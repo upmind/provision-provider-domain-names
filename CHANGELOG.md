@@ -2,6 +2,13 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.25](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.25) - 2024-12-05
+
+- Fix OpenSrs getInfo() when nameserver_list is missing
+- Remove ClientDeleteProhibited from lock statuses in providers:
+  - Hexonet
+  - CoccaEpp
+
 ## [v2.12.24](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.24) - 2024-11-22
 
 - Update OpenSRS domain availability check to gracefully handle 'Invalid domain syntax' errors"

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\OpenSRS\Helper;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\Response;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
@@ -85,8 +88,7 @@ class OpenSrsApi
     }
 
     /**
-     * @param string $type
-     * @param array $rawContactData
+     * @throws \RuntimeException
      */
     private static function validateContactType(string $type, array $rawContactData): void
     {
@@ -117,8 +119,10 @@ class OpenSrsApi
 
     /**
      * @param array $rawContactData
-     * @param   string  $type   Contact Type (owner, tech, admin, billing)
+     * @param string $type Contact Type (owner, tech, admin, billing)
      * @return ContactData
+     *
+     * @throws \RuntimeException
      */
     public static function parseContact(array $rawContactData, string $type): ContactData
     {
@@ -161,12 +165,27 @@ class OpenSrsApi
     /**
      * Send request and return the response.
      *
-     * @param array $params
+     * @param  array  $params
      * @return array
      *
-     * @throws ProvisionFunctionError
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function makeRequest(array $params): array
+    {
+        return $this->makeRequestAsync($params)->wait();
+    }
+
+    /**
+     * Send request and return the response.
+     *
+     * @param  array  $params
+     * @return PromiseInterface
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function makeRequestAsync(array $params): PromiseInterface
     {
         // Request Template
         $xmlDataBlock = self::array2xml($params);
@@ -182,7 +201,7 @@ class OpenSrsApi
             self::XML_INDENT . '</body>' . self::CRLF .
             '</OPS_envelope>';
 
-        $response = $this->client->request('POST', $this->getApiEndpoint(), [
+        return $this->client->requestAsync('POST', $this->getApiEndpoint(), [
             'body' => $xml,
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/OpenSRS',
@@ -191,24 +210,16 @@ class OpenSrsApi
                 'X-Signature' => md5(md5($xml . $this->configuration->key) . $this->configuration->key),
                 'Content-Length' => strlen($xml)
             ],
-        ]);
+        ])->then(function (Response $response) {
+            $result = $response->getBody()->getContents();
 
-        $result = $response->getBody()->getContents();
+            if (empty($result)) {
+                // Something bad happened...
+                throw new RuntimeException('Problem while sending OpenSRS request.');
+            }
 
-        // Init cUrl
-        if (empty($result)) {
-            $response->getBody()->close();
-
-            // Something bad happened...
-            throw new RuntimeException('Problem while sending OpenSRS request.');
-        }
-
-        $response->getBody()->close();
-
-        $responseData = self::parseResponseData($result);
-
-        // Return the result
-        return $responseData;
+            return self::parseResponseData($result);
+        });
     }
 
     /**
@@ -219,7 +230,9 @@ class OpenSrsApi
      */
     private static function array2xml(array $data): string
     {
-        return str_repeat(self::XML_INDENT, 2) . '<data_block>' . self::convertData($data, 3) . self::CRLF . str_repeat(self::XML_INDENT, 2) . '</data_block>';
+        return str_repeat(self::XML_INDENT, 2) . '<data_block>'
+            . self::convertData($data, 3)
+            . self::CRLF . str_repeat(self::XML_INDENT, 2) . '</data_block>';
     }
 
     /**
@@ -237,10 +250,10 @@ class OpenSrsApi
 
         if (is_array($array)) {
             if (self::isAssoc($array)) {        # HASH REFERENCE
-                $string .= self::CRLF . $spacer . '<dt_assoc>';
+                $string .= self::CRLF . $spacer . '<dt_assoc>' . self::CRLF;
                 $end = '</dt_assoc>';
             } else {                # ARRAY REFERENCE
-                $string .= self::CRLF . $spacer . '<dt_array>';
+                $string .= self::CRLF . $spacer . '<dt_array>' . self::CRLF;
                 $end = '</dt_array>';
             }
 
@@ -259,14 +272,14 @@ class OpenSrsApi
                 $string .= '>';
                 if (is_array($v) || is_object($v)) {
                     $string .= self::convertData($v, $indent + 1);
-                    $string .= self::XML_INDENT . $spacer . '</item>';
+                    $string .= self::CRLF . self::XML_INDENT . $spacer . '</item>' . self::CRLF;
                 } else {
-                    $string .= self::quoteXmlChars($v) . '</item>';
+                    $string .= self::quoteXmlChars($v) . '</item>' . self::CRLF;
                 }
 
                 --$indent;
             }
-            $string .= self::XML_INDENT . $spacer . $end;
+            $string .= $spacer . $end;
         } else {
             $string .= self::XML_INDENT . $spacer . '<dt_scalar>' . self::quoteXmlChars($array) . '</dt_scalar>';
         }
@@ -279,14 +292,14 @@ class OpenSrsApi
      *
      * Quotes special XML characters.
      *
-     * @param   string      string to quote
+     * @param string $string string to quote
      * @return string quoted string
      */
     private static function quoteXmlChars($string): string
     {
         $search = ['&', '<', '>', "'", '"'];
         $replace = ['&amp;', '&lt;', '&gt;', '&apos;', '&quot;'];
-        $string = str_replace($search, $replace, $string);
+        $string = Str::replace($search, $replace, $string);
         $string = utf8_encode($string);
 
         return $string;
@@ -298,7 +311,7 @@ class OpenSrsApi
      * Determines if an array is associative or not, since PHP
      * doesn't really distinguish between the two, but Perl/OPS does.
      *
-     * @param   array       array to check
+     * @param array $array array to check
      * @return bool true if the array is associative
      */
     private static function isAssoc(array &$array): bool
@@ -311,11 +324,9 @@ class OpenSrsApi
             return true;
         }
 
-        if (is_array($array)) {
-            foreach ($array as $k => $v) {
-                if (!is_int($k)) {
-                    return true;
-                }
+        foreach ($array as $k => $v) {
+            if (!is_int($k)) {
+                return true;
             }
         }
 
@@ -328,7 +339,7 @@ class OpenSrsApi
      * @param string $result
      * @return array
      *
-     * @throws ProvisionFunctionError
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private static function parseResponseData(string $result): array
     {
@@ -336,7 +347,7 @@ class OpenSrsApi
 
         // Check the XML for errors
         if (!isset($data['is_success'])) {
-            throw static::errorResult('Registrar API Response Error', ['response' => $result, 'data' => $data]);
+            static::errorResult('Registrar API Response Error', ['response' => $result, 'data' => $data]);
         }
 
         if ((int)$data['is_success'] === 0 && !in_array($data['response_code'], [200, 212])) {
@@ -346,7 +357,7 @@ class OpenSrsApi
                 $errorMessage = 'Registrar API Authentication Error';
             }
 
-            throw static::errorResult($errorMessage, $data);
+            static::errorResult($errorMessage, $data);
         }
 
         return $data;
@@ -361,9 +372,9 @@ class OpenSrsApi
      * @param array $debug Error debug
      * @param Throwable|null $previous Encountered exception
      *
-     * @throws ProvisionFunctionError
-     *
      * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public static function errorResult($message, $data = [], $debug = [], ?Throwable $previous = null): void
     {
@@ -479,6 +490,8 @@ class OpenSrsApi
     /**
      * @param array $xmlErrors
      * @return string
+     *
+     * @phpstan-ignore method.unused
      */
     private static function formatOpenSrsErrorMessage(array $xmlErrors): string
     {

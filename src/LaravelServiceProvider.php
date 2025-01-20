@@ -33,6 +33,8 @@ use Upmind\ProvisionProviders\DomainNames\InternetBS\Provider as InternetBS;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Provider as EuroDNS;
 use Upmind\ProvisionProviders\DomainNames\InternetX\Provider as InternetX;
 use Upmind\ProvisionProviders\DomainNames\EURID\Provider as EURID;
+use Upmind\ProvisionProviders\DomainNames\TPPWholesale\Provider as TPPWholesale;
+use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Provider as SynergyWholesale;
 use Upmind\ProvisionProviders\DomainNames\Netim\Provider as Netim;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
@@ -48,6 +50,7 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('domain-names', 'hexonet', Hexonet::class);
         $this->bindProvider('domain-names', 'enom', Enom::class);
         $this->bindProvider('domain-names', 'opensrs', OpenSRS::class);
+        $this->bindProvider('domain-names', 'hrs', HRS\Provider::class);
         $this->bindProvider('domain-names', 'connect-reseller', ConnectReseller::class);
         $this->bindProvider('domain-names', 'logic-boxes', LogicBoxes::class);
         $this->bindProvider('domain-names', 'resellerclub', ResellerClub::class);
@@ -66,10 +69,11 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('domain-names', 'centralnic-reseller', CentralNicReseller::class);
         $this->bindProvider('domain-names', 'realtime-register', RealtimeRegister::class);
         $this->bindProvider('domain-names', 'internetbs', InternetBS::class);
-        $this->bindProvider('domain-names', 'hrs', HRS\Provider::class);
         $this->bindProvider('domain-names', 'eurodns', EuroDNS::class);
         $this->bindProvider('domain-names', 'internetx', InternetX::class);
         $this->bindProvider('domain-names', 'eurid', EURID::class);
+        $this->bindProvider('domain-names', 'tpp-wholesale', TPPWholesale::class);
+        $this->bindProvider('domain-names', 'synergy-wholesale', SynergyWholesale::class);
         $this->bindProvider('domain-names', 'netim', Netim::class);
     }
 }

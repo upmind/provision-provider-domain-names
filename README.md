@@ -61,6 +61,9 @@ The following providers are currently implemented:
   - [Internet.bs](https://internetbs.net/internet-bs-api.pdf)
   - [EuroDNS](https://whois.eurodns.com/doc/domain/info)
   - [InternetX](https://help.internetx.com/display/APIXMLEN/Domain+tasks)
+  - [EURid](https://eurid.eu/en/become-a-eu-registrar/accreditation-criteria/)
+  - [TPP Wholesale](https://www.tppwholesale.com.au/api/)
+  - [Synergy Wholesale](https://synergywholesale.com/wp-content/uploads/2024/06/Synergy-Wholesale-API-Documentation-v3-11.pdf)
 
 ## Functions
 
@@ -96,6 +99,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
  - [Codeline](https://codeline.fi/)
  - [PEWEO](https://www.peweo.com/)
  - [Dan](https://github.com/domainregistrar)
+-  [Roussetos Karafyllakis](https://github.com/RoussKS)
  - [All Contributors](../../contributors)
 
 ## License

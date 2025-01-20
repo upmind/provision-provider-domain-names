@@ -2,6 +2,194 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.17.8](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.8) - 2024-12-05
+
+- Fix OpenSrs getInfo() when nameserver_list is missing
+- Remove ClientDeleteProhibited from lock statuses in providers:
+  - Hexonet
+  - CoccaEpp
+
+## [v2.17.7](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.7) - 2024-11-22
+
+- Update OpenSRS domain availability check to gracefully handle 'Invalid domain syntax' errors"
+
+## [v2.17.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.6) - 2024-11-21
+
+- Implement OpenSRS/HRS domain availability check
+
+## [v2.17.5](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.5) - 2024-10-08
+
+- Update TPPWholesaleResponse to gracefully handle HTML responses
+- Add `account_id` and `account_option` to TPPWholesale configuration for register() and transfer()
+
+## [v2.17.4](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.4) - 2024-09-27
+
+- Update DomainNameApi add specific error for when registrant contact is not set, and workaround
+  for updateRegistrantContact() when other contact types are also missing
+
+## [v2.17.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.3) - 2024-09-25
+
+- Update OpenProvider error handling, return api response data in provision result data
+
+## [v2.17.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.2) - 2024-09-24
+
+- Fix DomainNameAPI type error in domainInfoToResult()
+
+## [v2.17.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.1) - 2024-09-19
+
+- Remove existing order check from TPPWholesale renew()
+- Update APPWholesale register() to pass AccountOption EXTERNAL in API call
+
+## [v2.17.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.17.0) - 2024-09-09
+
+- Add `auto_renew` to DomainResult
+- Fix LogicBoxes _renewDomain() undefined index error
+
+## [v2.16.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.16.1) - 2024-09-03
+
+- Fix LogicBoxes _getDomain() whois_privacy bool cast
+
+## [v2.16.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.16.0) - 2024-09-02
+
+- Add `whois_privacy` to Register/Transfer params and DomainResult data
+- Implement whois_privacy for LogicBoxes, OpenProvider + OpenSRS
+
+## [v2.15.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.15.3) - 2024-09-02
+
+- Update TPPWholesaleApi::checkMultipleDomains()
+  -  Ensure only one result per domain, with sensible prioritisation
+  -  Return available if the only result is that an order already exists
+
+## [v2.15.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.15.2) - 2024-08-29
+
+- Update TppWholesale renew() to throw an error if a scheduled renewal order already exists
+
+## [v2.15.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.15.1) - 2024-08-20
+
+- Update OpenSRS provider with exception handling for connection errors
+- Update OpenSRS getEppCode() to reset EPP code if none set
+- Tweak TppWHolesale inactive domain order data error message
+
+## [v2.15.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.15.0) - 2024-08-15
+
+- Implement Synergy Wholesale provider
+
+## [v2.14.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.14.1) - 2024-08-15
+
+- Remove invalid length validation rules from TPP Wholesale configuration
+
+## [v2.14.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.14.0) - 2024-08-13
+
+- Add optional `additional_fields` to RegisterDomainParams
+- Implement TPP Wholesale provider
+
+## [v2.13.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.1) - 2024-08-06
+
+- Update Enom/Provider::updateNameservers() to return the param's NS, to avoid race condition
+  where Enom does not immediately return the new NS when a "Get Info" is then called
+
+## [v2.13.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.0) - 2024-07-29
+
+- Update library for PHP 8 + Base lib v4
+
+## [v2.12.25](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.25) - 2024-12-05
+
+- Fix OpenSrs getInfo() when nameserver_list is missing
+- Remove ClientDeleteProhibited from lock statuses in providers:
+  - Hexonet
+  - CoccaEpp
+
+## [v2.12.24](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.24) - 2024-11-22
+
+- Update OpenSRS domain availability check to gracefully handle 'Invalid domain syntax' errors"
+
+## [v2.12.23](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.23) - 2024-11-21
+
+- Implement OpenSRS/HRS domain availability check
+
+## [v2.12.22](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.22) - 2024-10-08
+
+- Update TPPWholesaleResponse to gracefully handle HTML responses
+- Add `account_id` and `account_option` to TPPWholesale configuration for register() and transfer()
+
+## [v2.12.21](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.21) - 2024-09-27
+
+- Update DomainNameApi add specific error for when registrant contact is not set, and workaround
+  for updateRegistrantContact() when other contact types are also missing
+
+## [v2.12.20](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.20) - 2024-09-25
+
+- Update OpenProvider error handling, return api response data in provision result data
+
+## [v2.12.19](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.19) - 2024-09-24
+
+- Fix DomainNameAPI type error in domainInfoToResult()
+
+## [v2.12.18](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.18) - 2024-09-19
+
+- Remove existing order check from TPPWholesale renew()
+- Update APPWholesale register() to pass AccountOption EXTERNAL in API call
+
+## [v2.12.17](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.17) - 2024-09-09
+
+- Add `auto_renew` to DomainResult
+- Fix LogicBoxes _renewDomain() undefined index error
+
+## [v2.12.16](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.16) - 2024-09-03
+
+- Fix LogicBoxes _getDomain() whois_privacy bool cast
+
+## [v2.12.15](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.15) - 2024-09-02
+
+- Add `whois_privacy` to Register/Transfer params and DomainResult data
+- Implement whois_privacy for LogicBoxes, OpenProvider + OpenSRS
+
+## [v2.12.14](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.14) - 2024-09-02
+
+- Update TPPWholesaleApi::checkMultipleDomains()
+  -  Ensure only one result per domain, with sensible prioritisation
+  -  Return available if the only result is that an order already exists
+
+## [v2.12.13](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.13) - 2024-08-29
+
+- Update TppWholesale renew() to throw an error if a scheduled renewal order already exists
+
+## [v2.12.12](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.12) - 2024-08-20
+
+- Update OpenSRS provider with exception handling for connection errors
+- Update OpenSRS getEppCode() to reset EPP code if none set
+- Tweak TppWHolesale inactive domain order data error message
+
+## [v2.12.11](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.11) - 2024-08-15
+
+- Implement Synergy Wholesale provider
+
+## [v2.12.10](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.10) - 2024-08-15
+
+- Remove invalid length validation rules from TPP Wholesale configuration
+
+## [v2.12.9](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.9) - 2024-08-13
+
+- Add optional `additional_fields` to RegisterDomainParams
+- Implement TPP Wholesale provider
+
+## [v2.12.8](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.8) - 2024-08-06
+
+- Update Enom/Provider::updateNameservers() to return the param's NS, to avoid race condition
+  where Enom does not immediately return the new NS when a "Get Info" is then called
+
+## [v2.12.7](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.7) - 2024-07-24
+
+- Update DomainNameApi/Provider::contactParamsToSoap() fix for invalid/empty values
+
+## [v2.12.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.6) - 2024-07-24
+
+- Fix Utils::internationalPhoneToEpp() and eppPhoneToInternational() to work with invalid numbers
+
+## [v2.12.5](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.5) - 2024-07-11
+
+- Update CentralNicReseller/Helper/EppHelper::getContactInfo() to return null if object not found
+
 ## [v2.12.4](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.4) - 2024-07-02
 
 - Fix EuroDNS unparenthesized ternary operation error

@@ -61,7 +61,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function poll(PollParams $params): PollResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -69,7 +69,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -77,7 +77,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -85,7 +85,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function transfer(TransferParams $params): DomainResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -93,7 +93,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function renew(RenewParams $params): DomainResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -134,7 +134,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -142,7 +142,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -150,7 +150,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setLock(LockParams $params): DomainResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -158,7 +158,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -166,7 +166,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -174,7 +174,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -183,7 +183,7 @@ class Provider extends DomainNames implements ProviderInterface
     protected function client(): Client
     {
         return $this->client ??= new Client([
-            'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
+            'handler' => $this->getGuzzleHandlerStack(),
             'base_uri' => 'https://api.example.com/v1/',
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->configuration->api_token,

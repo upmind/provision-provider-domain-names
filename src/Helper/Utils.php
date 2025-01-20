@@ -7,6 +7,7 @@ namespace Upmind\ProvisionProviders\DomainNames\Helper;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use libphonenumber\PhoneNumberUtil;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\WhoisPrivacy;
@@ -18,6 +19,8 @@ class Utils
      *
      * @param string|null $date
      * @param string|null $format
+     * @param string|null $adjustHours
+     *
      * @return string|null Formatted date, or null
      */
     public static function formatDate(?string $date, ?string $format = null, ?string $adjustHours = null): ?string
@@ -224,11 +227,11 @@ class Utils
      *
      * @link https://tools.ietf.org/html/rfc5733#section-2.5
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException If not a valid international phone number
+     * @param string|null $number Phone number in "international format" E.g., +447515878251
      *
-     * @param string $number Phone number in "international format" E.g., +447515878251
+     * @return string|null Phone number in "EPP format" E.g., +44.7515878251
      *
-     * @return string Phone number in "EPP format" E.g., +44.7515878251
+     * @throws \libphonenumber\NumberParseException If not a valid international phone number
      */
     public static function internationalPhoneToEpp(?string $number): ?string
     {
@@ -236,13 +239,11 @@ class Utils
             return null;
         }
 
-        $phone = phone($number);
-        $diallingCode = $phone->getPhoneNumberInstance()->getCountryCode();
+        $phone = PhoneNumberUtil::getInstance()->parse($number, null);
+        $diallingCode = $phone->getCountryCode();
+        $nationalNumber = $phone->getNationalNumber();
 
-        $prefix = sprintf('+%d', $diallingCode);
-        $suffix = Str::replaceFirst($prefix, '', (string)$phone);
-
-        return sprintf('%s.%s', $prefix, $suffix);
+        return sprintf('+%s.%s', $diallingCode, $nationalNumber);
     }
 
     /**
@@ -251,7 +252,7 @@ class Utils
      *
      * @link https://tools.ietf.org/html/rfc5733#section-2.5
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException If not a valid EPP format phone number
+     * @throws \libphonenumber\NumberParseException If not a valid EPP format phone number
      *
      * @param string $eppNumber Phone number in "EPP format" E.g., +44.7515878251
      *
@@ -259,7 +260,11 @@ class Utils
      */
     public static function eppPhoneToInternational(string $eppNumber): string
     {
-        return (string)phone($eppNumber);
+        $phone = PhoneNumberUtil::getInstance()->parse($eppNumber, null);
+        $diallingCode = $phone->getCountryCode();
+        $nationalNumber = $phone->getNationalNumber();
+
+        return sprintf('+%s%s', $diallingCode, $nationalNumber);
     }
 
     /**
@@ -269,6 +274,8 @@ class Utils
      * @param string|null $countryCode Country code, if known
      *
      * @return string International format phone number, if possible
+     *
+     * @throws \Throwable
      */
     public static function localPhoneToInternational(string $number, ?string $countryCode, bool $orFail = true): string
     {

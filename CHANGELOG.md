@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.26](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.26) - 2025-01-21
+
+- Fix LogicBoxes\Provider::_parseContactInfo() where company is missing
+
 ## [v2.12.25](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.25) - 2024-12-05
 
 - Fix OpenSrs getInfo() when nameserver_list is missing

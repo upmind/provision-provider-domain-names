@@ -1018,7 +1018,7 @@ class Provider extends DomainNames implements ProviderInterface
             'name' => $contact['name'],
             'email' => $contact['emailaddr'],
             'phone' => '+' . $contact['telnocc'] . $contact['telno'],
-            'organisation' => $contact['company'],
+            'organisation' => $contact['company'] ?? null,
             'address1' => $contact['address1'],
             'city' => $contact['city'],
             'postcode' => $contact['zip'],

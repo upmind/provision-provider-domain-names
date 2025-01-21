@@ -10,10 +10,9 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
 /**
  * Example configuration.
  *
- * @property-read string $username Login id
- * @property-read string $api_token API token
- * @property-read bool|null $sandbox Make API requests against the sandbox environment
- * @property-read bool|null $debug Whether or not to log API requests and responses
+ * @property-read string $Username Login id
+ * @property-read string $Das_Password API token
+ * @property-read bool|null $Sandbox Make API requests against the sandbox environment
  */
 class Configuration extends DataSet
 {

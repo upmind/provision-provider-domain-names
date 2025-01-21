@@ -1,6 +1,6 @@
 <?php
 
-namespace Netim {
+namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper\ {
     class Normalization
     {
         public function __construct()

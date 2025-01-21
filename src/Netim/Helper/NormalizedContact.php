@@ -2,6 +2,7 @@
 
 namespace Netim {
     include_once "Contact.php";
+
     use Netim\Contact;
 
     require_once "Normalization.php";

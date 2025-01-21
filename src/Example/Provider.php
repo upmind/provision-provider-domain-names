@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Example;
 
-use Carbon\Carbon;
+use Carbon\Carbon;N
 use GuzzleHttp\Client;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;

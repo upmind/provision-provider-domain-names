@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Netim;
 
-include_once __DIR__ . '/Helper/APIRest.php';
-include_once __DIR__ . '/Helper/NetimAPIException.php';
-include_once __DIR__ . '/Helper/NormalizedContact.php';
+// include_once __DIR__ . '/Helper/APIRest.php';
+// include_once __DIR__ . '/Helper/NetimAPIException.php';
+// include_once __DIR__ . '/Helper/NormalizedContact.php';
 
 use DateTime;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -243,28 +243,44 @@ class Provider extends DomainNames implements ProviderInterface
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
 
         try {
-            if (isset($params->registrant['id'])) {
-                $registrant = $params->registrant['id'];
-            } else {
-                $registrant = $this->createContact($params->registrant['register'], 1);
+            if (isset($params->registrant)) {
+                if (isset($params->registrant['id'])) {
+                    $registrant = $params->registrant['id'];
+                } else {
+                    $registrant = $this->createContact($params->registrant['register'], 1);
+                }
+            } {
+                $registrant = "";
             }
 
-            if (isset($params->admin['id'])) {
-                $admin = $params->admin['id'];
+            if (isset($params->admin)) {
+                if (isset($params->admin['id'])) {
+                    $admin = $params->admin['id'];
+                } else {
+                    $admin = $this->createContact($params->admin['register']);
+                }
             } else {
-                $admin = $this->createContact($params->admin['register']);
+                $admin = $registrant;
             }
 
-            if (isset($params->tech['id'])) {
-                $tech = $params->tech['id'];
+            if (isset($params->tech)) {
+                if (isset($params->tech['id'])) {
+                    $tech = $params->tech['id'];
+                } else {
+                    $tech = $this->createContact($params->tech['register']);
+                }
             } else {
-                $tech = $this->createContact($params->tech['register']);
+                $tech = $registrant;
             }
 
-            if (isset($params->billing['id'])) {
-                $billing = $params->billing['id'];
+            if (isset($params->billing)) {
+                if (isset($params->billing['id'])) {
+                    $billing = $params->billing['id'];
+                } else {
+                    $billing = $this->createContact($params->billing['register']);
+                }
             } else {
-                $billing = $this->createContact($params->billing['register']);
+                $billing = $registrant;
             }
 
             $ns1 = isset($params->nameservers->ns1) ? $params->nameservers->ns1['host'] : "";
@@ -343,6 +359,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
         try {
             // Get the owner contact id 
@@ -571,9 +588,12 @@ class Provider extends DomainNames implements ProviderInterface
 
     protected function normalizeContactToArray($params, $isOwner = 0): array
     {
+        $firstName = explode(" ", $params->name)[0];
+        $lastName = explode(" ", $params->name)[1];
+
         $normalizedContact = new NormalizedContact(
-            isset($params->firstName) ? $params->firstName : "",
-            isset($params->lastName) ? $params->lastName : "",
+            isset($firstName) ? $firstName : "",
+            isset($lastName) ? $lastName : "",
             isset($params->bodyName) ? $params->bodyName : "",
             isset($params->address1) ? $params->address1 : "",
             isset($params->address2) ? $params->address2 : "",

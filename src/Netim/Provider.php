@@ -103,7 +103,7 @@ class Provider extends DomainNames implements ProviderInterface
                     'created_at' => Utils::formatDate($poll[$i]->date_ope),
                 ];
                 $pollList[] = DomainNotification::create($notification);
-                $count = $count - 1;
+                --$count;
             }
 
 
@@ -130,7 +130,11 @@ class Provider extends DomainNames implements ProviderInterface
 
                 $available = strtolower($domainCheck[0]->result) === 'available';
                 $transfer = !$available;
-                if (strtolower($domainCheck[0]->reason) === 'reserved' || strtolower($domainCheck[0]->reason) === 'pending application') {
+
+                if (
+                    strtolower($domainCheck[0]->reason) === 'reserved'
+                    || strtolower($domainCheck[0]->reason) === 'pending application'
+                ) {
                     $available = false;
                     $transfer = false;
                 }
@@ -139,9 +143,7 @@ class Provider extends DomainNames implements ProviderInterface
 
                 $domain = DacDomain::create([
                     'domain' => $domain,
-                    'description' => $data['reason'] ?? sprintf(
-                        'Domain is ' . $domainCheck[0]->result . ' to register'
-                    ),
+                    'description' => $data['reason'] ?? 'Domain is ' . $domainCheck[0]->result . ' to register',
                     'tld' => Utils::getTld($domain),
                     'can_register' => $available,
                     'can_transfer' => $transfer,
@@ -151,9 +153,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $dacDomains[] = $domain;
             }
 
-            return DacResult::create([
-                'domains' => $dacDomains,
-            ]);
+            return DacResult::create(['domains' => $dacDomains]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -167,7 +167,6 @@ class Provider extends DomainNames implements ProviderInterface
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
 
         try {
-
             $domainCheck = $this->client()->domainCheck($domain);
 
             if (strtolower($domainCheck[0]->result) !== 'available') {
@@ -290,11 +289,12 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
         try {
-            $renew = $this->client()->domainRenew($domain, (int)$params->renew_years);
+            $renew = $this->client()->domainRenew($domain, (int) $params->renew_years);
 
             if ($renew->STATUS === 'Done') {
-                $domainInfo =  $this->getDomainInfo($domain);
-                return $domainInfo->setMessage('Your domain : ' . $domain . ' has been renewed successfully');
+                return $this->getDomainInfo($domain)->setMessage(
+                    'Your domain : ' . $domain . ' has been renewed successfully'
+                );
             }
 
             if ($renew->STATUS === 'Pending') {
@@ -313,6 +313,7 @@ class Provider extends DomainNames implements ProviderInterface
     public function getInfo(DomainInfoParams $params): DomainResult
     {
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
+
         try {
             return $this->getDomainInfo($domain);
         } catch (NetimAPIException $e) {
@@ -577,17 +578,17 @@ class Provider extends DomainNames implements ProviderInterface
         $lastName = explode(" ", $params->name)[1];
 
         $normalizedContact = new NormalizedContact(
-            isset($firstName) ? $firstName : "",
-            isset($lastName) ? $lastName : "",
-            isset($params->bodyName) ? $params->bodyName : "",
-            isset($params->address1) ? $params->address1 : "",
-            isset($params->address2) ? $params->address2 : "",
-            isset($params->postcode) ? $params->postcode : "",
-            isset($params->state) ? $params->state : "",
-            isset($params->country_code) ? $params->country_code : "",
-            isset($params->city) ? $params->city : "",
-            isset($params->phone) ? $params->phone : "",
-            isset($params->email) ? $params->email : "",
+            $firstName ?? "",
+            $lastName ?? "",
+            $params->bodyName ?? "",
+            $params->address1 ?? "",
+            $params->address2 ?? "",
+            $params->postcode ?? "",
+            $params->state ?? "",
+            $params->country_code ?? "",
+            $params->city ?? "",
+            $params->phone ?? "",
+            $params->email ?? "",
             "en",
             $isOwner
         );
@@ -597,6 +598,7 @@ class Provider extends DomainNames implements ProviderInterface
     protected function getContactInfo($idContact): array
     {
         $contact = $this->client()->contactInfo($idContact);
+
         return [
             'name' => $contact->firstName . ' ' . $contact->lastName,
             'email' => $contact->email,

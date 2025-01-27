@@ -217,10 +217,10 @@ class Provider extends DomainNames implements ProviderInterface
                 (int)$params->renew_years,
             );
 
-            if ($result->STATUS == 'Done') {
+            if ($result->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been registered successfully');
-            } else if ($result->STATUS == 'Pending') {
+            } else if ($result->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' registration is pending');
             } else {
@@ -299,10 +299,10 @@ class Provider extends DomainNames implements ProviderInterface
                 $ns5,
             );
 
-            if ($result->STATUS == 'Done') {
+            if ($result->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been transferred successfully');
-            } else if ($result->STATUS == 'Pending') {
+            } else if ($result->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' transfer is pending');
             } else {
@@ -322,11 +322,11 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $renew = $this->client()->domainRenew($domain, (int)$params->renew_years);
 
-            if ($renew->STATUS == 'Done') {
+            if ($renew->STATUS === 'Done') {
                 $domainInfo =  $this->getDomainInfo($domain);
                 return $domainInfo
                     ->setMessage('Your domain : ' . $domain . ' has been renewed successfully');
-            } else if ($renew->STATUS == 'Pending') {
+            } else if ($renew->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' renew is pending');
             } else {
@@ -393,7 +393,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             $domainInfo = $this->getDomainInfo($domain);
 
-            if ($result->STATUS == 'Done') {
+            if ($result->STATUS === 'Done') {
                 return NameserversResult::create([
                     'ns1' => $params->ns1,
                     'ns2' => $params->ns2,
@@ -401,7 +401,7 @@ class Provider extends DomainNames implements ProviderInterface
                     'ns4' => $params->ns4,
                     'ns5' => $params->ns5,
                 ])->setMessage('Your domain : ' . $domain . ' has been updated successfully');
-            } else if ($result->STATUS == 'Pending') {
+            } else if ($result->STATUS === 'Pending') {
                 return NameserversResult::create([
                     'ns1' => $params->ns1,
                     'ns2' => $params->ns2,
@@ -426,10 +426,10 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $return = $this->client()->domainSetPreference($domain, 'registrar_lock', $params->lock ? '1' : '0');
-            if ($return->STATUS == 'Pending') {
+            if ($return->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' change lock is pending');
-            } else if ($return->STATUS == 'Done') {
+            } else if ($return->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been ' . ($params->lock ? 'locked' : 'unlocked') . ' successfully');
             } else {
@@ -449,10 +449,10 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $return = $this->client()->domainSetPreference($domain, 'auto_renew', $params->auto_renew ? '1' : '0');
-            if ($return->STATUS == 'Pending') {
+            if ($return->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' change auto renew is pending');
-            } else if ($return->STATUS == 'Done') {
+            } else if ($return->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' auto renew has been ' . ($params->auto_renew ? 'enable' : 'disable') . ' successfully');
             } else {

@@ -74,35 +74,36 @@ class Provider extends DomainNames implements ProviderInterface
             for ($i = 0; $i < min($count, $params->limit); $i++) {
                 if (isset($params->after_date) && $poll[$i]->date < $params->after_date) {
                     break;
-                } else {
-                    $type = '';
-                    switch ($poll[$i]->code_ope) {
-                        case 'domainTransferIn':
-                            $type = DomainNotification::TYPE_TRANSFER_IN;
-                            break;
-                        case 'domainRenew':
-                            $type = DomainNotification::TYPE_RENEWED;
-                            break;
-                        case 'domainDelete':
-                            $type = DomainNotification::TYPE_DELETED;
-                            break;
-                        default:
-                            break;
-                    }
-
-                    if ($type === '')
-                        break;
-
-                    $notification = [
-                        'id' => $poll[$i]->id_ope,
-                        'type' => $type,
-                        'message' => $poll[$i]->code_ope,
-                        'domains' => [$poll[$i]->data_ope],
-                        'created_at' => Utils::formatDate($poll[$i]->date_ope),
-                    ];
-                    $pollList[] = DomainNotification::create($notification);
-                    $count = $count - 1;
                 }
+
+                $type = '';
+                switch ($poll[$i]->code_ope) {
+                    case 'domainTransferIn':
+                        $type = DomainNotification::TYPE_TRANSFER_IN;
+                        break;
+                    case 'domainRenew':
+                        $type = DomainNotification::TYPE_RENEWED;
+                        break;
+                    case 'domainDelete':
+                        $type = DomainNotification::TYPE_DELETED;
+                        break;
+                    default:
+                        break;
+                }
+
+                if ($type === '') {
+                    break;
+                }
+
+                $notification = [
+                    'id' => $poll[$i]->id_ope,
+                    'type' => $type,
+                    'message' => $poll[$i]->code_ope,
+                    'domains' => [$poll[$i]->data_ope],
+                    'created_at' => Utils::formatDate($poll[$i]->date_ope),
+                ];
+                $pollList[] = DomainNotification::create($notification);
+                $count = $count - 1;
             }
 
 
@@ -134,7 +135,7 @@ class Provider extends DomainNames implements ProviderInterface
                     $transfer = false;
                 }
 
-                $premium = strtolower($domainCheck[0]->reason) === 'premium' ? true : false;
+                $premium = strtolower($domainCheck[0]->reason) === 'premium';
 
                 $domain = DacDomain::create([
                     'domain' => $domain,
@@ -173,29 +174,10 @@ class Provider extends DomainNames implements ProviderInterface
                 $this->errorResult('Domain ' . $domain . ' is not available');
             }
 
-            if (isset($params->registrant['id'])) {
-                $registrant = $params->registrant['id'];
-            } else {
-                $registrant = $this->createContact($params->registrant['register'], 1);
-            }
-
-            if (isset($params->admin['id'])) {
-                $admin = $params->admin['id'];
-            } else {
-                $admin = $this->createContact($params->admin['register']);
-            }
-
-            if (isset($params->tech['id'])) {
-                $tech = $params->tech['id'];
-            } else {
-                $tech = $this->createContact($params->tech['register']);
-            }
-
-            if (isset($params->billing['id'])) {
-                $billing = $params->billing['id'];
-            } else {
-                $billing = $this->createContact($params->billing['register']);
-            }
+            $registrant = $params->registrant['id'] ?? $this->createContact($params->registrant['register'], 1);
+            $admin = $params->admin['id'] ?? $this->createContact($params->admin['register']);
+            $tech = $params->tech['id'] ?? $this->createContact($params->tech['register']);
+            $billing = $params->billing['id'] ?? $this->createContact($params->billing['register']);
 
             $ns1 = isset($params->nameservers->ns1) ? $params->nameservers->ns1['host'] : "";
             $ns2 = isset($params->nameservers->ns2) ? $params->nameservers->ns2['host'] : "";
@@ -220,12 +202,14 @@ class Provider extends DomainNames implements ProviderInterface
             if ($result->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been registered successfully');
-            } else if ($result->STATUS === 'Pending') {
+            }
+
+            if ($result->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' registration is pending');
-            } else {
-                $this->errorResult($result->MESSAGE);
             }
+
+            $this->errorResult($result->MESSAGE);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -240,41 +224,25 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             if (isset($params->registrant)) {
-                if (isset($params->registrant['id'])) {
-                    $registrant = $params->registrant['id'];
-                } else {
-                    $registrant = $this->createContact($params->registrant['register'], 1);
-                }
-            } {
+                $registrant = $params->registrant['id'] ?? $this->createContact($params->registrant['register'], 1);
+            } else {
                 $registrant = "";
             }
 
             if (isset($params->admin)) {
-                if (isset($params->admin['id'])) {
-                    $admin = $params->admin['id'];
-                } else {
-                    $admin = $this->createContact($params->admin['register']);
-                }
+                $admin = $params->admin['id'] ?? $this->createContact($params->admin['register']);
             } else {
                 $admin = $registrant;
             }
 
             if (isset($params->tech)) {
-                if (isset($params->tech['id'])) {
-                    $tech = $params->tech['id'];
-                } else {
-                    $tech = $this->createContact($params->tech['register']);
-                }
+                $tech = $params->tech['id'] ?? $this->createContact($params->tech['register']);
             } else {
                 $tech = $registrant;
             }
 
             if (isset($params->billing)) {
-                if (isset($params->billing['id'])) {
-                    $billing = $params->billing['id'];
-                } else {
-                    $billing = $this->createContact($params->billing['register']);
-                }
+                $billing = $params->billing['id'] ?? $this->createContact($params->billing['register']);
             } else {
                 $billing = $registrant;
             }
@@ -302,12 +270,14 @@ class Provider extends DomainNames implements ProviderInterface
             if ($result->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been transferred successfully');
-            } else if ($result->STATUS === 'Pending') {
+            }
+
+            if ($result->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' transfer is pending');
-            } else {
-                $this->errorResult($result->MESSAGE);
             }
+
+            $this->errorResult($result->MESSAGE);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -324,14 +294,14 @@ class Provider extends DomainNames implements ProviderInterface
 
             if ($renew->STATUS === 'Done') {
                 $domainInfo =  $this->getDomainInfo($domain);
-                return $domainInfo
-                    ->setMessage('Your domain : ' . $domain . ' has been renewed successfully');
-            } else if ($renew->STATUS === 'Pending') {
-                return $this->getDomainInfo($domain)
-                    ->setMessage('Your domain : ' . $domain . ' renew is pending');
-            } else {
-                $this->errorResult($renew->MESSAGE);
+                return $domainInfo->setMessage('Your domain : ' . $domain . ' has been renewed successfully');
             }
+
+            if ($renew->STATUS === 'Pending') {
+                return $this->getDomainInfo($domain)->setMessage('Your domain : ' . $domain . ' renew is pending');
+            }
+
+            $this->errorResult($renew->MESSAGE);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -401,7 +371,9 @@ class Provider extends DomainNames implements ProviderInterface
                     'ns4' => $params->ns4,
                     'ns5' => $params->ns5,
                 ])->setMessage('Your domain : ' . $domain . ' has been updated successfully');
-            } else if ($result->STATUS === 'Pending') {
+            }
+
+            if ($result->STATUS === 'Pending') {
                 return NameserversResult::create([
                     'ns1' => $params->ns1,
                     'ns2' => $params->ns2,
@@ -409,9 +381,9 @@ class Provider extends DomainNames implements ProviderInterface
                     'ns4' => $params->ns4,
                     'ns5' => $params->ns5,
                 ])->setMessage('Your domain : ' . $domain . ' update is pending');
-            } else {
-                $this->errorResult($result->MESSAGE);
             }
+
+            $this->errorResult($result->MESSAGE);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -426,15 +398,18 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $return = $this->client()->domainSetPreference($domain, 'registrar_lock', $params->lock ? '1' : '0');
+
             if ($return->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' change lock is pending');
-            } else if ($return->STATUS === 'Done') {
+            }
+
+            if ($return->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been ' . ($params->lock ? 'locked' : 'unlocked') . ' successfully');
-            } else {
-                $this->errorResult($return->MESSAGE);
             }
+
+            $this->errorResult($return->MESSAGE);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -449,15 +424,19 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $return = $this->client()->domainSetPreference($domain, 'auto_renew', $params->auto_renew ? '1' : '0');
+
             if ($return->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' change auto renew is pending');
-            } else if ($return->STATUS === 'Done') {
-                return $this->getDomainInfo($domain)
-                    ->setMessage('Your domain : ' . $domain . ' auto renew has been ' . ($params->auto_renew ? 'enable' : 'disable') . ' successfully');
-            } else {
-                $this->errorResult($return->MESSAGE);
             }
+
+            if ($return->STATUS === 'Done') {
+                return $this->getDomainInfo($domain)->setMessage(
+                    'Your domain : ' . $domain . ' auto renew has been ' . ($params->auto_renew ? 'enable' : 'disable') . ' successfully'
+                );
+            }
+
+            $this->errorResult($return->MESSAGE);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -471,12 +450,13 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
             $tldinfo = $this->client()->domainTldInfo(Utils::normalizeTld($params->tld));
+
             if ($tldinfo->HasEppCode) {
                 $domInfo = $this->client()->domainInfo($domain);
-                return EppCodeResult::create()
-                    ->setEppCode($domInfo->authID);
-            } else
-                $this->errorResult($this->client()->domainAuthID($domain, 1)->MESSAGE);
+                return EppCodeResult::create()->setEppCode($domInfo->authID);
+            }
+
+            $this->errorResult($this->client()->domainAuthID($domain, 1)->MESSAGE);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }

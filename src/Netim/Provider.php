@@ -47,7 +47,7 @@ use Netim\NormalizedContact;
 class Provider extends DomainNames implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected APIRest $client;
+    protected ?APIRest $client = null;
 
     public function __construct(Configuration $configuration)
     {
@@ -490,11 +490,15 @@ class Provider extends DomainNames implements ProviderInterface
         $this->errorResult('Not implemented');
     }
 
-
     protected function client(): APIRest
     {
         $url = $this->configuration->sandbox ? 'http://oterest.netim.com/1.0/' : 'https://rest.netim.com/1.0/';
-        return $this->client ??= new APIRest($this->configuration->username, $this->configuration->password, $url);
+
+        if ($this->client === null) {
+            $this->client = new APIRest($this->configuration->username, $this->configuration->password, $url);
+        }
+
+        return $this->client;
     }
 
 

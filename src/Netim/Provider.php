@@ -362,7 +362,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
         try {
-            // Get the owner contact id 
+            // Get the owner contact id
             $domainInfo = $this->client()->domainInfo($domain);
             $owner = $domainInfo->idOwner;
 
@@ -497,12 +497,12 @@ class Provider extends DomainNames implements ProviderInterface
 
     protected function client(): APIRest
     {
-        $url = $this->configuration->Sandbox ? 'http://oterest.netim.com/1.0/' : 'https://rest.netim.com/1.0/';
-        return $this->client ??= new APIRest($this->configuration->Username, $this->configuration->Das_Password, $url);
+        $url = $this->configuration->sandbox ? 'http://oterest.netim.com/1.0/' : 'https://rest.netim.com/1.0/';
+        return $this->client ??= new APIRest($this->configuration->username, $this->configuration->password, $url);
     }
 
 
-    // Utils function 
+    // Utils function
     protected function nsParser(array $ns): array
     {
         $return = [];

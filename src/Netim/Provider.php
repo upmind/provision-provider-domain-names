@@ -492,7 +492,9 @@ class Provider extends DomainNames implements ProviderInterface
 
     protected function client(): APIRest
     {
-        $url = $this->configuration->sandbox ? 'http://oterest.netim.com/1.0/' : 'https://rest.netim.com/1.0/';
+        $url = (bool) $this->configuration->sandbox === true
+            ? 'http://oterest.netim.com/1.0/'
+            : 'https://rest.netim.com/1.0/';
 
         if ($this->client === null) {
             $this->client = new APIRest($this->configuration->username, $this->configuration->password, $url);

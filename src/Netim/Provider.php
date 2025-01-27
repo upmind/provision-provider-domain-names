@@ -55,9 +55,6 @@ class Provider extends DomainNames implements ProviderInterface
         $this->configuration = $configuration;
     }
 
-    /**
-     * @inheritDoc
-     */
     public static function aboutProvider(): AboutData
     {
         return AboutData::create()
@@ -66,7 +63,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function poll(PollParams $params): PollResult
     {
@@ -115,12 +112,12 @@ class Provider extends DomainNames implements ProviderInterface
                 'count_remaining' => $count,
             ]);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
@@ -158,12 +155,12 @@ class Provider extends DomainNames implements ProviderInterface
                 'domains' => $dacDomains,
             ]);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
@@ -174,7 +171,7 @@ class Provider extends DomainNames implements ProviderInterface
             $domainCheck = $this->client()->domainCheck($domain);
 
             if (strtolower($domainCheck[0]->result) !== 'available') {
-                return $this->errorResult('Domain ' . $domain . ' is not available');
+                $this->errorResult('Domain ' . $domain . ' is not available');
             }
 
             if (isset($params->registrant['id'])) {
@@ -228,15 +225,15 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' registration is pending');
             } else {
-                return $this->errorResult($result->MESSAGE);
+                $this->errorResult($result->MESSAGE);
             }
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
     {
@@ -310,15 +307,15 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' transfer is pending');
             } else {
-                return $this->errorResult($result->MESSAGE);
+                $this->errorResult($result->MESSAGE);
             }
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(RenewParams $params): DomainResult
     {
@@ -334,15 +331,15 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' renew is pending');
             } else {
-                return $this->errorResult($renew->MESSAGE);
+                $this->errorResult($renew->MESSAGE);
             }
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getInfo(DomainInfoParams $params): DomainResult
     {
@@ -350,12 +347,12 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             return $this->getDomainInfo($domain);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
@@ -375,12 +372,12 @@ class Provider extends DomainNames implements ProviderInterface
             return ContactResult::create($this->getContactInfo($owner))
                 ->setMessage('Your domain : ' . $domain . ' registrant has been updated successfully');
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
@@ -414,15 +411,15 @@ class Provider extends DomainNames implements ProviderInterface
                     'ns5' => $params->ns5,
                 ])->setMessage('Your domain : ' . $domain . ' update is pending');
             } else {
-                return $this->errorResult($result->MESSAGE);
+                $this->errorResult($result->MESSAGE);
             }
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function setLock(LockParams $params): DomainResult
     {
@@ -437,15 +434,15 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been ' . ($params->lock ? 'locked' : 'unlocked') . ' successfully');
             } else {
-                return $this->errorResult($return->MESSAGE);
+                $this->errorResult($return->MESSAGE);
             }
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
@@ -460,15 +457,15 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' auto renew has been ' . ($params->auto_renew ? 'enable' : 'disable') . ' successfully');
             } else {
-                return $this->errorResult($return->MESSAGE);
+                $this->errorResult($return->MESSAGE);
             }
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
@@ -480,18 +477,18 @@ class Provider extends DomainNames implements ProviderInterface
                 return EppCodeResult::create()
                     ->setEppCode($domInfo->authID);
             } else
-                return $this->errorResult($this->client()->domainAuthID($domain, 1)->MESSAGE);
+                $this->errorResult($this->client()->domainAuthID($domain, 1)->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
 
@@ -573,6 +570,9 @@ class Provider extends DomainNames implements ProviderInterface
             ->setUpdatedAt(null);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     protected function createContact($params, $isOwner = 0)
     {
         try {
@@ -582,7 +582,7 @@ class Provider extends DomainNames implements ProviderInterface
             $normalizedContact = new NormalizedContact(isset($firstName) ? $firstName : "", isset($lastName) ? $lastName : "", isset($params->organisation) ? $params->organisation : "", isset($params->address1) ? $params->address1 : "", isset($params->address2) ? $params->address2 : "", isset($params->postcode) ? $params->postcode : "", isset($params->state) ? $params->state : "", isset($params->country_code) ? $params->country_code : "", isset($params->city) ? $params->city : "",  isset($params->phone) ? $params->phone : "",  isset($params->email) ? $params->email : "", "en", $isOwner);
             return $this->client()->contactCreate($normalizedContact->to_array());
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 

@@ -180,7 +180,6 @@ class Contact
      */
     public function denormalization($lang = "en"): Contact
     {
-        require dirname(__FILE__)."/../lib/constNormalization.inc.php";
         $lang = strtolower($lang);
 
         if (isset($this->getStateCodeToStateMappings()[$this->country]) && isset($this->getStateCodeToStateMappings()[$this->country][$this->area])) {

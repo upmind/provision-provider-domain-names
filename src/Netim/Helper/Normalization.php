@@ -126,10 +126,9 @@ class Normalization
      */
     public function phoneNumber($str, $country)
     {
-        if (empty($str))
+        if (empty($str)) {
             return $str;
-
-        require(__DIR__ . DIRECTORY_SEPARATOR . 'constNormalization.inc.php');
+        }
 
         // $str is normalized as "+countrycode digits" to conform API values
         $country = strtoupper($country);
@@ -171,8 +170,6 @@ class Normalization
      */
     public function state($str, $country)
     {
-        require(__DIR__ . DIRECTORY_SEPARATOR . 'constNormalization.inc.php');
-
         $country = strtoupper($country);
         $str = $this->stripAccent($str); // Removal of accentued characters
         $str = $this->specialCharacter($str); // Removal of special characters

@@ -6,7 +6,6 @@ namespace Upmind\ProvisionProviders\DomainNames\Netim;
 
 // include_once __DIR__ . '/Helper/APIRest.php';
 // include_once __DIR__ . '/Helper/NetimAPIException.php';
-// include_once __DIR__ . '/Helper/NormalizedContact.php';
 
 use DateTime;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -39,7 +38,7 @@ use Upmind\ProvisionProviders\DomainNames\Netim\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\Netim\Helper\Api\APIRest;
 use Upmind\ProvisionProviders\DomainNames\Netim\Helper\Api\NetimAPIException;
-use Netim\NormalizedContact;
+use Upmind\ProvisionProviders\DomainNames\Netim\Helper\NormalizedContact;
 
 /**
  * Netim provider.

@@ -1,50 +1,50 @@
 <?php
 
-/** 
+/**
  * @created 2021-04-02
  * @lastUpdated 2022-11-09
  * @version 1.01
  *
- * Generic class for a NETIM REST client API. 
+ * Generic class for a NETIM REST client API.
  * Documentation @ https://support.netim.com/en/docs/resellers/apis/rest-api
  *
  * How to use the class?
  * =====================
- * 
+ *
  * Beforehand you need to include this script into your php script:
  * ```php
  * 		include_once('$PATH/APIRest.php');
  * 		//(replace $PATH by the path of the file)
  * ```
- * 
+ *
  * Then you can instantiate a APIRest object:
  * ```php
  * 		$username = 'yourUsername';
  * 		$secret = 'yourSecret';
  * 		$client = new APIRest($username, $secret);
  * ```
- * 
+ *
  * You can also create a conf.xml file next to the APIRest.php class with the login credentials to connect to the API with no parameters
- * 	
+ *
  * Now that you have your object, you can issue commands to the API.
- * 
+ *
  * Say you want to see the information you gave when creating your contact, and your contact ID is 'GK521'.
  * The code is:
  * ```php
  * 		$result = $client->contactInfo('GK521');
  * ```
- * 
+ *
  * (SIDENOTE: you may have noticed that you didn't need to explicitely open nor close a connexion with the API, the client handle it for you.
  * It is good for shortlived scripts. The connection is automatically stopped when the script ends. However if you open multiple connections
  * in a long running script, you should close each connection when you don't need them anymore to avoid having too many connections opened).
- * 
+ *
  * To know if there is an error we provide you an exception type NetimAPIException
- * 
+ *
  * How to issue many commands more effectively
  * ===========================================
- * 
+ *
  * Previously we saw how to issue a simple command. Now we will look into issueing many commands sequentially.
- * 
+ *
  * Let's take an example, we want to create 2 contacts, look up info on 2 domains and look up infos on the contacts previously created
  * We could do it simply:
  * ```php
@@ -53,7 +53,7 @@
  * 		{
  * 			$result1 = $client->contactCreate(...); //skipping needed parameters here for the sake of the example brevity
  * 			$result2 = $client->contactCreate(...);
- * 			
+ *
  * 			//asking for domain informations
  * 			$result3 = $client->domainInfo('myDomain.fr');
  * 			$result4 = $client->domainInfo('myDomain.com');
@@ -62,14 +62,14 @@
  * 		{
  * 			//do something about the error
  * 		}
- * 		
+ *
  * 		//asking for contact informations
  * 		$result5 = $client->contactInfo($result1));
  * 		$result6 = $client->contactInfo($result2));
  * ```
- * 	
+ *
  * The connection is automatically closed when the script ends. However we recommend you to close the connection yourself when you won't use it
- * anymore like so : 
+ * anymore like so :
  * ```php
  * 		$client->sessionClose();
  * ```
@@ -86,6 +86,8 @@ use stdClass;
 
 class APIRest
 {
+    public const NETIM_MODULE_VERSION = '1.0.0';
+
     private $_connected;
     private $_sessionID;
 
@@ -106,10 +108,10 @@ class APIRest
      *
      * @param string $userID the ID the client uses to connect to his NETIM account
      * @param string $secret the SECRET the client uses to connect to his NETIM account
-     *	 
+     *
      * @throws Error if $userID, $secret or $apiURL are not string or are empty
-     * 
-     * @link semantic versionning http://semver.org/ by Tom Preston-Werner 
+     *
+     * @link semantic versionning http://semver.org/ by Tom Preston-Werner
      */
     public function __construct(string $userID = null, string $secret = null, $url)
     {
@@ -239,7 +241,6 @@ class APIRest
      */
     public function call(string $ressource, string $httpVerb, array $params = array())
     {
-        require_once __DIR__ . '/const.php';
         $httpVerb = strtoupper($httpVerb);
 
         $this->_lastRequestRessource = $ressource;
@@ -249,11 +250,11 @@ class APIRest
         $this->_lastResponse = "";
         $this->_lastError = "";
 
-        $params['source'] = 'UPMIND=,PLUGIN=' . NETIM_MODULE_VERSION;
+        $params['source'] = 'UPMIND=,PLUGIN=' . self::NETIM_MODULE_VERSION;
 
         try {
 
-            //login		
+            //login
             if (!$this->_connected) {
                 if ($this->isSessionClose($ressource, $httpVerb)) //If already disconnected, just return.
                     return;
@@ -339,9 +340,9 @@ class APIRest
 
     /**
      * @param array $arr content returned by the server
-     * 
+     *
      * @return bool true : structure is an object
-     * 				false : structure is an array of objects (or empty array)    
+     * 				false : structure is an array of objects (or empty array)
      */
     private function isObject(array $arr)
     {
@@ -370,7 +371,7 @@ class APIRest
 
     # -------------------------------------------------
     # SESSION
-    # -------------------------------------------------	
+    # -------------------------------------------------
     /**
      * Opens a session with REST
      *
@@ -392,10 +393,10 @@ class APIRest
     }
 
     /**
-     * Return the information of the current session. 
+     * Return the information of the current session.
      *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructSessionInfo A structure StructSessionInfo
      *
      * @see sessionInfo API https://support.netim.com/en/wiki/SessionInfo
@@ -406,7 +407,7 @@ class APIRest
     }
 
     /**
-     * Returns all active sessions linked to the reseller account. 
+     * Returns all active sessions linked to the reseller account.
      *
      * @throws NetimAPIException
      *
@@ -420,12 +421,12 @@ class APIRest
     }
 
     /**
-     * Updates the settings of the current session. 
+     * Updates the settings of the current session.
      *
      * @param string $type Setting to be modified : lang
      *                                              sync
      * @param string $value New value of the Setting : lang = EN / FR
-     *                                                 sync = 0 (for asynchronous) / 1 (for synchronous) 
+     *                                                 sync = 0 (for asynchronous) / 1 (for synchronous)
      * @throws NetimAPIException
      *
      * @see sessionSetPreference API https://support.netim.com/en/wiki/SessionSetPreference
@@ -451,7 +452,7 @@ class APIRest
      *	//continue processing```
      *
      * @return string a welcome message
-     * 
+     *
      * @throws NetimAPIException
      *
      * @see hello API http://support.netim.com/en/wiki/Hello
@@ -466,7 +467,7 @@ class APIRest
      *
      *
      * @return StructQueryResellerAccount A structure of StructQueryResellerAccount containing the information
-     * 
+     *
      * @throws NetimAPIException
      *
      * @see queryResellerAccount API https://support.netim.com/en/wiki/QueryResellerAccount
@@ -478,14 +479,14 @@ class APIRest
 
     # -------------------------------------------------
     # CONTACT
-    # -------------------------------------------------	        
+    # -------------------------------------------------
 
     /**
      * Creates a contact
      *
      * Example1: non-owner
      *	```php
-     *	//we create a contact as a non-owner 
+     *	//we create a contact as a non-owner
      *	$id = null;
      *	try
      *	{
@@ -517,7 +518,7 @@ class APIRest
      *	```
      *
      * Example2: owner
-     *	```php	
+     *	```php
      *	$id = null;
      *	try
      *	{
@@ -569,7 +570,7 @@ class APIRest
      *	```php
      *	$idContact = 'BJ007';
      *	$res = null;
-     *	try 
+     *	try
      *	{
      *		$res = $client->contactInfo($idContact);
      *	}
@@ -597,9 +598,9 @@ class APIRest
     /**
      * Edit contact details
      *
-     * Example: 
+     * Example:
      *	```php
-     *	//we update a contact as a non-owner 
+     *	//we update a contact as a non-owner
      *	$res = null;
      *	try {
      *	 	$contact = array(
@@ -619,7 +620,7 @@ class APIRest
      *			'language' => 'EN',
      *			'isOwner'  => 0
      *		);
-     *		$res = $client->contactUpdate($idContact, $contact);   
+     *		$res = $client->contactUpdate($idContact, $contact);
      *	}
      *	catch (NetimAPIexception $exception)
      *	{
@@ -645,7 +646,7 @@ class APIRest
     }
 
     /**
-     * Edit contact details (for owner only) 
+     * Edit contact details (for owner only)
      *
      * Example
      *	```php
@@ -670,7 +671,7 @@ class APIRest
      *			'language' => 'EN',
      *			'isOwner'  => 1
      *		);
-     *		$res = $client->contactOwnerUpdate($idContact, $contact); 
+     *		$res = $client->contactOwnerUpdate($idContact, $contact);
      *	}
      *	catch (NetimAPIexception $exception)
      *	{
@@ -688,7 +689,7 @@ class APIRest
      *
      * @see contactOwnerUpdate API http://support.netim.com/en/wiki/ContactOwnerUpdate
      * @see StructOwnerContact http://support.netim.com/en/wiki/StructOwnerContact
-     * 
+     *
      */
     public function contactOwnerUpdate(string $idContact, array $datas)
     {
@@ -696,7 +697,7 @@ class APIRest
     }
 
     /**
-     * Deletes a contact object 
+     * Deletes a contact object
      *
      * Example1:
      *	```php
@@ -730,7 +731,7 @@ class APIRest
      * Query informations about the state of an operation
      *
      * Example
-     *	```php	
+     *	```php
      *	$domain = 'myDomain.com';
      *	$res = null;
      *	try
@@ -738,10 +739,10 @@ class APIRest
      *		$res = $client->domainAuthID($domain, 0);
      *		$try = 0;
      *		while($try < 10 && $res->STATUS=="Pending")
-     *		{	
+     *		{
      *			// The operation is pending, we will wait at most 10sec to see if the operation status change
      *			// and check every second if it changes
-     *			sleep(1); 
+     *			sleep(1);
      *			$try++;
      *			$res = $client->queryOpe()
      *		}
@@ -753,7 +754,7 @@ class APIRest
      *	//continue processing
      *	```
      * @param int $operationID The id of the operation requested
-     * 
+     *
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
@@ -768,9 +769,9 @@ class APIRest
     /**
      * Cancel a pending operation
      * @warning Depending on the current status of the operation, the cancellation might not be possible
-     * 
+     *
      * @param int $idOpe Tracking ID of the operation
-     * 
+     *
      * @throws NetimAPIException
      *
      * @see cancelOpe http://support.netim.com/en/wiki/CancelOpe
@@ -781,16 +782,16 @@ class APIRest
     }
 
     /**
-     * Returns the status (opened/closed) for all operations for the extension 
-     * 
+     * Returns the status (opened/closed) for all operations for the extension
+     *
      * @param string $tld Extension (uppercase without dot)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return object An associative array with (Name of the operation, boolean active)
-     * 
+     *
      * @see queryOpeList API https://support.netim.com/en/wiki/QueryOpeList
-     * 
+     *
      */
     public function queryOpeList(string $tld): stdClass
     {
@@ -798,14 +799,14 @@ class APIRest
     }
 
     /**
-     * Returns the list of pending operations processing 
-     * 
+     * Returns the list of pending operations processing
+     *
      * @throws NetimAPIException
-     * 
-     * @return StructQueryOpePending[]  the list of pending operations processing 
-     * 
+     *
+     * @return StructQueryOpePending[]  the list of pending operations processing
+     *
      * @see queryOpePending API https://support.netim.com/en/wiki/QueryOpePending
-     * 
+     *
      */
     public function queryOpePending(): array
     {
@@ -813,14 +814,14 @@ class APIRest
     }
 
     /**
-     * Returns the list of pending operations processing 
-     * 
+     * Returns the list of pending operations processing
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructContactList[] the list of contacts associated to the account
-     * 
+     *
      * @see queryContactList API https://support.netim.com/en/wiki/QueryContactList
-     * 
+     *
      */
     public function queryContactList(string $filter = "", string $field = ""): array
     {
@@ -871,7 +872,7 @@ class APIRest
     }
 
     /**
-     * Deletes an Host at the registry 
+     * Deletes an Host at the registry
      *
      * Example
      *	```php
@@ -901,7 +902,7 @@ class APIRest
     }
 
     /**
-     * Updates a host at the registry 
+     * Updates a host at the registry
      *
      * Example
      *	```php
@@ -937,8 +938,8 @@ class APIRest
     }
 
     /**
-     * @param string $filter The filter applies onto the host name 
-     * 
+     * @param string $filter The filter applies onto the host name
+     *
      * @throws NetimAPIException
      *
      * @return array An array of StructHostList
@@ -951,9 +952,9 @@ class APIRest
     }
 
     /**
-     * Checks if domain names are available for registration   
+     * Checks if domain names are available for registration
      *
-     *  
+     *
      * Example: Check one domain name
      *	```php
      *	$domain = "myDomain.com";
@@ -969,16 +970,16 @@ class APIRest
      *	$domainCheckResponse = $res[0];
      *	//continue processing
      *	```
-     * @param string $domain Domain names to be checked 
-     * You can provide several domain names separated with semicolons. 
-     * Caution : 
-     *	- you can't mix different extensions during the same call 
+     * @param string $domain Domain names to be checked
+     * You can provide several domain names separated with semicolons.
+     * Caution :
+     *	- you can't mix different extensions during the same call
      *	- all the extensions don't accept a multiple checkDomain. See HasMultipleCheck in Category:Tld
      *
      * @throws NetimAPIException
      *
      * @return array An array of StructDomainCheckResponse
-     * 
+     *
      * @see StructDomainCheckResponse http://support.netim.com/en/wiki/StructDomainCheckResponse
      * @see DomainCheck API http://support.netim.com/en/wiki/DomainCheck
      */
@@ -988,7 +989,7 @@ class APIRest
     }
 
     /**
-     * Requests a new domain registration 
+     * Requests a new domain registration
      *
      * Example:
      *	```php
@@ -999,7 +1000,7 @@ class APIRest
      *	$idBilling = 'BJ007';
      *	$ns1 = 'ns1.netim.com';
      *	$ns2 = 'ns2.netim.com';
-     *	$ns3 = 'ns3.netim.com'; 
+     *	$ns3 = 'ns3.netim.com';
      *	$ns4 = 'ns4.netim.com';
      *	$ns5 = 'ns5.netim.com';
      *	$duration = 1;
@@ -1032,7 +1033,7 @@ class APIRest
      *
      * @return StructOperationResponse giving information on the status of the operation
      *
-     * @see domainCreate API http://support.netim.com/en/wiki/DomainCreate 
+     * @see domainCreate API http://support.netim.com/en/wiki/DomainCreate
      */
     public function domainCreate(string $domain, string $idOwner, string $idAdmin, string $idTech, string $idBilling, string $ns1, string $ns2, string $ns3, string $ns4, string $ns5, int $duration, int $templateDNS = null): stdClass
     {
@@ -1058,7 +1059,7 @@ class APIRest
     }
 
     /**
-     * Returns all informations about a domain name 
+     * Returns all informations about a domain name
      *
      * Example
      *	```php
@@ -1079,7 +1080,7 @@ class APIRest
      * @param string $domain name of the domain
      *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructDomainInfo information about the domain
      *
      * @see domainInfo API http://support.netim.com/en/wiki/DomainInfo
@@ -1135,7 +1136,7 @@ class APIRest
      *
      * @return StructOperationResponse giving information on the status of the operation
      *
-     * @see domainCreateLP API http://support.netim.com/en/wiki/DomainCreateLP 
+     * @see domainCreateLP API http://support.netim.com/en/wiki/DomainCreateLP
      */
     public function domainCreateLP(string $domain, string $idOwner, string $idAdmin, string $idTech, string $idBilling, string $ns1, string $ns2, string $ns3, string $ns4, string $ns5, int $duration, string $phase): stdClass
     {
@@ -1160,8 +1161,8 @@ class APIRest
     }
 
     /**
-     * Deletes immediately a domain name 
-     * 
+     * Deletes immediately a domain name
+     *
      * Example:
      *	```php
      *	$domain = 'myDomain.com';
@@ -1194,7 +1195,7 @@ class APIRest
     }
 
     /**
-     * Requests the transfer of a domain name to Netim 
+     * Requests the transfer of a domain name to Netim
      *
      * Example:
      *	```php
@@ -1206,7 +1207,7 @@ class APIRest
      *	$idBilling = 'BJ007';
      *	$ns1 = 'ns1.netim.com';
      *	$ns2 = 'ns2.netim.com';
-     *	$ns3 = 'ns3.netim.com'; 
+     *	$ns3 = 'ns3.netim.com';
      *	$ns4 = 'ns4.netim.com';
      *	$ns5 = 'ns5.netim.com';
      *	$res = null;
@@ -1260,7 +1261,7 @@ class APIRest
     }
 
     /**
-     * Requests the transfer (with change of domain holder) of a domain name to Netim 
+     * Requests the transfer (with change of domain holder) of a domain name to Netim
      *
      * Example:
      *	```php
@@ -1272,7 +1273,7 @@ class APIRest
      *	$idBilling = 'BJ007';
      *	$ns1 = 'ns1.netim.com';
      *	$ns2 = 'ns2.netim.com';
-     *	$ns3 = 'ns3.netim.com'; 
+     *	$ns3 = 'ns3.netim.com';
      *	$ns4 = 'ns4.netim.com';
      *	$ns5 = 'ns5.netim.com';
      *	$res = null;
@@ -1286,7 +1287,7 @@ class APIRest
      *	}
      *	//continue processing
      *	```
-     * 
+     *
      * @param string $domain name of the domain to transfer
      * @param string $authID authorisation code / EPP code (if applicable)
      * @param string $idOwner a valid idOwner.
@@ -1326,7 +1327,7 @@ class APIRest
     }
 
     /**
-     * Requests the internal transfer of a domain name from one Netim account to another. 
+     * Requests the internal transfer of a domain name from one Netim account to another.
      *
      * Example:
      *	```php
@@ -1337,7 +1338,7 @@ class APIRest
      *	$idBilling = 'BJ007';
      *	$ns1 = 'ns1.netim.com';
      *	$ns2 = 'ns2.netim.com';
-     *	$ns3 = 'ns3.netim.com'; 
+     *	$ns3 = 'ns3.netim.com';
      *	$ns4 = 'ns4.netim.com';
      *	$ns5 = 'ns5.netim.com';
      *	$res = null;
@@ -1351,7 +1352,7 @@ class APIRest
      *	}
      *	//continue processing
      *	```
-     * 
+     *
      * @param string $domain name of the domain to transfer
      * @param string $authID authorisation code / EPP code (if applicable)
      * @param string $idAdmin a valid idAdmin
@@ -1388,7 +1389,7 @@ class APIRest
     }
 
     /**
-     * Renew a domain name for a new subscription period 
+     * Renew a domain name for a new subscription period
      *
      * Example
      *	```php
@@ -1405,7 +1406,7 @@ class APIRest
      *	}
      *	//continue processing
      *	```
-     * 
+     *
      * @param string $domain the name of the domain to renew
      * @param int $duration the duration of the renewal expressed in year. Must be at least 1 and less than the maximum amount
      *
@@ -1477,7 +1478,7 @@ class APIRest
      *
      * @param string $domain name of the domain
      * @param string $codePref setting to be modified. Accepted value are 'whois_privacy', 'registrar_lock', 'auto_renew', 'tag' or 'note'
-     * @param string $value new value for the settings. 
+     * @param string $value new value for the settings.
      *
      * @throws NetimAPIException
      *
@@ -1531,7 +1532,7 @@ class APIRest
     }
 
     /**
-     * Replaces the contacts of the domain (administrative, technical, billing) 
+     * Replaces the contacts of the domain (administrative, technical, billing)
      *
      * Example
      *	```php
@@ -1550,12 +1551,12 @@ class APIRest
      *	}
      *	//continue processing
      *	```
-     * 
+     *
      * @param string $domain name of the domain
      * @param string $idAdmin id of the admin contact
      * @param string $idTech id of the tech contact
      * @param string $idBilling id of the billing contact
-     * 
+     *
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
@@ -1573,8 +1574,8 @@ class APIRest
     }
 
     /**
-     * Replaces the DNS servers of the domain (redelegation) 
-     * 
+     * Replaces the DNS servers of the domain (redelegation)
+     *
      * Example
      *	```php
      *	$domain = 'myDomain.com';
@@ -1594,7 +1595,7 @@ class APIRest
      *	}
      *	//continue processing
      *	```
-     * 
+     *
      * @param string $domain name of the domain
      * @param string $ns1 the name of the first dns
      * @param string $ns2 the name of the second dns
@@ -1620,11 +1621,11 @@ class APIRest
     }
 
     /**
-     * Allows to sign a domain name with DNSSEC if it uses NETIM DNS servers 
-     * 
+     * Allows to sign a domain name with DNSSEC if it uses NETIM DNS servers
+     *
      * @param string $domain name of the domain
      * @param int $enable New signature value 0 : unsign
-     * 										1 : sign 
+     * 										1 : sign
      *
      * @throws NetimAPIException
      *
@@ -1640,7 +1641,7 @@ class APIRest
     }
 
     /**
-     * Returns the authorization code to transfer the domain name to another registrar or to another client account 
+     * Returns the authorization code to transfer the domain name to another registrar or to another client account
      *
      * Example
      *	```php
@@ -1675,7 +1676,7 @@ class APIRest
     }
 
     /**
-     * Release a domain name (managed by the reseller) to its registrant (who will become a direct customer at Netim) 
+     * Release a domain name (managed by the reseller) to its registrant (who will become a direct customer at Netim)
      *
      * Example
      *	```php
@@ -1707,7 +1708,7 @@ class APIRest
     }
 
     /**
-     * Adds a membership to the domain name 
+     * Adds a membership to the domain name
      *
      * Example
      *	```php
@@ -1742,8 +1743,8 @@ class APIRest
     }
 
     /**
-     * Returns all available operations for a given TLD 
-     * 
+     * Returns all available operations for a given TLD
+     *
      * Example:
      *	```php
      *	$res = null;
@@ -1759,7 +1760,7 @@ class APIRest
      *	$domainInfo = $res;
      *	//continue processing
      *	```
-     *	
+     *
      * @param string $tld a valid tld without the dot before it
      *
      * @throws NetimAPIException
@@ -1775,7 +1776,7 @@ class APIRest
 
     /**
      * Returns whois informations on given domain
-     * 
+     *
      * Example:
      *	```php
      *	$res = null;
@@ -1790,7 +1791,7 @@ class APIRest
      *
      *	//continue processing
      *	```
-     *	
+     *
      * @param string $domain the domain's name
      *
      * @throws NetimAPIException
@@ -1804,19 +1805,19 @@ class APIRest
     }
 
     /**
-     * Allows to sign a domain name with DNSSEC if it doesn't use NETIM DNS servers 
-     * 
+     * Allows to sign a domain name with DNSSEC if it doesn't use NETIM DNS servers
+     *
      * @param string 	$domain name of the domain
      * @param array		$DSRecords An object StructDSRecord
      * @param int 		$flags
      * @param int		$protocol
      * @param int		$algo
      * @param string	$pubKeys
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
-     * 
+     *
      * @see domainSetDNSSecExt API http://support.netim.com/en/wiki/DomainSetDNSSecExt
      */
     public function domainSetDNSSecExt(string $domain, array $DSRecords, int $flags, int $protocol, int $algo, string $pubKey): stdClass
@@ -1831,12 +1832,12 @@ class APIRest
     }
 
     /**
-     * Returns the list of all prices for each tld 
-     * 
+     * Returns the list of all prices for each tld
+     *
      * @throws NetimAPIException
-     * 
-     * @return StructDomainPriceList[] 
-     * 
+     *
+     * @return StructDomainPriceList[]
+     *
      * @see domainPriceList API http://support.netim.com/en/wiki/DomainPriceList
      */
     public function domainPriceList(): array
@@ -1845,17 +1846,17 @@ class APIRest
     }
 
     /**
-     * Allows to know a domain's price 
-     * 
+     * Allows to know a domain's price
+     *
      * @param string $domain name of domain
      * @param string $authID authorisation code (optional)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructQueryDomainPrice
-     * 
+     *
      * @see queryDomainPrice API https://support.netim.com/en/wiki/QueryDomainPrice
-     * 
+     *
      */
     public function queryDomainPrice(string $domain, string $authID = ""): stdClass
     {
@@ -1866,16 +1867,16 @@ class APIRest
     }
 
     /**
-     * Allows to know if there is a claim on the domain name 
-     * 
+     * Allows to know if there is a claim on the domain name
+     *
      * @param string $domain name of domain
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return int 0: no claim ; 1: at least one claim
-     * 
+     *
      * @see queryDomainClaim API https://support.netim.com/en/wiki/QueryDomainClaim
-     * 
+     *
      */
     public function queryDomainClaim(string $domain): int
     {
@@ -1885,11 +1886,11 @@ class APIRest
 
     /**
      * Returns all domains linked to the reseller account.
-     * 
+     *
      * @param string $filter Domain name
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return array The filter applies onto the domain name
      *
      * @see queryDomainList API https://support.netim.com/en/wiki/QueryDomainList
@@ -1901,17 +1902,17 @@ class APIRest
     }
 
     /**
-     * Resets all DNS settings from a template 
-     * 
+     * Resets all DNS settings from a template
+     *
      * @param string 	$domain Domain name
      * @param int 		$numTemplate Template number
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse
-     * 
+     *
      * @see domainZoneInit API https://support.netim.com/en/wiki/DomainZoneInit
-     * 
+     *
      */
     public function domainZoneInit(string $domain, int $numTemplate): stdClass
     {
@@ -1946,7 +1947,7 @@ class APIRest
      * @param string $subdomain subdomain
      * @param string $type type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
      * @param string $value value of the new DNS record
-     * @param array $options StructOptionsZone : settings of the new DNS record 
+     * @param array $options StructOptionsZone : settings of the new DNS record
      *
      * @throws NetimAPIException
      *
@@ -1966,7 +1967,7 @@ class APIRest
     }
 
     /**
-     * Deletes a DNS record into the domain's zonefile 
+     * Deletes a DNS record into the domain's zonefile
      *
      * Example
      *	```php
@@ -1985,7 +1986,7 @@ class APIRest
      *	}
      *	//continue processing
      *	```
-     * 
+     *
      * @param string $domain name of the domain
      * @param string $subdomain subdomain
      * @param string $type type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
@@ -1994,7 +1995,7 @@ class APIRest
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
-     * 
+     *
      * @see domainZoneDelete API http://support.netim.com/en/wiki/DomainZoneDelete
      */
     public function domainZoneDelete(string $domain, string $subdomain, string $type, string $value): stdClass
@@ -2007,7 +2008,7 @@ class APIRest
     }
 
     /**
-     * Resets the SOA record of a domain name 
+     * Resets the SOA record of a domain name
      *
      * Example
      *	```php
@@ -2022,7 +2023,7 @@ class APIRest
      *	$expireUnit = 'H';
      *	$minimum = 24;
      *	$minimumUnit = 'H';
-     *	
+     *
      *	try
      *	{
      *		$res = $client->domainZoneInitSoa($domain, $ttl, $ttlUnit, $refresh, $refreshUnit, $retry, $retryUnit, $expire, $expireUnit, $minimum, $minimumUnit);
@@ -2033,7 +2034,7 @@ class APIRest
      *	}
      *	//continue processing
      *	```
-     * 
+     *
      * @param string $domain name of the domain
      * @param int 	 $ttl time to live
      * @param string $ttlUnit TTL unit. Accepted values are: 'S', 'M', 'H', 'D', 'W'
@@ -2049,7 +2050,7 @@ class APIRest
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
-     * 
+     *
      * @see domainZoneInitSoa API http://support.netim.com/en/wiki/DomainZoneInitSoa
      */
     public function domainZoneInitSoa(string $domain, int $ttl, string $ttlUnit, int $refresh, string $refreshUnit, int $retry, string $retryUnit, int $expire, string $expireUnit, int $minimum, string $minimumUnit): stdClass
@@ -2070,12 +2071,12 @@ class APIRest
     }
 
     /**
-     * Returns all DNS records of a domain name 
-     * 
+     * Returns all DNS records of a domain name
+     *
      * @param string $domain Domain name
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return array An array of StructQueryZoneList
      *
      * @see queryZoneList API https://support.netim.com/en/wiki/QueryZoneList
@@ -2140,7 +2141,7 @@ class APIRest
      *	//continue processing
      *	```
      *
-     * @param string $mailBox email adress 
+     * @param string $mailBox email adress
      *
      * @throws NetimAPIException
      *
@@ -2156,13 +2157,13 @@ class APIRest
 
     /**
      * Returns all email forwards for a domain name
-     * 
+     *
      * @param string $domain Domain name
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return array An array of StructQueryMailFwdList
-     * 
+     *
      * @see queryMailFwdList API https://support.netim.com/en/wiki/QueryMailFwdList
      */
     public function queryMailFwdList(string $domain): array
@@ -2172,7 +2173,7 @@ class APIRest
     }
 
     /**
-     * Creates a web forwarding 
+     * Creates a web forwarding
      *
      * Example
      *	```php
@@ -2180,7 +2181,7 @@ class APIRest
      *	$target = 'myDomain.com';
      *	$type = 'DIRECT';
      *	$options = $array('header'=>301, 'protocol'=>ftp, 'title'=>'', 'parking'=>'');
-     *	
+     *
      *	$res = null;
      *	try
      *	{
@@ -2215,7 +2216,7 @@ class APIRest
     }
 
     /**
-     * Removes a web forwarding 
+     * Removes a web forwarding
      *
      * Example
      *	```php
@@ -2246,12 +2247,12 @@ class APIRest
     }
 
     /**
-     * Return all web forwarding of a domain name 
-     * 
+     * Return all web forwarding of a domain name
+     *
      * @param string $domain Domain name
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return array An array of StructQueryWebFwdList
      *
      * @see queryWebFwdList API https://support.netim.com/en/wiki/QueryWebFwdList
@@ -2264,14 +2265,14 @@ class APIRest
     }
 
     /**
-     * Creates a SSL redirection 
-     *		
-     * @param string $prod certificate type 
+     * Creates a SSL redirection
+     *
+     * @param string $prod certificate type
      * @param string $duration period of validity (in years)
-     * @param StructCSR $CSRInfo object containing informations about the CSR 
+     * @param StructCSR $CSRInfo object containing informations about the CSR
      * @param string $validation validation method of the CSR (either by email or file) : 	"file"
      *																						"email:admin@yourdomain.com"
-     *																						"email:postmaster@yourdomain.com,webmaster@yourdomain.com" 
+     *																						"email:postmaster@yourdomain.com,webmaster@yourdomain.com"
      *
      * @throws NetimAPIException
      *
@@ -2291,11 +2292,11 @@ class APIRest
     }
 
     /**
-     * Renew a SSL certificate for a new subscription period. 
-     *		
+     * Renew a SSL certificate for a new subscription period.
+     *
      * @param string $IDSSL SSL certificate ID
      * @param int $duration period of validity after the renewal (in years). Only the value 1 is valid
-     * 
+     *
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
@@ -2310,10 +2311,10 @@ class APIRest
     }
 
     /**
-     * Revokes a SSL Certificate. 
-     * 
+     * Revokes a SSL Certificate.
+     *
      * @param string $IDSSL SSL certificate ID
-     * 
+     *
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
@@ -2326,14 +2327,14 @@ class APIRest
     }
 
     /**
-     * Reissues a SSL Certificate. 
-     * 
+     * Reissues a SSL Certificate.
+     *
      * @param string $IDSSL SSL certificate ID
      * @param StructCSR $CSRInfo Object containing informations about the CSR
      * @param string $validation validation method of the CSR (either by email or file) : 	"file"
      *																						"email:admin@yourdomain.com"
      *																						"email:postmaster@yourdomain.com,webmaster@yourdomain.com"
-     * 
+     *
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
@@ -2351,12 +2352,12 @@ class APIRest
     }
 
     /**
-     * Updates the settings of a SSL certificate. Currently, only the autorenew setting can be modified. 
-     * 
+     * Updates the settings of a SSL certificate. Currently, only the autorenew setting can be modified.
+     *
      * @param string $IDSSL SSL certificate ID
      * @param string $codePref Setting to be modified (auto_renew/to_be_renewed)
      * @param string $value New value of the setting
-     * 
+     *
      * @throws NetimAPIException
      *
      * @return StructOperationResponse giving information on the status of the operation
@@ -2374,13 +2375,13 @@ class APIRest
 
     /**
      * Returns all the informations about a SSL certificate
-     * 
+     *
      * @param string $IDSSL SSL certificate ID
-     * 
+     *
      * @throws NetimAPIException
-     * 
-     * @return StructSSLInfo containing the SSL certificate informations 
-     * 
+     *
+     * @return StructSSLInfo containing the SSL certificate informations
+     *
      * @see sslInfo API http://support.netim.com/en/wiki/SslInfo
      */
     public function sslInfo(string $IDSSL): stdClass
@@ -2390,13 +2391,13 @@ class APIRest
 
     /**
      * Creates a web hosting
-     * 
+     *
      * @param string $fqdn Fully qualified domain of the main vhost. Warning, the secondary vhosts will always be subdomains of this FQDN
      * @param int $duration ID_TYPE_PROD of the hosting
-     * @param array $options 
-     * 
+     * @param array $options
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingCreate(string $fqdn, string $offer, int $duration, array $cms = array()): stdClass
@@ -2412,11 +2413,11 @@ class APIRest
 
     /**
      * Get the unique ID of the hosting
-     * 
+     *
      * @param string $fqdn Fully qualified domain of the main vhost.
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return string the unique ID of the hosting
      */
     public function webHostingGetID(string $fqdn): string
@@ -2426,13 +2427,13 @@ class APIRest
 
     /**
      * Get informations about web hosting (generic infos, MUTU platform infos, ISPConfig ...)
-     * 
+     *
      * @param string $id Hosting id
      * @param array $additionalData determines which infos should be returned ("NONE", "ALL", "WEB", "VHOSTS", "SSL_CERTIFICATES",
      * "PROTECTED_DIRECTORIES", "DATABASES", "DATABASE_USERS", "FTP_USERS", "CRON_TASKS", "MAIL", "DOMAIN_MAIL")
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructWebHostingInfo giving informations of the webhosting
      */
     public function webHostingInfo(string $id, array $additionalData): array
@@ -2445,12 +2446,12 @@ class APIRest
 
     /**
      * Renew a webhosting
-     * 
+     *
      * @param string $id Hosting id
      * @param int $duration Duration period (in months)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingRenew(string $id, int $duration): stdClass
@@ -2463,13 +2464,13 @@ class APIRest
 
     /**
      * Updates a webhosting
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Action name ("SetHold", "SetWebHold", "SetDBHold", "SetFTPHold", "SetMailHold", "SetPackage", "SetAutoRenew", "SetRenewReminder", "CalculateDiskUsage")
      * @param array $params array("value"=>true/false) for all except SetPackage : array("offer"=>"SHWEB"/"SHLITE"/"SHMAIL"/"SHPREMIUM"/"SHSTART") and CalculateDiskUsage: array()
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingUpdate(string $id, string $action, array $fparams): stdClass
@@ -2483,12 +2484,12 @@ class APIRest
 
     /**
      * Deletes a webhosting
-     * 
+     *
      * @param $id Hosting id
      * @param $typeDelete Only "NOW" is allowed
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDelete(string $id, string $typeDelete): stdClass
@@ -2501,12 +2502,12 @@ class APIRest
 
     /**
      * Creates a vhost
-     * 
+     *
      * @param $id Hosting id
      * @param $fqdn Fqdn of the vhost
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingVhostCreate(string $id, string $fqdn): stdClass
@@ -2519,15 +2520,15 @@ class APIRest
 
     /**
      * Change settings of a vhost
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Possible values :"SetStaticEngine", "SetPHPVersion",  "SetFQDN", "SetWebApplicationFirewall",
      * "ResetContent", "FlushLogs", "AddAlias", "RemoveAlias", "LinkSSLCert", "UnlinkSSLCert", "EnableLetsEncrypt",
      * "DisableLetsEncrypt", "SetRedirectHTTPS", "InstallWordpress", "InstallPrestashop", "SetHold"
      * @param array $fparams Depends of the action
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingVhostUpdate(string $id, string $action, array $fparams): stdClass
@@ -2541,12 +2542,12 @@ class APIRest
 
     /**
      * Deletes a vhost
-     * 
+     *
      * @param string $id Hosting id
      * @param string $fqdn of the vhost
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingVhostDelete(string $id, string $fqdn): stdClass
@@ -2559,12 +2560,12 @@ class APIRest
 
     /**
      * Creates a mail domain
-     * 
+     *
      * @param string $id Hosting id
      * @param string $domain
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDomainMailCreate(string $id, string $domain): stdClass
@@ -2577,13 +2578,13 @@ class APIRest
 
     /**
      * Change settings of mail domain based on the specified action
-     * 
+     *
      * @param string $id Hosting id
-     * @param string $action Action name 
+     * @param string $action Action name
      * @param array $fparams Parameters of the action
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDomainMailUpdate(string $id, string $action, array $fparams): stdClass
@@ -2597,12 +2598,12 @@ class APIRest
 
     /**
      * Deletes a mail domain
-     * 
+     *
      * @param string $id Hosting id
      * @param string $domain
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDomainMailDelete(string $id, string $domain): stdClass
@@ -2615,16 +2616,16 @@ class APIRest
 
     /**
      * Creates a SSL certificate
-     * 
+     *
      * @param string $id Hosting id
      * @param string $sslName Name of the certificate
      * @param string $crt Content of the .crt file
      * @param string $key Content of the .key file
      * @param string $ca Content of the .ca file
      * @param string $csr Content of the .csr file (optional)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingSSLCertCreate(string $id, string $sslName, string $crt, string $key, string $ca, string $csr = ""): stdClass
@@ -2641,12 +2642,12 @@ class APIRest
 
     /**
      * Delete a SSL certificate
-     * 
+     *
      * @param string $id Hosting id
      * @param string $sslName Name of the certificate
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingSSLCertDelete(string $id, string $sslName): stdClass
@@ -2659,16 +2660,16 @@ class APIRest
 
     /**
      * Creates a htpasswd protection on a directory
-     * 
+     *
      * @param string $id Hosting id
      * @param string $fqdn FQDN of the vhost which you want to protect
      * @param string $pathSecured Path of the directory to protect starting from the selected vhost
      * @param string $authname Text shown by browsers when accessing the directory
      * @param string $username Login of the first user of the protected directory
      * @param string $password Password of the first user of the protected directory
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingProtectedDirCreate(string $id, string $fqdn, string $pathSecured, string $authname, string $username, string $password): stdClass
@@ -2685,13 +2686,13 @@ class APIRest
 
     /**
      * Change settings of a protected directory
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Name of the action to perform
      * @param array $fparams Parameters for the action (depends of the action)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingProtectedDirUpdate(string $id, string $action, array $fparams): stdClass
@@ -2705,13 +2706,13 @@ class APIRest
 
     /**
      * Remove protection of a directory
-     * 
+     *
      * @param string $id Hosting id
      * @param string $fqdn Vhost's FQDN
      * @param string $pathSecured Path of the protected directory starting from the selected vhost
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingProtectedDirDelete(string $id, string $fqdn, string $pathSecured): stdClass
@@ -2725,7 +2726,7 @@ class APIRest
 
     /**
      * Creates a cron task
-     * 
+     *
      * @param string $id Hosting id
      * @param string $fqdn Vhost's FDQN
      * @param string $path Path to the script starting from the vhost's directory
@@ -2737,9 +2738,9 @@ class APIRest
      * @param string $jj
      * @param string $mmm
      * @param string $jjj
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingCronTaskCreate(string $id, string $fqdn, string $path, string $returnMethod, string $returnTarget, string $mm, string $hh, string $jj, string $mmm, string $jjj): stdClass
@@ -2760,13 +2761,13 @@ class APIRest
 
     /**
      * Change settings of a cron task
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Name of the action to perform
      * @param array $fparams Parameters for the action (depends of the action)
      *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingCronTaskUpdate(string $id, string $action, array $fparams): stdClass
@@ -2780,12 +2781,12 @@ class APIRest
 
     /**
      * Delete a cron task
-     * 
+     *
      * @param string $id Hosting id
-     * @param string $idCronTask 
-     * 
+     * @param string $idCronTask
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingCronTaskDelete(string $id, string $idCronTask): stdClass
@@ -2798,14 +2799,14 @@ class APIRest
 
     /**
      * Create a FTP user
-     * 
+     *
      * @param string $id Hosting id
      * @param string $username
      * @param string $password
      * @param string $rootDir User's root directory's path starting from the hosting root
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingFTPUserCreate(string $id, string $username, string $password, string $rootDir): stdClass
@@ -2820,13 +2821,13 @@ class APIRest
 
     /**
      * Update a FTP user
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Name of the action to perform
      * @param array $fparams Parameters for the action (depends of the action)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingFTPUserUpdate(string $id, string $action, array $fparams): stdClass
@@ -2840,12 +2841,12 @@ class APIRest
 
     /**
      * Delete a FTP user
-     * 
+     *
      * @param string $id Hosting id
      * @param string $username
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingFTPUserDelete(string $id, string $username): stdClass
@@ -2858,13 +2859,13 @@ class APIRest
 
     /**
      * Create a database
-     * 
+     *
      * @param string $id Hosting id
      * @param string $dbName Name of the database (Must be preceded by the hosting id separated with a "_")
      * @param string $version Wanted SQL version (Optional, the newest version will be chosen if left empty)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDBCreate(string $id, string $dbName, string $version = ""): stdClass
@@ -2878,13 +2879,13 @@ class APIRest
 
     /**
      * Update database settings
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Name of the action to perform
      * @param array $fparams Parameters for the action (depends of the action)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDBUpdate(string $id, string $action, array $fparams): stdClass
@@ -2898,12 +2899,12 @@ class APIRest
 
     /**
      * Delete a database
-     * 
+     *
      * @param string $id Hosting id
      * @param string $dbName Name of the database
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDBDelete(string $id, string $dbName): stdClass
@@ -2916,15 +2917,15 @@ class APIRest
 
     /**
      * Create a database user
-     * 
+     *
      * @param string $id Hosting id
      * @param string $username
      * @param string $password
      * @param string $internalAccess "RW", "RO" or "NO"
      * @param string $externalAccess "RW", "RO" or "NO"
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDBUserCreate(string $id, string $username, string $password, string $internalAccess, string $externalAccess): stdClass
@@ -2940,13 +2941,13 @@ class APIRest
 
     /**
      * Update database user's settings
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Name of the action to perform
      * @param array $fparams Parameters for the action (depends of the action)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDBUserUpdate(string $id, string $action, array $fparams): stdClass
@@ -2960,12 +2961,12 @@ class APIRest
 
     /**
      * Delete a database user
-     * 
+     *
      * @param string $id Hosting id
      * @param string $username
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingDBUserDelete(string $id, string $username): stdClass
@@ -2978,14 +2979,14 @@ class APIRest
 
     /**
      * Create a mailbox
-     * 
+     *
      * @param string $id Hosting id
      * @param string $email
      * @param string $password
      * @param int $quota Disk space allocated to this box in MB
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingMailCreate(string $id, string $email, string $password, int $quota): stdClass
@@ -3000,13 +3001,13 @@ class APIRest
 
     /**
      * Update mailbox' settings
-     * 
+     *
      * @param string $id Hosting id
      * @param string $action Name of the action to perform
      * @param array $fparams Parameters for the action (depends of the action)
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingMailUpdate(string $id, string $action, array $fparams): stdClass
@@ -3020,12 +3021,12 @@ class APIRest
 
     /**
      * Delete a mailbox
-     * 
+     *
      * @param string $id Hosting id
      * @param string $email
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingMailDelete(string $id, string $email): stdClass
@@ -3038,13 +3039,13 @@ class APIRest
 
     /**
      * Create a mail redirection
-     * 
+     *
      * @param string $id Hosting id
      * @param string $source
      * @param string[] $destination
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingMailFwdCreate(string $id, string $source, array $destination): stdClass
@@ -3058,12 +3059,12 @@ class APIRest
 
     /**
      * Delete a mail redirection
-     * 
+     *
      * @param string $id Hosting id
      * @param string $source
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingMailFwdDelete(string $id, string $source): stdClass
@@ -3075,13 +3076,13 @@ class APIRest
     }
 
     /**
-     * Resets all DNS settings from a template 
-     * 
+     * Resets all DNS settings from a template
+     *
      * @param string $domain
      * @param int $profil
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingZoneInit(string $fqdn, int $profil): stdClass
@@ -3095,7 +3096,7 @@ class APIRest
 
     /**
      * Resets the SOA record of a domain name for a webhosting
-     * 
+     *
      * @param string $domain name of the domain
      * @param int 	 $ttl time to live
      * @param string $ttlUnit TTL unit. Accepted values are: 'S', 'M', 'H', 'D', 'W'
@@ -3132,11 +3133,11 @@ class APIRest
 
     /**
      * Returns all DNS records of a webhosting
-     * 
+     *
      * @param string $domain Domain name
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructQueryZoneList[]
      */
     public function webHostingZoneList(string $fqdn): array
@@ -3151,7 +3152,7 @@ class APIRest
      * @param string $subdomain subdomain
      * @param string $type type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
      * @param string $value value of the new DNS record
-     * @param array $options  StructOptionsZone : settings of the new DNS record 
+     * @param array $options  StructOptionsZone : settings of the new DNS record
      *
      * @throws NetimAPIException
      *
@@ -3172,14 +3173,14 @@ class APIRest
 
     /**
      * Deletes a DNS record into the webhosting domain zonefile
-     * 
+     *
      * @param string $domain name of the domain
      * @param string $subdomain subdomain
      * @param string $type type of DNS record. Accepted values are: 'A', 'AAAA', 'MX, 'CNAME', 'TXT', 'NS and 'SRV'
      * @param string $value value of the new DNS record
-     * 
+     *
      * @throws NetimAPIException
-     * 
+     *
      * @return StructOperationResponse giving information on the status of the operation
      */
     public function webHostingZoneDelete(string $domain, string $subdomain, string $type, string $value): stdClass

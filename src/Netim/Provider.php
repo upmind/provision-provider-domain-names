@@ -558,12 +558,11 @@ class Provider extends DomainNames implements ProviderInterface
     protected function createContact($params, $isOwner = 0)
     {
         try {
-            $firstName = strstr($params->name, ' ', true);
-            $lastName = strstr($params->name, ' ');
+            $nameArray = $this->splitFullName($params->name);
 
             $normalizedContact = new NormalizedContact(
-                $firstName ?? '',
-                $lastName ?? '',
+                $nameArray['first_name'],
+                $nameArray['last_name'],
                 $params->organisation ?? '',
                 $params->address1 ?? '',
                 $params->address2 ?? '',
@@ -584,22 +583,21 @@ class Provider extends DomainNames implements ProviderInterface
 
     protected function normalizeContactToArray($params, $isOwner = 0): array
     {
-        $firstName = explode(" ", $params->name)[0];
-        $lastName = explode(" ", $params->name)[1];
+        $nameArray = $this->splitFullName($params->name);
 
         $normalizedContact = new NormalizedContact(
-            $firstName ?? "",
-            $lastName ?? "",
-            $params->bodyName ?? "",
-            $params->address1 ?? "",
-            $params->address2 ?? "",
-            $params->postcode ?? "",
-            $params->state ?? "",
-            $params->country_code ?? "",
-            $params->city ?? "",
-            $params->phone ?? "",
-            $params->email ?? "",
-            "en",
+            $nameArray['first_name'],
+            $nameArray['last_name'],
+            $params->bodyName ?? '',
+            $params->address1 ?? '',
+            $params->address2 ?? '',
+            $params->postcode ?? '',
+            $params->state ?? '',
+            $params->country_code ?? '',
+            $params->city ?? '',
+            $params->phone ?? '',
+            $params->email ?? '',
+            'en',
             $isOwner
         );
         return $normalizedContact->to_array();
@@ -618,6 +616,29 @@ class Provider extends DomainNames implements ProviderInterface
             'state' => $contact->area,
             'postcode' => $contact->zipCode,
             'country_code' => $contact->country,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     first_name: string,
+     *     last_name: string
+     * }
+     */
+    private function splitFullName(string $name): array
+    {
+        // First, explode the name by spaces
+        $exploded = explode(' ', trim($name));
+
+        // Then, trim each element of the array
+        $trimmed = array_map('trim', $exploded);
+
+        // Now return an array with the first and last name
+        // The first name is the first element of the array
+        // The last name is the rest of the elements joined by a space
+        return [
+            'first_name' => $trimmed[0] ?? '',
+            'last_name' => isset($trimmed[1]) ? implode(' ', array_slice($trimmed, 1)) : '',
         ];
     }
 }

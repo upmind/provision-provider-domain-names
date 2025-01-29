@@ -6,7 +6,6 @@ namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper;
  * Handle all the normalization on fields needed for contact.
  * Will be usefull for contactCreate, contactUpdate, contactOwnerUpdate...
  *
- *
  * @param $firstName string first name of the contact
  * @param $lastName string last name of the contact
  * @param $bodyName string the name of the organization
@@ -65,19 +64,22 @@ class NormalizedContact extends Contact
         ?array $additional = array()
     ) {
         $this->norm = new Normalization();
-        $lastName = $this->norm->specialCharacter($lastName);
-        $firstName = $this->norm->specialCharacter($firstName);
-        $bodyForm = (empty($bodyName ?? "")) ? "IND" : "ORG";
-        $bodyName = $this->norm->specialCharacter($bodyName);
-        $address1 = $this->norm->specialCharacter($address1);
-        $address2 = $this->norm->specialCharacter($address2 ?? "");
-        $country = $this->norm->country($countryCode);
-        $city = $this->norm->specialCharacter($city);
-        $area = $this->norm->state($state, $country);
-        $phone = $this->norm->phoneNumber($phone, $country);
+
+        /** @var string $lastName */
+        $lastName = $this->norm->specialCharacter(trim($lastName));
+        $firstName = $this->norm->specialCharacter(trim($firstName));
+        $bodyForm = (empty(trim($bodyName))) ? "IND" : "ORG";
+        $bodyName = $this->norm->specialCharacter(trim($bodyName));
+        $address1 = $this->norm->specialCharacter(trim($address1));
+        $address2 = $this->norm->specialCharacter(trim($address2));
+        $country = $this->norm->country(trim($countryCode));
+        $city = $this->norm->specialCharacter(trim($city));
+        $area = $this->norm->state(trim($state), $country);
+        $phone = $this->norm->phoneNumber(trim($phone), $country);
         // $phone      = $phone;
         $fax = '';
         $language = ($lang === 'FR') ? 'FR' : 'EN';
+
         parent::__construct(
             $firstName,
             $lastName,
@@ -94,26 +96,25 @@ class NormalizedContact extends Contact
             $email,
             $language,
             $isOwner,
-            $tmName ?? "",
-            $tmNumber ?? "",
-            $tmType ?? "",
-            $tmDate ?? "",
-            $companyNumber ?? "",
-            $vatNumber ?? "",
-            $birthDate ?? "",
-            $birthZipCode ?? "",
-            $birthCity ?? "",
-            $birthCountry ?? "",
-            $idNumber ?? "",
-            $additional ?? array()
+            $tmName ?? '',
+            $tmNumber ?? '',
+            $tmType ?? '',
+            $tmDate ?? '',
+            $companyNumber ?? '',
+            $vatNumber ?? '',
+            $birthDate ?? '',
+            $birthZipCode ?? '',
+            $birthCity ?? '',
+            $birthCountry ?? '',
+            $idNumber ?? '',
+            $additional ?? []
         );
     }
-
 
     /**
      * Set the value of firstName
      *
-     * @return  self
+     * @return self
      */
     public function setFirstName(string $firstName)
     {
@@ -125,7 +126,7 @@ class NormalizedContact extends Contact
     /**
      * Set the value of lastName
      *
-     * @return  self
+     * @return self
      */
     public function setLastName(string $lastName)
     {
@@ -151,7 +152,7 @@ class NormalizedContact extends Contact
     /**
      * Set the value of address1
      *
-     * @return  self
+     * @return self
      */
     public function setAddress1(string $address1)
     {

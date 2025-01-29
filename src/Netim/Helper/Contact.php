@@ -1,10 +1,8 @@
 <?php
 
-namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper;
+declare(strict_types=1);
 
-# -------------------------------------------------
-# CONTACT
-# -------------------------------------------------
+namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper;
 
 /**
  * This class is used to map a Contact between the API and the CMS
@@ -15,39 +13,37 @@ class Contact
 {
     use NormalizationConstantsTrait;
 
-    private $firstName;
-    private $lastName;
-    private $bodyForm;
-    private $bodyName;
-    private $address1;
-    private $address2;
-    private $zipCode;
-    private $area;
-    private $city;
-    private $country;
-    private $phone;
-    private $fax;
-    private $email;
-    private $language;
-    private $isOwner;
-    private $tmName;
-    private $tmNumber;
-    private $tmType;
-    private $tmDate;
-    private $companyNumber;
-    private $vatNumber;
-    private $birthDate;
-    private $birthZipCode;
-    private $birthCity;
-    private $birthCountry;
-    private $idNumber;
-    private $additional;
+    private string $firstName;
+    private string $lastName;
+    private string $bodyForm;
+    private string $bodyName;
+    private string $address1;
+    private string $address2;
+    private string $zipCode;
+    private string $area;
+    private string $city;
+    private string $country;
+    private string $phone;
+    private string $fax;
+    private string $email;
+    private string $language;
+    private int $isOwner;
+    private string $tmName;
+    private string $tmNumber;
+    private string $tmType;
+    private string $tmDate;
+    private string $companyNumber;
+    private string $vatNumber;
+    private string $birthDate;
+    private string $birthZipCode;
+    private string $birthCity;
+    private string $birthCountry;
+    private string $idNumber;
+    private array $additional;
 
     /**
      * Handle all the normalization on fields needed for contact.
-     * Will be usefull for contactCreate, contactUpdate, contactOwnerUpdate...
-     *
-     *
+     * Will be useful for contactCreate, contactUpdate, contactOwnerUpdate...
      *
      * @param $firstName string first name of the contact
      * @param $lastName string last name of the contact
@@ -104,7 +100,7 @@ class Contact
         string $birthCity = "",
         string $birthCountry = "",
         string $idNumber = "",
-        array $additional = array()
+        array $additional = []
     ) {
         $this->firstName = $firstName;
         $this->lastName = $lastName;
@@ -142,7 +138,7 @@ class Contact
      */
     public function to_array(): array
     {
-        return array(
+        return [
             'firstName' => $this->firstName,
             'lastName' => $this->lastName,
             'bodyForm' => $this->bodyForm,
@@ -170,19 +166,17 @@ class Contact
             'birthCountry' => $this->birthCountry,
             'idNumber' => $this->idNumber,
             'additional' => $this->additional
-        );
+        ];
     }
 
     /**
      * Used to communicate with the API
-     *
-     * @return array Contact transformed into an array
      */
     public function denormalization($lang = "en"): Contact
     {
         $lang = strtolower($lang);
 
-        if (isset($this->getStateCodeToStateMappings()[$this->country]) && isset($this->getStateCodeToStateMappings()[$this->country][$this->area])) {
+        if (isset($this->getStateCodeToStateMappings()[$this->country][$this->area])) {
             if (is_array($this->getStateCodeToStateMappings()[$this->country][$this->area])) {
                 if (isset($this->getStateCodeToStateMappings()[$this->country][$this->area][$lang])) {
                     $this->area = $this->getStateCodeToStateMappings()[$this->country][$this->area][$lang];
@@ -235,8 +229,6 @@ class Contact
 
     /**
      * Used to communicate with the API
-     *
-     * @return Contact
      */
     public static function object_to_contact(object $arr): Contact
     {
@@ -267,12 +259,9 @@ class Contact
             $arr->birthCity ?? "",
             $arr->birthCountry ?? "",
             $arr->idNumber ?? "",
-            $arr->additional ?? array()
+            $arr->additional ?? []
         );
     }
-
-
-    /// Getters and setters
 
     /**
      * Get the value of firstName
@@ -294,7 +283,6 @@ class Contact
         return $this;
     }
 
-
     /**
      * Get the value of lastName
      */
@@ -306,7 +294,7 @@ class Contact
     /**
      * Set the value of lastName
      *
-     * @return  self
+     * @return self
      */
     public function setLastName(string $lastName)
     {
@@ -326,7 +314,7 @@ class Contact
     /**
      * Set the value of bodyForm
      *
-     * @return  self
+     * @return self
      */
     public function setBodyForm(string $bodyForm)
     {
@@ -346,7 +334,7 @@ class Contact
     /**
      * Set the value of bodyName
      *
-     * @return  self
+     * @return self
      */
     public function setBodyName(string $bodyName)
     {
@@ -366,7 +354,7 @@ class Contact
     /**
      * Set the value of address1
      *
-     * @return  self
+     * @return self
      */
     public function setAddress1(string $address1)
     {
@@ -386,7 +374,7 @@ class Contact
     /**
      * Set the value of address2
      *
-     * @return  self
+     * @return self
      */
     public function setAddress2(string $address2)
     {
@@ -406,7 +394,7 @@ class Contact
     /**
      * Set the value of zipCode
      *
-     * @return  self
+     * @return self
      */
     public function setZipCode(string $zipCode)
     {
@@ -426,7 +414,7 @@ class Contact
     /**
      * Set the value of area
      *
-     * @return  self
+     * @return self
      */
     public function setArea(string $area)
     {
@@ -446,7 +434,7 @@ class Contact
     /**
      * Set the value of city
      *
-     * @return  self
+     * @return self
      */
     public function setCity(string $city)
     {
@@ -466,7 +454,7 @@ class Contact
     /**
      * Set the value of country
      *
-     * @return  self
+     * @return self
      */
     public function setCountry(string $country)
     {
@@ -486,7 +474,7 @@ class Contact
     /**
      * Set the value of phone
      *
-     * @return  self
+     * @return self
      */
     public function setPhone(string $phone)
     {
@@ -506,7 +494,7 @@ class Contact
     /**
      * Set the value of fax
      *
-     * @return  self
+     * @return self
      */
     public function setFax(string $fax)
     {
@@ -526,7 +514,7 @@ class Contact
     /**
      * Set the value of email
      *
-     * @return  self
+     * @return self
      */
     public function setEmail(string $email)
     {
@@ -546,7 +534,7 @@ class Contact
     /**
      * Set the value of language
      *
-     * @return  self
+     * @return self
      */
     public function setLanguage(string $language)
     {
@@ -566,7 +554,7 @@ class Contact
     /**
      * Set the value of isOwner
      *
-     * @return  self
+     * @return self
      */
     public function setIsOwner(int $isOwner)
     {
@@ -586,7 +574,7 @@ class Contact
     /**
      * Set the value of tmName
      *
-     * @return  self
+     * @return self
      */
     public function setTmName(string $tmName)
     {
@@ -606,7 +594,7 @@ class Contact
     /**
      * Set the value of tmNumber
      *
-     * @return  self
+     * @return self
      */
     public function setTmNumber(string $tmNumber)
     {
@@ -626,7 +614,7 @@ class Contact
     /**
      * Set the value of tmType
      *
-     * @return  self
+     * @return self
      */
     public function setTmType(string $tmType)
     {
@@ -646,7 +634,7 @@ class Contact
     /**
      * Set the value of companyNumber
      *
-     * @return  self
+     * @return self
      */
     public function setCompanyNumber(string $companyNumber)
     {
@@ -666,7 +654,7 @@ class Contact
     /**
      * Set the value of vatNumber
      *
-     * @return  self
+     * @return self
      */
     public function setVatNumber(string $vatNumber)
     {
@@ -686,7 +674,7 @@ class Contact
     /**
      * Set the value of birthDate
      *
-     * @return  self
+     * @return self
      */
     public function setBirthDate(string $birthDate)
     {
@@ -706,7 +694,7 @@ class Contact
     /**
      * Set the value of birthZipCode
      *
-     * @return  self
+     * @return self
      */
     public function setBirthZipCode(string $birthZipCode)
     {
@@ -726,7 +714,7 @@ class Contact
     /**
      * Set the value of birthCity
      *
-     * @return  self
+     * @return self
      */
     public function setBirthCity(string $birthCity)
     {
@@ -746,7 +734,7 @@ class Contact
     /**
      * Set the value of birthCountry
      *
-     * @return  self
+     * @return self
      */
     public function setBirthCountry(string $birthCountry)
     {
@@ -766,7 +754,7 @@ class Contact
     /**
      * Set the value of idNumber
      *
-     * @return  self
+     * @return self
      */
     public function setIdNumber(string $idNumber)
     {
@@ -786,7 +774,7 @@ class Contact
     /**
      * Set the value of additional
      *
-     * @return  self
+     * @return self
      */
     public function setAdditional(array $additional)
     {
@@ -806,7 +794,7 @@ class Contact
     /**
      * Set the value of tmDate
      *
-     * @return  self
+     * @return self
      */
     public function setTmDate($tmDate)
     {
@@ -817,32 +805,32 @@ class Contact
 
     public function equals(Contact $c): bool
     {
-        return $this->firstName == $c->getFirstName() &&
-            $this->lastName == $c->getLastName() &&
-            $this->bodyForm == $c->getBodyForm() &&
-            $this->bodyName == $c->getBodyName() &&
-            $this->address1 == $c->getAddress1() &&
-            $this->address2 == $c->getAddress2() &&
-            $this->zipCode == $c->getZipCode() &&
-            $this->area == $c->getArea() &&
-            $this->city == $c->getCity() &&
-            $this->country == $c->getCountry() &&
-            $this->phone == $c->getPhone() &&
-            $this->fax == $c->getFax() &&
-            $this->email == $c->getEmail() &&
-            $this->language == $c->getLanguage() &&
-            $this->isOwner == $c->getIsOwner() &&
-            $this->tmName == $c->getTmName() &&
-            $this->tmNumber == $c->getTmNumber() &&
-            $this->tmType == $c->getTmType() &&
-            $this->tmDate == $c->getTmDate() &&
-            $this->companyNumber == $c->getCompanyNumber() &&
-            $this->vatNumber == $c->getVatNumber() &&
-            $this->birthDate == $c->getBirthDate() &&
-            $this->birthZipCode == $c->getBirthZipCode() &&
-            $this->birthCity == $c->getBirthCity() &&
-            $this->birthCountry == $c->getBirthCountry() &&
-            $this->idNumber == $c->getIdNumber() &&
-            $this->additional == $c->getAdditional();
+        return $this->firstName === $c->getFirstName()
+            && $this->lastName === $c->getLastName()
+            && $this->bodyForm === $c->getBodyForm()
+            && $this->bodyName === $c->getBodyName()
+            && $this->address1 === $c->getAddress1()
+            && $this->address2 === $c->getAddress2()
+            && $this->zipCode === $c->getZipCode()
+            && $this->area === $c->getArea()
+            && $this->city === $c->getCity()
+            && $this->country === $c->getCountry()
+            && $this->phone === $c->getPhone()
+            && $this->fax === $c->getFax()
+            && $this->email === $c->getEmail()
+            && $this->language === $c->getLanguage()
+            && $this->isOwner === $c->getIsOwner()
+            && $this->tmName === $c->getTmName()
+            && $this->tmNumber === $c->getTmNumber()
+            && $this->tmType === $c->getTmType()
+            && $this->tmDate === $c->getTmDate()
+            && $this->companyNumber === $c->getCompanyNumber()
+            && $this->vatNumber === $c->getVatNumber()
+            && $this->birthDate === $c->getBirthDate()
+            && $this->birthZipCode === $c->getBirthZipCode()
+            && $this->birthCity === $c->getBirthCity()
+            && $this->birthCountry === $c->getBirthCountry()
+            && $this->idNumber === $c->getIdNumber()
+            && $this->additional === $c->getAdditional();
     }
 }

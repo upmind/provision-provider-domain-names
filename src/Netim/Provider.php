@@ -191,7 +191,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $ns3,
                 $ns4,
                 $ns5,
-                (int)$params->renew_years,
+                (int) $params->renew_years,
             );
 
             if ($result->STATUS === 'Done') {
@@ -561,7 +561,21 @@ class Provider extends DomainNames implements ProviderInterface
             $firstName = strstr($params->name, ' ', true);
             $lastName = strstr($params->name, ' ');
 
-            $normalizedContact = new NormalizedContact(isset($firstName) ? $firstName : "", isset($lastName) ? $lastName : "", isset($params->organisation) ? $params->organisation : "", isset($params->address1) ? $params->address1 : "", isset($params->address2) ? $params->address2 : "", isset($params->postcode) ? $params->postcode : "", isset($params->state) ? $params->state : "", isset($params->country_code) ? $params->country_code : "", isset($params->city) ? $params->city : "",  isset($params->phone) ? $params->phone : "",  isset($params->email) ? $params->email : "", "en", $isOwner);
+            $normalizedContact = new NormalizedContact(
+                $firstName ?? '',
+                $lastName ?? '',
+                $params->organisation ?? '',
+                $params->address1 ?? '',
+                $params->address2 ?? '',
+                $params->postcode ?? '',
+                $params->state ?? '',
+                $params->country_code ?? '',
+                $params->city ?? '',
+                $params->phone ?? '',
+                $params->email ?? '',
+                'en',
+                $isOwner
+            );
             return $this->client()->contactCreate($normalizedContact->to_array());
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());

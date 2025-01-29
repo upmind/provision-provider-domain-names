@@ -120,10 +120,10 @@ class Normalization
         if (preg_match("#^\+#", $str2)) {
             if (preg_match("#^\+" . $this->getCountryPhoneCodeMappings()[$country] . "#", $str2)) {
                 //Number has the international syntax for the country
-                $l = strlen($this->getCountryPhoneCodeMappings()[$country]) + 1;
+                $l = strlen((string) $this->getCountryPhoneCodeMappings()[$country]) + 1;
                 $new_str = "+" . $this->getCountryPhoneCodeMappings()[$country] . " " . substr($str2, $l, strlen($str2));
             } else {
-                //Number has the international syntax for another country but we are unable to extract the country code
+                //Number has the international syntax for another country, but we are unable to extract the country code
                 $new_str = substr($str2, 0, 3) . " " . substr($str2, 3, strlen($str2));
             }
         } else if (preg_match("#^00#", $str2)) {

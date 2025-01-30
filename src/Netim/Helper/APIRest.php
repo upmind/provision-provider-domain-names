@@ -103,27 +103,27 @@ class APIRest
     /**
      * Constructor for class APIRest
      *
-     * @param string|null $userID the ID the client uses to connect to his NETIM account
-     * @param string|null $secret the SECRET the client uses to connect to his NETIM account
+     * @param string $userId the ID the client uses to connect to his NETIM account
+     * @param string $secret the SECRET the client uses to connect to his NETIM account
      *
      * @throws \Upmind\ProvisionProviders\DomainNames\Netim\Helper\NetimAPIException if $userID, $secret or $apiURL are not string or are empty
      *
      * @see http://semver.org/ Semantic Versionning by Tom Preston-Werner
      */
-    public function __construct(string $userID = null, string $secret = null, $url)
+    public function __construct(string $userId, string $secret, string $url)
     {
         register_shutdown_function([&$this, "__destruct"]);
         // Init variables
         $this->_connected = false;
 
-        if (isset($userID, $secret, $url)) {
-            $this->_userID = $userID;
-            $this->_secret = $secret;
-            $this->_apiURL = $url;
-            $this->_defaultLanguage = "EN";
-        } else {
-            throw new NetimAPIException("Error in configuration, please check your inputs.");
+        if (!isset($userId, $secret, $url)) {
+            throw new NetimAPIException('Error in configuration, please check your inputs.');
         }
+
+        $this->_userID = $userId;
+        $this->_secret = $secret;
+        $this->_apiURL = $url;
+        $this->_defaultLanguage = 'EN';
     }
 
     # ---------------------------------------------------
@@ -629,7 +629,7 @@ class APIRest
      * @see StructOperationResponse https://support.netim.com/en/docs/api-rest-1-0/api-objects/structoperationresponse
      * @see https://support.netim.com/en/docs/api-rest-1-0/domain-names/domain-contacts/update-contact
      */
-    public function contactOwnerUpdate(string $idContact, array $data)
+    public function contactOwnerUpdate(string $idContact, array $data): stdClass
     {
         return $this->contactUpdate($idContact, $data);
     }

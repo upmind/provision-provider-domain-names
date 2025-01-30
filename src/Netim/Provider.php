@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Netim;
 
-use DateTime;
+use DateTimeImmutable;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -156,6 +156,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
@@ -211,6 +212,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
@@ -218,28 +220,31 @@ class Provider extends DomainNames implements ProviderInterface
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
 
         try {
+            // Registrant default placeholder.
+            $registrant = '';
+
+            // If param provided, set it.
             if (isset($params->registrant)) {
                 $registrant = $params->registrant['id'] ?? $this->createContact($params->registrant['register'], 1);
-            } else {
-                $registrant = "";
             }
+
+            // Then set admin, tech, and billing contacts if params provided, using registrant as default placeholder
+            $admin = $registrant;
 
             if (isset($params->admin)) {
                 $admin = $params->admin['id'] ?? $this->createContact($params->admin['register']);
-            } else {
-                $admin = $registrant;
             }
+
+            $tech = $registrant;
 
             if (isset($params->tech)) {
                 $tech = $params->tech['id'] ?? $this->createContact($params->tech['register']);
-            } else {
-                $tech = $registrant;
             }
+
+            $billing = $registrant;
 
             if (isset($params->billing)) {
                 $billing = $params->billing['id'] ?? $this->createContact($params->billing['register']);
-            } else {
-                $billing = $registrant;
             }
 
             $ns1 = isset($params->nameservers->ns1) ? $params->nameservers->ns1['host'] : "";
@@ -279,6 +284,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(RenewParams $params): DomainResult
@@ -304,6 +310,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getInfo(DomainInfoParams $params): DomainResult
@@ -322,8 +329,8 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
+
         try {
             // Get the owner contact id
             $domainInfo = $this->client()->domainInfo($domain);
@@ -358,8 +365,6 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $result = $this->client()->domainChangeDNS($domain, $ns1, $ns2, $ns3, $ns4, $ns5);
 
-            $domainInfo = $this->getDomainInfo($domain);
-
             if ($result->STATUS === 'Done') {
                 return NameserversResult::create([
                     'ns1' => $params->ns1,
@@ -387,6 +392,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function setLock(LockParams $params): DomainResult
@@ -413,6 +419,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
@@ -467,6 +474,9 @@ class Provider extends DomainNames implements ProviderInterface
         $this->errorResult('Not implemented');
     }
 
+    /**
+     * @throws NetimAPIException
+     */
     protected function client(): APIRest
     {
         $url = (bool) $this->configuration->sandbox === true
@@ -494,6 +504,10 @@ class Provider extends DomainNames implements ProviderInterface
         return $return;
     }
 
+    /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionProviders\DomainNames\Netim\Helper\NetimAPIException
+     */
     protected function getContact($id): ContactData
     {
 
@@ -501,7 +515,7 @@ class Provider extends DomainNames implements ProviderInterface
         return ContactData::create()
             ->setName($contact->firstName . ' ' . $contact->lastName)
             ->setEmail($contact->email)
-            ->setOrganisation($contact->bodyName != "" ? $contact->bodyName : null)
+            ->setOrganisation($contact->bodyName !== '' ? $contact->bodyName : null)
             ->setPhone(Utils::eppPhoneToInternational($contact->phone))
             ->setAddress1($contact->address1 . ' ' . $contact->address2)
             ->setCity($contact->city)
@@ -510,6 +524,10 @@ class Provider extends DomainNames implements ProviderInterface
             ->setCountryCode($contact->country);
     }
 
+    /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionProviders\DomainNames\Netim\Helper\NetimAPIException
+     */
     protected function getDomainInfo($domain): DomainResult
     {
         $domainInfo = $this->client()->domainInfo($domain);
@@ -547,8 +565,14 @@ class Provider extends DomainNames implements ProviderInterface
             ->setAdmin(isset($domainInfo->idAdmin) ? $this->getContact($domainInfo->idAdmin) : null)
             ->setTech(isset($domainInfo->idTech) ? $this->getContact($domainInfo->idTech) : null)
             ->setBilling(isset($domainInfo->idBilling) ? $this->getContact($domainInfo->idBilling) : null)
-            ->setCreatedAt(isset($domainInfo->dateCreate) ? new DateTime($domainInfo->dateCreate) : null)
-            ->setExpiresAt(isset($domainInfo->dateExpiration) ? new DateTime($domainInfo->dateExpiration) : null)
+            ->setCreatedAt(isset($domainInfo->dateCreate)
+                ? DateTimeImmutable::createFromFormat('Y-m-d', $domainInfo->dateCreate)
+                : null
+            )
+            ->setExpiresAt(isset($domainInfo->dateExpiration)
+                ? DateTimeImmutable::createFromFormat('Y-m-d', $domainInfo->dateExpiration)
+                : null
+            )
             ->setUpdatedAt(null);
     }
 
@@ -600,6 +624,7 @@ class Provider extends DomainNames implements ProviderInterface
             'en',
             $isOwner
         );
+
         return $normalizedContact->to_array();
     }
 

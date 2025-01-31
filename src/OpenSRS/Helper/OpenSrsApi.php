@@ -260,12 +260,12 @@ class OpenSrsApi
             foreach ($array as $k => $v) {
                 ++$indent;
                 /* don't encode some types of stuff */
-                if ((gettype($v) == 'resource') || (gettype($v) == 'user function') || (gettype($v) == 'unknown type')) {
+                if ((gettype($v) === 'resource') || (gettype($v) === 'user function') || (gettype($v) === 'unknown type')) {
                     continue;
                 }
 
                 $string .= self::XML_INDENT . $spacer . '<item key="' . $k . '"';
-                if (gettype($v) == 'object' && get_class($v)) {
+                if (gettype($v) === 'object' && get_class($v)) {
                     $string .= ' class="' . get_class($v) . '"';
                 }
 

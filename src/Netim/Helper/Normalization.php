@@ -222,7 +222,7 @@ class Normalization
     /**
      * Takes a pattern and adds delimiter, anchors and options if needed to make it a valid regex
      *
-     * @param string $wanabeRegex A string to be used as a regex pattern
+     * @param string $wannabeRegex A string to be used as a regex pattern
      * @param string $delimiter OPTIONAL The delimiter to be used in the regex, default is '/'
      * @param bool $isStartOfLine OPTIONAL If true, adds '^' anchor at the start of regex. Default is true
      * @param bool $isEndOfLine OPTIONAL If true, adds '$' anchor at the end of regex. Default is true

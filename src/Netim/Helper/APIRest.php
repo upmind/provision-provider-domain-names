@@ -116,7 +116,7 @@ class APIRest
         // Init variables
         $this->_connected = false;
 
-        if (!isset($userId, $secret, $url)) {
+        if (empty($userId) || empty($secret) || empty($url)) {
             throw new NetimAPIException('Error in configuration, please check your inputs.');
         }
 
@@ -723,7 +723,7 @@ class APIRest
      *
      * @throws NetimAPIException
      *
-     * @return object An associative array with (Name of the operation, boolean active)
+     * @return stdClass An associative array with (Name of the operation, boolean active)
      *
      * @see https://support.netim.com/en/docs/api-rest-1-0/operation-management/get-operations-types-for-an-extension
      */

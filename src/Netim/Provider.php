@@ -55,7 +55,7 @@ class Provider extends DomainNames implements ProviderInterface
         return AboutData::create()
             ->setName('Netim')
             ->setDescription('More than 1000 global extensions (ccTlds, gTlds, ngTlds) with a single registrar module');
-    } 
+    }
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
@@ -139,7 +139,7 @@ class Provider extends DomainNames implements ProviderInterface
 
                 $domain = DacDomain::create([
                     'domain' => $domain,
-                    'description' => $data['reason'] ?? 'Domain is ' . $domainCheck[0]->result . ' to register',
+                    'description' => 'Domain is ' . $domainCheck[0]->result . ' to register',
                     'tld' => Utils::getTld($domain),
                     'can_register' => $available,
                     'can_transfer' => $transfer,
@@ -665,7 +665,7 @@ class Provider extends DomainNames implements ProviderInterface
         // The first name is the first element of the array
         // The last name is the rest of the elements joined by a space
         return [
-            'first_name' => $trimmed[0] ?? '',
+            'first_name' => $trimmed[0],
             'last_name' => isset($trimmed[1]) ? implode(' ', array_slice($trimmed, 1)) : '',
         ];
     }

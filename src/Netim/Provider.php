@@ -255,7 +255,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             $result = $this->client()->domainTransferIn(
                 $domain,
-                $params->epp_code,
+                $params->epp_code ?? '',
                 $registrant,
                 $admin,
                 $tech,
@@ -628,6 +628,9 @@ class Provider extends DomainNames implements ProviderInterface
         return $normalizedContact->to_array();
     }
 
+    /**
+     * @throws NetimAPIException
+     */
     protected function getContactInfo($idContact): array
     {
         $contact = $this->client()->contactInfo($idContact);

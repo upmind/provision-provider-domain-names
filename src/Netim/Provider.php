@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Netim;
 
-// include_once __DIR__ . '/Helper/APIRest.php';
-// include_once __DIR__ . '/Helper/NetimAPIException.php';
-// include_once __DIR__ . '/Helper/NormalizedContact.php';
-
-use DateTime;
+use DateTimeImmutable;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -31,7 +27,6 @@ use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
-use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
@@ -48,16 +43,13 @@ use Upmind\ProvisionProviders\DomainNames\Netim\Helper\NormalizedContact;
 class Provider extends DomainNames implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected APIRest $client;
+    protected ?APIRest $client = null;
 
     public function __construct(Configuration $configuration)
     {
         $this->configuration = $configuration;
     }
 
-    /**
-     * @inheritDoc
-     */
     public static function aboutProvider(): AboutData
     {
         return AboutData::create()
@@ -66,7 +58,7 @@ class Provider extends DomainNames implements ProviderInterface
     } 
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function poll(PollParams $params): PollResult
     {
@@ -78,35 +70,36 @@ class Provider extends DomainNames implements ProviderInterface
             for ($i = 0; $i < min($count, $params->limit); $i++) {
                 if (isset($params->after_date) && $poll[$i]->date < $params->after_date) {
                     break;
-                } else {
-                    $type = '';
-                    switch ($poll[$i]->code_ope) {
-                        case 'domainTransferIn':
-                            $type = DomainNotification::TYPE_TRANSFER_IN;
-                            break;
-                        case 'domainRenew':
-                            $type = DomainNotification::TYPE_RENEWED;
-                            break;
-                        case 'domainDelete':
-                            $type = DomainNotification::TYPE_DELETED;
-                            break;
-                        default:
-                            break;
-                    }
-
-                    if ($type === '')
-                        break;
-
-                    $notification = [
-                        'id' => $poll[$i]->id_ope,
-                        'type' => $type,
-                        'message' => $poll[$i]->code_ope,
-                        'domains' => [$poll[$i]->data_ope],
-                        'created_at' => Utils::formatDate($poll[$i]->date_ope),
-                    ];
-                    $pollList[] = DomainNotification::create($notification);
-                    $count = $count - 1;
                 }
+
+                $type = '';
+                switch ($poll[$i]->code_ope) {
+                    case 'domainTransferIn':
+                        $type = DomainNotification::TYPE_TRANSFER_IN;
+                        break;
+                    case 'domainRenew':
+                        $type = DomainNotification::TYPE_RENEWED;
+                        break;
+                    case 'domainDelete':
+                        $type = DomainNotification::TYPE_DELETED;
+                        break;
+                    default:
+                        break;
+                }
+
+                if ($type === '') {
+                    break;
+                }
+
+                $notification = [
+                    'id' => $poll[$i]->id_ope,
+                    'type' => $type,
+                    'message' => $poll[$i]->code_ope,
+                    'domains' => [$poll[$i]->data_ope],
+                    'created_at' => Utils::formatDate($poll[$i]->date_ope),
+                ];
+                $pollList[] = DomainNotification::create($notification);
+                --$count;
             }
 
 
@@ -115,12 +108,12 @@ class Provider extends DomainNames implements ProviderInterface
                 'count_remaining' => $count,
             ]);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
@@ -133,18 +126,20 @@ class Provider extends DomainNames implements ProviderInterface
 
                 $available = strtolower($domainCheck[0]->result) === 'available';
                 $transfer = !$available;
-                if (strtolower($domainCheck[0]->reason) === 'reserved' || strtolower($domainCheck[0]->reason) === 'pending application') {
+
+                if (
+                    strtolower($domainCheck[0]->reason) === 'reserved'
+                    || strtolower($domainCheck[0]->reason) === 'pending application'
+                ) {
                     $available = false;
                     $transfer = false;
                 }
 
-                $premium = strtolower($domainCheck[0]->reason) === 'premium' ? true : false;
+                $premium = strtolower($domainCheck[0]->reason) === 'premium';
 
                 $domain = DacDomain::create([
                     'domain' => $domain,
-                    'description' => $data['reason'] ?? sprintf(
-                        'Domain is ' . $domainCheck[0]->result . ' to register'
-                    ),
+                    'description' => $data['reason'] ?? 'Domain is ' . $domainCheck[0]->result . ' to register',
                     'tld' => Utils::getTld($domain),
                     'can_register' => $available,
                     'can_transfer' => $transfer,
@@ -154,52 +149,31 @@ class Provider extends DomainNames implements ProviderInterface
                 $dacDomains[] = $domain;
             }
 
-            return DacResult::create([
-                'domains' => $dacDomains,
-            ]);
+            return DacResult::create(['domains' => $dacDomains]);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
 
         try {
-
             $domainCheck = $this->client()->domainCheck($domain);
 
             if (strtolower($domainCheck[0]->result) !== 'available') {
-                return $this->errorResult('Domain ' . $domain . ' is not available');
+                $this->errorResult('Domain ' . $domain . ' is not available');
             }
 
-            if (isset($params->registrant['id'])) {
-                $registrant = $params->registrant['id'];
-            } else {
-                $registrant = $this->createContact($params->registrant['register'], 1);
-            }
-
-            if (isset($params->admin['id'])) {
-                $admin = $params->admin['id'];
-            } else {
-                $admin = $this->createContact($params->admin['register']);
-            }
-
-            if (isset($params->tech['id'])) {
-                $tech = $params->tech['id'];
-            } else {
-                $tech = $this->createContact($params->tech['register']);
-            }
-
-            if (isset($params->billing['id'])) {
-                $billing = $params->billing['id'];
-            } else {
-                $billing = $this->createContact($params->billing['register']);
-            }
+            $registrant = $params->registrant['id'] ?? $this->createContact($params->registrant['register'], 1);
+            $admin = $params->admin['id'] ?? $this->createContact($params->admin['register']);
+            $tech = $params->tech['id'] ?? $this->createContact($params->tech['register']);
+            $billing = $params->billing['id'] ?? $this->createContact($params->billing['register']);
 
             $ns1 = isset($params->nameservers->ns1) ? $params->nameservers->ns1['host'] : "";
             $ns2 = isset($params->nameservers->ns2) ? $params->nameservers->ns2['host'] : "";
@@ -218,69 +192,59 @@ class Provider extends DomainNames implements ProviderInterface
                 $ns3,
                 $ns4,
                 $ns5,
-                (int)$params->renew_years,
+                (int) $params->renew_years,
             );
 
-            if ($result->STATUS == 'Done') {
+            if ($result->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been registered successfully');
-            } else if ($result->STATUS == 'Pending') {
+            }
+
+            if ($result->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' registration is pending');
-            } else {
-                return $this->errorResult($result->MESSAGE);
             }
+
+            $this->errorResult($result->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
     {
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
 
         try {
+            // Registrant default placeholder.
+            $registrant = '';
+
+            // If param provided, set it.
             if (isset($params->registrant)) {
-                if (isset($params->registrant['id'])) {
-                    $registrant = $params->registrant['id'];
-                } else {
-                    $registrant = $this->createContact($params->registrant['register'], 1);
-                }
-            } {
-                $registrant = "";
+                $registrant = $params->registrant['id'] ?? $this->createContact($params->registrant['register'], 1);
             }
+
+            // Then set admin, tech, and billing contacts if params provided, using registrant as default placeholder
+            $admin = $registrant;
 
             if (isset($params->admin)) {
-                if (isset($params->admin['id'])) {
-                    $admin = $params->admin['id'];
-                } else {
-                    $admin = $this->createContact($params->admin['register']);
-                }
-            } else {
-                $admin = $registrant;
+                $admin = $params->admin['id'] ?? $this->createContact($params->admin['register']);
             }
+
+            $tech = $registrant;
 
             if (isset($params->tech)) {
-                if (isset($params->tech['id'])) {
-                    $tech = $params->tech['id'];
-                } else {
-                    $tech = $this->createContact($params->tech['register']);
-                }
-            } else {
-                $tech = $registrant;
+                $tech = $params->tech['id'] ?? $this->createContact($params->tech['register']);
             }
 
+            $billing = $registrant;
+
             if (isset($params->billing)) {
-                if (isset($params->billing['id'])) {
-                    $billing = $params->billing['id'];
-                } else {
-                    $billing = $this->createContact($params->billing['register']);
-                }
-            } else {
-                $billing = $registrant;
+                $billing = $params->billing['id'] ?? $this->createContact($params->billing['register']);
             }
 
             $ns1 = isset($params->nameservers->ns1) ? $params->nameservers->ns1['host'] : "";
@@ -303,66 +267,72 @@ class Provider extends DomainNames implements ProviderInterface
                 $ns5,
             );
 
-            if ($result->STATUS == 'Done') {
+            if ($result->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been transferred successfully');
-            } else if ($result->STATUS == 'Pending') {
+            }
+
+            if ($result->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' transfer is pending');
-            } else {
-                return $this->errorResult($result->MESSAGE);
             }
+
+            $this->errorResult($result->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(RenewParams $params): DomainResult
     {
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
         try {
-            $renew = $this->client()->domainRenew($domain, (int)$params->renew_years);
+            $renew = $this->client()->domainRenew($domain, (int) $params->renew_years);
 
-            if ($renew->STATUS == 'Done') {
-                $domainInfo =  $this->getDomainInfo($domain);
-                return $domainInfo
-                    ->setMessage('Your domain : ' . $domain . ' has been renewed successfully');
-            } else if ($renew->STATUS == 'Pending') {
-                return $this->getDomainInfo($domain)
-                    ->setMessage('Your domain : ' . $domain . ' renew is pending');
-            } else {
-                return $this->errorResult($renew->MESSAGE);
+            if ($renew->STATUS === 'Done') {
+                return $this->getDomainInfo($domain)->setMessage(
+                    'Your domain : ' . $domain . ' has been renewed successfully'
+                );
             }
+
+            if ($renew->STATUS === 'Pending') {
+                return $this->getDomainInfo($domain)->setMessage('Your domain : ' . $domain . ' renew is pending');
+            }
+
+            $this->errorResult($renew->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getInfo(DomainInfoParams $params): DomainResult
     {
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
+
         try {
             return $this->getDomainInfo($domain);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
+
         try {
-            // Get the owner contact id 
+            // Get the owner contact id
             $domainInfo = $this->client()->domainInfo($domain);
             $owner = $domainInfo->idOwner;
 
@@ -375,12 +345,12 @@ class Provider extends DomainNames implements ProviderInterface
             return ContactResult::create($this->getContactInfo($owner))
                 ->setMessage('Your domain : ' . $domain . ' registrant has been updated successfully');
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
@@ -395,9 +365,7 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $result = $this->client()->domainChangeDNS($domain, $ns1, $ns2, $ns3, $ns4, $ns5);
 
-            $domainInfo = $this->getDomainInfo($domain);
-
-            if ($result->STATUS == 'Done') {
+            if ($result->STATUS === 'Done') {
                 return NameserversResult::create([
                     'ns1' => $params->ns1,
                     'ns2' => $params->ns2,
@@ -405,7 +373,9 @@ class Provider extends DomainNames implements ProviderInterface
                     'ns4' => $params->ns4,
                     'ns5' => $params->ns5,
                 ])->setMessage('Your domain : ' . $domain . ' has been updated successfully');
-            } else if ($result->STATUS == 'Pending') {
+            }
+
+            if ($result->STATUS === 'Pending') {
                 return NameserversResult::create([
                     'ns1' => $params->ns1,
                     'ns2' => $params->ns2,
@@ -413,16 +383,17 @@ class Provider extends DomainNames implements ProviderInterface
                     'ns4' => $params->ns4,
                     'ns5' => $params->ns5,
                 ])->setMessage('Your domain : ' . $domain . ' update is pending');
-            } else {
-                return $this->errorResult($result->MESSAGE);
             }
+
+            $this->errorResult($result->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function setLock(LockParams $params): DomainResult
     {
@@ -430,22 +401,26 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $return = $this->client()->domainSetPreference($domain, 'registrar_lock', $params->lock ? '1' : '0');
-            if ($return->STATUS == 'Pending') {
+
+            if ($return->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' change lock is pending');
-            } else if ($return->STATUS == 'Done') {
+            }
+
+            if ($return->STATUS === 'Done') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' has been ' . ($params->lock ? 'locked' : 'unlocked') . ' successfully');
-            } else {
-                return $this->errorResult($return->MESSAGE);
             }
+
+            $this->errorResult($return->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
@@ -453,56 +428,70 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $return = $this->client()->domainSetPreference($domain, 'auto_renew', $params->auto_renew ? '1' : '0');
-            if ($return->STATUS == 'Pending') {
+
+            if ($return->STATUS === 'Pending') {
                 return $this->getDomainInfo($domain)
                     ->setMessage('Your domain : ' . $domain . ' change auto renew is pending');
-            } else if ($return->STATUS == 'Done') {
-                return $this->getDomainInfo($domain)
-                    ->setMessage('Your domain : ' . $domain . ' auto renew has been ' . ($params->auto_renew ? 'enable' : 'disable') . ' successfully');
-            } else {
-                return $this->errorResult($return->MESSAGE);
             }
+
+            if ($return->STATUS === 'Done') {
+                return $this->getDomainInfo($domain)->setMessage(
+                    'Your domain : ' . $domain . ' auto renew has been ' . ($params->auto_renew ? 'enable' : 'disable') . ' successfully'
+                );
+            }
+
+            $this->errorResult($return->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
         try {
             $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
             $tldinfo = $this->client()->domainTldInfo(Utils::normalizeTld($params->tld));
+
             if ($tldinfo->HasEppCode) {
                 $domInfo = $this->client()->domainInfo($domain);
-                return EppCodeResult::create()
-                    ->setEppCode($domInfo->authID);
-            } else
-                return $this->errorResult($this->client()->domainAuthID($domain, 1)->MESSAGE);
+                return EppCodeResult::create()->setEppCode($domInfo->authID);
+            }
+
+            $this->errorResult($this->client()->domainAuthID($domain, 1)->MESSAGE);
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
-
+    /**
+     * @throws NetimAPIException
+     */
     protected function client(): APIRest
     {
-        $url = $this->configuration->Sandbox ? 'http://oterest.netim.com/1.0/' : 'https://rest.netim.com/1.0/';
-        return $this->client ??= new APIRest($this->configuration->Username, $this->configuration->Das_Password, $url);
+        $url = (bool) $this->configuration->sandbox === true
+            ? 'http://oterest.netim.com/1.0/'
+            : 'https://rest.netim.com/1.0/';
+
+        if ($this->client === null) {
+            $this->client = new APIRest($this->configuration->username, $this->configuration->password, $url);
+        }
+
+        return $this->client;
     }
 
 
-    // Utils function 
+    // Utils function
     protected function nsParser(array $ns): array
     {
         $return = [];
@@ -515,6 +504,10 @@ class Provider extends DomainNames implements ProviderInterface
         return $return;
     }
 
+    /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionProviders\DomainNames\Netim\Helper\NetimAPIException
+     */
     protected function getContact($id): ContactData
     {
 
@@ -522,7 +515,7 @@ class Provider extends DomainNames implements ProviderInterface
         return ContactData::create()
             ->setName($contact->firstName . ' ' . $contact->lastName)
             ->setEmail($contact->email)
-            ->setOrganisation($contact->bodyName != "" ? $contact->bodyName : null)
+            ->setOrganisation($contact->bodyName !== '' ? $contact->bodyName : null)
             ->setPhone(Utils::eppPhoneToInternational($contact->phone))
             ->setAddress1($contact->address1 . ' ' . $contact->address2)
             ->setCity($contact->city)
@@ -531,6 +524,10 @@ class Provider extends DomainNames implements ProviderInterface
             ->setCountryCode($contact->country);
     }
 
+    /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionProviders\DomainNames\Netim\Helper\NetimAPIException
+     */
     protected function getDomainInfo($domain): DomainResult
     {
         $domainInfo = $this->client()->domainInfo($domain);
@@ -568,50 +565,73 @@ class Provider extends DomainNames implements ProviderInterface
             ->setAdmin(isset($domainInfo->idAdmin) ? $this->getContact($domainInfo->idAdmin) : null)
             ->setTech(isset($domainInfo->idTech) ? $this->getContact($domainInfo->idTech) : null)
             ->setBilling(isset($domainInfo->idBilling) ? $this->getContact($domainInfo->idBilling) : null)
-            ->setCreatedAt(isset($domainInfo->dateCreate) ? new DateTime($domainInfo->dateCreate) : null)
-            ->setExpiresAt(isset($domainInfo->dateExpiration) ? new DateTime($domainInfo->dateExpiration) : null)
+            ->setCreatedAt(isset($domainInfo->dateCreate)
+                ? DateTimeImmutable::createFromFormat('Y-m-d', $domainInfo->dateCreate)
+                : null
+            )
+            ->setExpiresAt(isset($domainInfo->dateExpiration)
+                ? DateTimeImmutable::createFromFormat('Y-m-d', $domainInfo->dateExpiration)
+                : null
+            )
             ->setUpdatedAt(null);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     protected function createContact($params, $isOwner = 0)
     {
         try {
-            $firstName = strstr($params->name, ' ', true);
-            $lastName = strstr($params->name, ' ');
+            $nameArray = $this->splitFullName($params->name);
 
-            $normalizedContact = new NormalizedContact(isset($firstName) ? $firstName : "", isset($lastName) ? $lastName : "", isset($params->organisation) ? $params->organisation : "", isset($params->address1) ? $params->address1 : "", isset($params->address2) ? $params->address2 : "", isset($params->postcode) ? $params->postcode : "", isset($params->state) ? $params->state : "", isset($params->country_code) ? $params->country_code : "", isset($params->city) ? $params->city : "",  isset($params->phone) ? $params->phone : "",  isset($params->email) ? $params->email : "", "en", $isOwner);
+            $normalizedContact = new NormalizedContact(
+                $nameArray['first_name'],
+                $nameArray['last_name'],
+                $params->organisation ?? '',
+                $params->address1 ?? '',
+                $params->address2 ?? '',
+                $params->postcode ?? '',
+                $params->state ?? '',
+                $params->country_code ?? '',
+                $params->city ?? '',
+                $params->phone ?? '',
+                $params->email ?? '',
+                'en',
+                $isOwner
+            );
             return $this->client()->contactCreate($normalizedContact->to_array());
         } catch (NetimAPIException $e) {
-            return $this->errorResult($e->getMessage());
+            $this->errorResult($e->getMessage());
         }
     }
 
     protected function normalizeContactToArray($params, $isOwner = 0): array
     {
-        $firstName = explode(" ", $params->name)[0];
-        $lastName = explode(" ", $params->name)[1];
+        $nameArray = $this->splitFullName($params->name);
 
         $normalizedContact = new NormalizedContact(
-            isset($firstName) ? $firstName : "",
-            isset($lastName) ? $lastName : "",
-            isset($params->bodyName) ? $params->bodyName : "",
-            isset($params->address1) ? $params->address1 : "",
-            isset($params->address2) ? $params->address2 : "",
-            isset($params->postcode) ? $params->postcode : "",
-            isset($params->state) ? $params->state : "",
-            isset($params->country_code) ? $params->country_code : "",
-            isset($params->city) ? $params->city : "",
-            isset($params->phone) ? $params->phone : "",
-            isset($params->email) ? $params->email : "",
-            "en",
+            $nameArray['first_name'],
+            $nameArray['last_name'],
+            $params->bodyName ?? '',
+            $params->address1 ?? '',
+            $params->address2 ?? '',
+            $params->postcode ?? '',
+            $params->state ?? '',
+            $params->country_code ?? '',
+            $params->city ?? '',
+            $params->phone ?? '',
+            $params->email ?? '',
+            'en',
             $isOwner
         );
+
         return $normalizedContact->to_array();
     }
 
     protected function getContactInfo($idContact): array
     {
         $contact = $this->client()->contactInfo($idContact);
+
         return [
             'name' => $contact->firstName . ' ' . $contact->lastName,
             'email' => $contact->email,
@@ -621,6 +641,29 @@ class Provider extends DomainNames implements ProviderInterface
             'state' => $contact->area,
             'postcode' => $contact->zipCode,
             'country_code' => $contact->country,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     first_name: string,
+     *     last_name: string
+     * }
+     */
+    private function splitFullName(string $name): array
+    {
+        // First, explode the name by spaces
+        $exploded = explode(' ', trim($name));
+
+        // Then, trim each element of the array
+        $trimmed = array_map('trim', $exploded);
+
+        // Now return an array with the first and last name
+        // The first name is the first element of the array
+        // The last name is the rest of the elements joined by a space
+        return [
+            'first_name' => $trimmed[0] ?? '',
+            'last_name' => isset($trimmed[1]) ? implode(' ', array_slice($trimmed, 1)) : '',
         ];
     }
 }

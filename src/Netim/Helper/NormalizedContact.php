@@ -1,214 +1,211 @@
 <?php
 
-namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper {
-    include_once "Contact.php";
+namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper;
 
-    use Upmind\ProvisionProviders\DomainNames\Netim\Helper\Contact;
+/**
+ * Handle all the normalization on fields needed for contact.
+ * Will be usefull for contactCreate, contactUpdate, contactOwnerUpdate...
+ *
+ * @param $firstName string first name of the contact
+ * @param $lastName string last name of the contact
+ * @param $bodyName string the name of the organization
+ * @param $address1 string first part of the address of the contact
+ * @param $address2 string second part of the address of the contact
+ * @param $zipCode string zipCode of the contact
+ * @param $state string state of the contact
+ * @param $countryCode string a valid country code defined by ISO 3166-1
+ * @param $city string city of the contact
+ * @param $phone string phone number of the contact
+ * @param $email string email of the contact
+ * @param $lang string language to display the message for the contact. Values are 'EN' or 'FR'
+ * @param $isOwner int determines if the contact is an owner
+ * @param $tmName string OPTIONAL trademark name
+ * @param $tmNumber string OPTIONAL trademark number
+ * @param $tmType string OPTIONAL trademark registry
+ * @param $tmDate string OPTIONAL
+ * @param $companyNumber string OPTIONAL organization number
+ * @param $vatNumber string OPTIONAL organisation VAT number
+ * @param $birthDate string OPTIONAL date of birth
+ * @param $birthZipCode string OPTIONAL postal code of birth
+ * @param $birthCity string OPTIONAL city of birth
+ * @param $birthCountry string OPTIONAL country of birth
+ * @param $idNumber string OPTIONAL personal id number
+ * @param $additional array OPTIONAL containing additional information that may be needed for some extensions but not all of them. See the extension documentation
+ */
+class NormalizedContact extends Contact
+{
+    private Normalization $norm;
 
-    require_once "Normalization.php";
+    public function __construct(
+        string $firstName,
+        string $lastName,
+        string $bodyName,
+        string $address1,
+        string $address2,
+        string $zipCode,
+        string $state,
+        string $countryCode,
+        string $city,
+        string $phone,
+        string $email,
+        string $lang,
+        int $isOwner,
+        ?string $tmName = "",
+        ?string $tmNumber = "",
+        ?string $tmType = "",
+        ?string $tmDate = "",
+        ?string $companyNumber = "",
+        ?string $vatNumber = "",
+        ?string $birthDate = "",
+        ?string $birthZipCode = "",
+        ?string $birthCity = "",
+        ?string $birthCountry = "",
+        ?string $idNumber = "",
+        ?array $additional = array()
+    ) {
+        $this->norm = new Normalization();
+
+        /** @var string $lastName */
+        $lastName = $this->norm->specialCharacter(trim($lastName));
+        $firstName = $this->norm->specialCharacter(trim($firstName));
+        $bodyForm = (empty(trim($bodyName))) ? "IND" : "ORG";
+        $bodyName = $this->norm->specialCharacter(trim($bodyName));
+        $address1 = $this->norm->specialCharacter(trim($address1));
+        $address2 = $this->norm->specialCharacter(trim($address2));
+        $country = $this->norm->country(trim($countryCode));
+        $city = $this->norm->specialCharacter(trim($city));
+        $area = $this->norm->state(trim($state), $country);
+        $phone = $this->norm->phoneNumber(trim($phone), $country);
+        // $phone      = $phone;
+        $fax = '';
+        $language = ($lang === 'FR') ? 'FR' : 'EN';
+
+        parent::__construct(
+            $firstName,
+            $lastName,
+            $bodyForm,
+            $bodyName,
+            $address1,
+            $address2,
+            $zipCode,
+            $area,
+            $city,
+            $country,
+            $phone,
+            $fax,
+            $email,
+            $language,
+            $isOwner,
+            $tmName ?? '',
+            $tmNumber ?? '',
+            $tmType ?? '',
+            $tmDate ?? '',
+            $companyNumber ?? '',
+            $vatNumber ?? '',
+            $birthDate ?? '',
+            $birthZipCode ?? '',
+            $birthCity ?? '',
+            $birthCountry ?? '',
+            $idNumber ?? '',
+            $additional ?? []
+        );
+    }
 
     /**
-     * Handle all the normalization on fields needed for contact.
-     * Will be usefull for contactCreate, contactUpdate, contactOwnerUpdate...
-     * 
+     * Set the value of firstName
      *
-     * @param $firstName string first name of the contact
-     * @param $lastName string last name of the contact
-     * @param $bodyName string the name of the organization
-     * @param $address1 string first part of the address of the contact
-     * @param $address2 string second part of the address of the contact
-     * @param $zipCode string zipCode of the contact
-     * @param $state string state of the contact
-     * @param $countryCode string a valid country code defined by ISO 3166-1
-     * @param $city string city of the contact
-     * @param $phone string phone number of the contact
-     * @param $email string email of the contact
-     * @param $lang string language to display the message for the contact. Values are 'EN' or 'FR'
-     * @param $isOwner int determines if the contact is an owner
-     * @param $tmName string OPTIONAL trademark name
-     * @param $tmNumber string OPTIONAL trademark number
-     * @param $tmType string OPTIONAL trademark registry
-     * @param $tmDate string OPTIONAL 
-     * @param $companyNumber string OPTIONAL organization number
-     * @param $vatNumber string OPTIONAL organisation VAT number
-     * @param $birthDate string OPTIONAL date of birth
-     * @param $birthZipCode string OPTIONAL postal code of birth
-     * @param $birthCity string OPTIONAL city of birth
-     * @param $birthCountry string OPTIONAL country of birth
-     * @param $idNumber string OPTIONAL personal id number
-     * @param $additional array OPTIONAL containing additional information that may be needed for some extensions but not all of them. See the extension documentation
+     * @return self
      */
-    class NormalizedContact extends Contact
+    public function setFirstName(string $firstName)
     {
-        private $norm;
-        public function __construct(
-            string $firstName,
-            string $lastName,
-            string $bodyName,
-            string $address1,
-            string $address2,
-            string $zipCode,
-            string $state,
-            string $countryCode,
-            string $city,
-            string $phone,
-            string $email,
-            string $lang,
-            int $isOwner,
-            ?string $tmName = "",
-            ?string $tmNumber = "",
-            ?string $tmType = "",
-            ?string $tmDate = "",
-            ?string $companyNumber = "",
-            ?string $vatNumber = "",
-            ?string $birthDate = "",
-            ?string $birthZipCode = "",
-            ?string $birthCity = "",
-            ?string $birthCountry = "",
-            ?string $idNumber = "",
-            ?array $additional = array()
-        ) {
-            $this->norm = new Normalization();
-            $lastName   = $this->norm->specialCharacter($lastName);
-            $firstName  = $this->norm->specialCharacter($firstName);
-            $bodyForm   = (empty($bodyName ?? "")) ? "IND" : "ORG";
-            $bodyName   = $this->norm->specialCharacter($bodyName);
-            $address1   = $this->norm->specialCharacter($address1);
-            $address2   = $this->norm->specialCharacter($address2 ?? "");
-            $country    = $this->norm->country($countryCode);
-            $city       = $this->norm->specialCharacter($city);
-            $area        = $this->norm->state($state, $country);
-            $phone      = $this->norm->phoneNumber($phone, $country);
-            // $phone      = $phone;
-            $fax        = '';
-            $language   = ($lang == 'FR') ? 'FR' : 'EN';
-            parent::__construct(
-                $firstName,
-                $lastName,
-                $bodyForm,
-                $bodyName,
-                $address1,
-                $address2,
-                $zipCode,
-                $area,
-                $city,
-                $country,
-                $phone,
-                $fax,
-                $email,
-                $language,
-                $isOwner,
-                $tmName ?? "",
-                $tmNumber ?? "",
-                $tmType ?? "",
-                $tmDate ?? "",
-                $companyNumber ?? "",
-                $vatNumber ?? "",
-                $birthDate ?? "",
-                $birthZipCode ?? "",
-                $birthCity ?? "",
-                $birthCountry ?? "",
-                $idNumber ?? "",
-                $additional ?? array()
-            );
-        }
+        parent::setFirstName($this->norm->specialCharacter($firstName));
 
+        return $this;
+    }
 
-        /**
-         * Set the value of firstName
-         *
-         * @return  self
-         */
-        public function setFirstName(string $firstName)
-        {
-            parent::setFirstName($this->norm->specialCharacter($firstName));
+    /**
+     * Set the value of lastName
+     *
+     * @return self
+     */
+    public function setLastName(string $lastName)
+    {
+        parent::setLastName($this->norm->specialCharacter($lastName));
 
-            return $this;
-        }
+        return $this;
+    }
 
-        /**
-         * Set the value of lastName
-         *
-         * @return  self
-         */
-        public function setLastName(string $lastName)
-        {
-            parent::setLastName($this->norm->specialCharacter($lastName));
+    /**
+     * Set the value of bodyName
+     *
+     * @return self
+     */
+    public function setBodyName(string $bodyName)
+    {
+        $this->setBodyForm((empty($bodyName)) ? "IND" : "ORG");
 
-            return $this;
-        }
+        parent::setBodyName($bodyName);
 
-        /**
-         * Set the value of bodyName
-         *
-         * @return  self
-         */
-        public function setBodyName(string $bodyName)
-        {
-            parent::setBodyForm((empty($bodyName)) ? "IND" : "ORG");
-            parent::setBodyName($bodyName);
+        return $this;
+    }
 
-            return $this;
-        }
+    /**
+     * Set the value of address1
+     *
+     * @return self
+     */
+    public function setAddress1(string $address1)
+    {
+        parent::setAddress1($this->norm->specialCharacter($address1));
 
-        /**
-         * Set the value of address1
-         *
-         * @return  self
-         */
-        public function setAddress1(string $address1)
-        {
-            parent::setAddress1($this->norm->specialCharacter($address1));
+        return $this;
+    }
 
-            return $this;
-        }
+    /**
+     * Set the value of address2
+     *
+     * @return self
+     */
+    public function setAddress2(string $address2)
+    {
+        parent::setAddress2($this->norm->specialCharacter($address2));
 
-        /**
-         * Set the value of address2
-         *
-         * @return  self
-         */
-        public function setAddress2(string $address2)
-        {
-            parent::setAddress2($this->norm->specialCharacter($address2));
+        return $this;
+    }
 
-            return $this;
-        }
+    /**
+     * Set the value of state
+     *
+     * @return self
+     */
+    public function setState(string $state)
+    {
+        $this->setArea($this->norm->state($state, $this->getCountry()));
 
-        /**
-         * Set the value of state
-         *
-         * @return  self
-         */
-        public function setState(string $state)
-        {
-            $this->setArea($this->norm->state($state, $this->getCountry()));
+        return $this;
+    }
 
-            return $this;
-        }
+    /**
+     * Set the value of city
+     *
+     * @return self
+     */
+    public function setCity(string $city)
+    {
+        parent::setCity($this->norm->specialCharacter($city));
 
-        /**
-         * Set the value of city
-         *
-         * @return  self
-         */
-        public function setCity(string $city)
-        {
-            parent::setCity($this->norm->specialCharacter($city));
+        return $this;
+    }
 
-            return $this;
-        }
+    /**
+     * Set the value of phone
+     *
+     * @return self
+     */
+    public function setPhone(string $phone)
+    {
+        parent::setPhone($this->norm->phoneNumber($phone, $this->getCountry()));
 
-        /**
-         * Set the value of phone
-         * 
-         * @return  self
-         */
-        public function setPhone(string $phone)
-        {
-            parent::setPhone($this->norm->phoneNumber($phone, $this->getCountry()));
-
-            return $this;
-        }
+        return $this;
     }
 }

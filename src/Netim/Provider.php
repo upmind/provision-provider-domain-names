@@ -38,9 +38,9 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Netim\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
-use Upmind\ProvisionProviders\DomainNames\Netim\Helper\Api\APIRest;
-use Upmind\ProvisionProviders\DomainNames\Netim\Helper\Api\NetimAPIException;
-use Netim\NormalizedContact;
+use Upmind\ProvisionProviders\DomainNames\Netim\Helper\APIRest;
+use Upmind\ProvisionProviders\DomainNames\Netim\Helper\NetimAPIException;
+use Upmind\ProvisionProviders\DomainNames\Netim\Helper\NormalizedContact;
 
 /**
  * Netim provider.
@@ -63,7 +63,7 @@ class Provider extends DomainNames implements ProviderInterface
         return AboutData::create()
             ->setName('Netim')
             ->setDescription('More than 1000 global extensions (ccTlds, gTlds, ngTlds) with a single registrar module');
-    }
+    } 
 
     /**
      * @inheritDoc

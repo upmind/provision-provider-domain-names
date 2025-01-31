@@ -1,9 +1,9 @@
 <?php
 
-namespace Netim {
+namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper {
     include_once "Contact.php";
 
-    use Netim\Contact;
+    use Upmind\ProvisionProviders\DomainNames\Netim\Helper\Contact;
 
     require_once "Normalization.php";
 

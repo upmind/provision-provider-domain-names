@@ -1,11 +1,9 @@
 <?php
 
-namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper\ {
+namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper {
     class Normalization
     {
-        public function __construct()
-        {
-        }
+        public function __construct() {}
 
         public function stripAccent($str)
         {
@@ -224,8 +222,34 @@ namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper\ {
         {
             // List of characters to replace by code point => replace value
             $car = [
-                33 => ".", 34 => "'", 35 => "", 36 => "", 37 => "", 40 => "", 41 => "", 42 => "", 43 => "", 58 => "", 59 => ".", 60 => "", 61 => "", 62 => "", 63 => "",
-                91 => "", 92 => "", 93 => "", 94 => "", 96 => "'", 123 => "", 124 => "", 125 => "", 171 => "'", 180 => "'", 8222 => " ", 8220 => "'", 8221 => "'"
+                33 => ".",
+                34 => "'",
+                35 => "",
+                36 => "",
+                37 => "",
+                40 => "",
+                41 => "",
+                42 => "",
+                43 => "",
+                58 => "",
+                59 => ".",
+                60 => "",
+                61 => "",
+                62 => "",
+                63 => "",
+                91 => "",
+                92 => "",
+                93 => "",
+                94 => "",
+                96 => "'",
+                123 => "",
+                124 => "",
+                125 => "",
+                171 => "'",
+                180 => "'",
+                8222 => " ",
+                8220 => "'",
+                8221 => "'"
             ];
 
             $patterns = [];

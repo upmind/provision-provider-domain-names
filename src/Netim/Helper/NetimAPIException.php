@@ -1,6 +1,6 @@
 <?php
 
-namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper\Api;
+namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper;
 // Generic class for a client API Exception. Used to standardize API Exceptions so the CMS code does not depend of the underlying architecture (SOAP, REST ...)
 class NetimAPIException extends \Exception
 {

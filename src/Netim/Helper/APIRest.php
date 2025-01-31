@@ -77,11 +77,8 @@
  * example, and it instanciates many APIRest objects without closing them, you may reach the limit of sessions you're allowed to open.
  */
 
-namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper\Api;
+namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper;
 
-require_once __DIR__ . '/NetimAPIException.php';
-
-use Upmind\ProvisionProviders\DomainNames\Netim\Helper\Api\NetimAPIException as NetimAPIException;
 use stdClass;
 
 class APIRest

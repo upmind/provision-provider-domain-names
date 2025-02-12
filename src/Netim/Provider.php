@@ -220,6 +220,15 @@ class Provider extends DomainNames implements ProviderInterface
         $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
 
         try {
+            // First check if domain already transferred, and return result with updated message.
+            $domainInfoResult = $this->getDomainInfo($domain);
+
+            $domainInfoResult->setMessage('Domain active in registrar account');
+        } catch (NetimAPIException $e) {
+            // If the domain does not exist, we can proceed with the transfer
+        }
+
+        try {
             // Registrant default placeholder.
             $registrant = '';
 

@@ -167,7 +167,17 @@ class Provider extends DomainNames implements ProviderInterface
             $domainCheck = $this->client()->domainCheck($domain);
 
             if (strtolower($domainCheck[0]->result) !== 'available') {
-                $this->errorResult('Domain ' . $domain . ' is not available');
+                $this->errorResult('Domain ' . $domain . ' is not available', [
+                    'function' => 'register',
+                    'domain' => $domain,
+                    'params' => $params->toArray(),
+                    'domain_check_result' => json_decode(
+                        json_encode($domainCheck, JSON_THROW_ON_ERROR),
+                        true,
+                        512,
+                        JSON_THROW_ON_ERROR
+                    ),
+                ]);
             }
 
             $registrant = $params->registrant['id'] ?? $this->createContact($params->registrant['register'], 1);
@@ -205,7 +215,16 @@ class Provider extends DomainNames implements ProviderInterface
                     ->setMessage('Your domain : ' . $domain . ' registration is pending');
             }
 
-            $this->errorResult($result->MESSAGE);
+            $this->errorResult($result->MESSAGE, [
+                'function' => 'register',
+                'params' => $params->toArray(),
+                'result' => json_decode(
+                    json_encode($result, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                ),
+            ]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -283,9 +302,10 @@ class Provider extends DomainNames implements ProviderInterface
 
             if ($result->STATUS === 'Pending') {
                 $this->errorResult('Your domain : ' . $domain . ' transfer is pending', [
+                    'function' => 'transfer',
                     'domain' => $domain,
-                    'request' => $params->toArray(),
-                    'response' => json_decode(
+                    'params' => $params->toArray(),
+                    'result' => json_decode(
                         json_encode($result, JSON_THROW_ON_ERROR),
                         true,
                         512,
@@ -295,8 +315,9 @@ class Provider extends DomainNames implements ProviderInterface
             }
 
             $this->errorResult($result->MESSAGE, [
-                'request' => $params->toArray(),
-                'response' => json_decode(
+                'function' => 'transfer',
+                'params' => $params->toArray(),
+                'result' => json_decode(
                     json_encode($result, JSON_THROW_ON_ERROR),
                     true,
                     512,
@@ -328,7 +349,16 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->getDomainInfo($domain)->setMessage('Your domain : ' . $domain . ' renew is pending');
             }
 
-            $this->errorResult($renew->MESSAGE);
+            $this->errorResult($renew->MESSAGE, [
+                'function' => 'renew',
+                'params' => $params->toArray(),
+                'result' => json_decode(
+                    json_encode($renew, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                ),
+            ]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -410,7 +440,16 @@ class Provider extends DomainNames implements ProviderInterface
                 ])->setMessage('Your domain : ' . $domain . ' update is pending');
             }
 
-            $this->errorResult($result->MESSAGE);
+            $this->errorResult($result->MESSAGE, [
+                'function' => 'updateNameservers',
+                'params' => $params->toArray(),
+                'result' => json_decode(
+                    json_encode($result, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                ),
+            ]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -437,7 +476,16 @@ class Provider extends DomainNames implements ProviderInterface
                     ->setMessage('Your domain : ' . $domain . ' has been ' . ($params->lock ? 'locked' : 'unlocked') . ' successfully');
             }
 
-            $this->errorResult($return->MESSAGE);
+            $this->errorResult($return->MESSAGE, [
+                'function' => 'setLock',
+                'params' => $params->toArray(),
+                'result' => json_decode(
+                    json_encode($return, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                ),
+            ]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -465,7 +513,16 @@ class Provider extends DomainNames implements ProviderInterface
                 );
             }
 
-            $this->errorResult($return->MESSAGE);
+            $this->errorResult($return->MESSAGE, [
+                'function' => 'setAutoRenew',
+                'params' => $params->toArray(),
+                'result' => json_decode(
+                    json_encode($return, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                ),
+            ]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }
@@ -485,7 +542,18 @@ class Provider extends DomainNames implements ProviderInterface
                 return EppCodeResult::create()->setEppCode($domInfo->authID);
             }
 
-            $this->errorResult($this->client()->domainAuthID($domain, 1)->MESSAGE);
+            $domainAuthIdResult = $this->client()->domainAuthID($domain, 1);
+
+            $this->errorResult($domainAuthIdResult->MESSAGE, [
+                'function' => 'getEppCode',
+                'params' => $params->toArray(),
+                'result' => json_decode(
+                    json_encode($domainAuthIdResult, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                ),
+            ]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }

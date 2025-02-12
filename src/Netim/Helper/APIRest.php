@@ -79,6 +79,7 @@
 
 namespace Upmind\ProvisionProviders\DomainNames\Netim\Helper;
 
+use Psr\Log\LoggerInterface;
 use stdClass;
 
 class APIRest
@@ -99,6 +100,7 @@ class APIRest
     private $_lastHttpStatus;
     private $_lastResponse;
     private $_lastError;
+    private LoggerInterface $logger;
 
     /**
      * Constructor for class APIRest
@@ -110,7 +112,7 @@ class APIRest
      *
      * @see http://semver.org/ Semantic Versionning by Tom Preston-Werner
      */
-    public function __construct(string $userId, string $secret, string $url)
+    public function __construct(string $userId, string $secret, string $url, LoggerInterface $logger)
     {
         register_shutdown_function([&$this, "__destruct"]);
         // Init variables
@@ -123,6 +125,7 @@ class APIRest
         $this->_userID = $userId;
         $this->_secret = $secret;
         $this->_apiURL = $url;
+        $this->logger = $logger;
         $this->_defaultLanguage = 'EN';
     }
 
@@ -207,6 +210,12 @@ class APIRest
         $this->_lastError = "";
 
         $params['source'] = 'UPMIND=,PLUGIN=' . self::NETIM_MODULE_VERSION;
+
+        $this->logger->debug('Netim API Request', [
+            'uri' => $resource,
+            'http_method' => $httpVerb,
+            'request_params' => $params,
+        ]);
 
         try {
             //login
@@ -293,6 +302,14 @@ class APIRest
             $this->_lastError = $exception->getMessage();
             throw $exception;
         }
+
+        $this->logger->debug('Netim API Response', [
+            'uri' => $resource,
+            'http_method' => $httpVerb,
+            'request_params' => $params,
+            'response_status' => $status_code,
+            'response_result' => $json,
+        ]);
 
         if (is_array($result)) {
             if (!$this->isObject($result)) {

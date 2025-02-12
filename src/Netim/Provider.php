@@ -509,7 +509,12 @@ class Provider extends DomainNames implements ProviderInterface
             : 'https://rest.netim.com/1.0/';
 
         if ($this->client === null) {
-            $this->client = new APIRest($this->configuration->username, $this->configuration->password, $url);
+            $this->client = new APIRest(
+                $this->configuration->username,
+                $this->configuration->password,
+                $url,
+                $this->getLogger()
+            );
         }
 
         return $this->client;

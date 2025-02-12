@@ -282,11 +282,27 @@ class Provider extends DomainNames implements ProviderInterface
             }
 
             if ($result->STATUS === 'Pending') {
-                return $this->getDomainInfo($domain)
-                    ->setMessage('Your domain : ' . $domain . ' transfer is pending');
+                $this->errorResult('Your domain : ' . $domain . ' transfer is pending', [
+                    'domain' => $domain,
+                    'request' => $params->toArray(),
+                    'response' => json_decode(
+                        json_encode($result, JSON_THROW_ON_ERROR),
+                        true,
+                        512,
+                        JSON_THROW_ON_ERROR
+                    ),
+                ]);
             }
 
-            $this->errorResult($result->MESSAGE);
+            $this->errorResult($result->MESSAGE, [
+                'request' => $params->toArray(),
+                'response' => json_decode(
+                    json_encode($result, JSON_THROW_ON_ERROR),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                ),
+            ]);
         } catch (NetimAPIException $e) {
             $this->errorResult($e->getMessage());
         }

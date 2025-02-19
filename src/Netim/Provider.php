@@ -56,7 +56,7 @@ class Provider extends DomainNames implements ProviderInterface
         return AboutData::create()
             ->setName('Netim')
             ->setDescription('More than 1000 global extensions (ccTlds, gTlds, ngTlds) with a single registrar module')
-            ->setLogoUrl('https://api.upmind.io/imagesimages/logos/provision/netim-logo.png');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/netim-logo.png');
     }
 
     /**

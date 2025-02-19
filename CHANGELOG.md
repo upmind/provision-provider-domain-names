@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.28](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.28) - 2025-02-19
+
+- Implement Netim provider
+
 ## [v2.12.27](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.27) - 2025-01-21
 
 - Fix LogicBoxes\Provider::_parseContactInfo() where company is missing

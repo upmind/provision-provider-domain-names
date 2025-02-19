@@ -246,9 +246,7 @@ class APIRest
             curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
 
-            $this->logger->debug('Netim API Request', [
-                'uri' => $this->_apiURL . $resource,
-                'http_method' => $httpVerb,
+            $this->logger->debug(sprintf('Netim API Request: %s %s', $httpVerb, $this->_apiURL . $resource), [
                 'request_params' => $params,
             ]);
 
@@ -257,8 +255,7 @@ class APIRest
             $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            $this->logger->debug('Netim API Response', [
-                'response_status' => $status_code,
+            $this->logger->debug(sprintf('Netim API Response: %s', $status_code), [
                 'response_result' => $result ?? $json,
             ]);
 

@@ -25,6 +25,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
+use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
@@ -703,6 +704,9 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @param \Upmind\ProvisionProviders\DomainNames\Data\ContactParams $params
+     */
     protected function normalizeContactToArray($params, $isOwner = 0): array
     {
         $nameArray = $this->splitFullName($params->name);
@@ -710,7 +714,7 @@ class Provider extends DomainNames implements ProviderInterface
         $normalizedContact = new NormalizedContact(
             $nameArray['first_name'],
             $nameArray['last_name'],
-            $params->bodyName ?? '',
+            $params->organisation ?? '',
             $params->address1 ?? '',
             $params->address2 ?? '',
             $params->postcode ?? '',
@@ -735,6 +739,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         return [
             'name' => $contact->firstName . ' ' . $contact->lastName,
+            'organisation' => $contact->bodyName,
             'email' => $contact->email,
             'phone' => $contact->phone,
             'address1' => $contact->address1,

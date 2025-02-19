@@ -207,12 +207,12 @@ class Provider extends DomainNames implements ProviderInterface
             );
 
             if ($result->STATUS === 'Done') {
-                return $this->getDomainInfo($domain)
+                return $this->getDomainInfo($domain, false)
                     ->setMessage('Your domain : ' . $domain . ' has been registered successfully');
             }
 
             if ($result->STATUS === 'Pending') {
-                return $this->getDomainInfo($domain)
+                return $this->getDomainInfo($domain, false)
                     ->setMessage('Your domain : ' . $domain . ' registration is pending');
             }
 
@@ -627,9 +627,17 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionProviders\DomainNames\Netim\Helper\NetimAPIException
      */
-    protected function getDomainInfo($domain): DomainResult
+    protected function getDomainInfo(string $domain, bool $throwErrorIfPending = true): DomainResult
     {
         $domainInfo = $this->client()->domainInfo($domain);
+        if ($throwErrorIfPending && strtoupper((string)$domainInfo->status) === 'PENDING') {
+            $this->errorResult('Domain ' . $domain . ' is pending', [
+                'function' => 'getDomainInfo',
+                'domain' => $domain,
+                'domain_info' => (array)$domainInfo,
+            ]);
+        }
+
         $status = array_map('trim', explode(',', $domainInfo->status));
 
         if (isset($domainInfo->ns) && !empty($domainInfo->ns)) {

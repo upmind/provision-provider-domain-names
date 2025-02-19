@@ -8,8 +8,8 @@ use Upmind\ProvisionBase\Provider\DataSet\DataSet;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
 /**
- * @property-read string $username Login id
- * @property-read string $password API token
+ * @property-read string $customer_reference Login id
+ * @property-read string $api_password API token
  * @property-read bool|null $sandbox Make API requests against the sandbox environment
  */
 class Configuration extends DataSet
@@ -17,8 +17,8 @@ class Configuration extends DataSet
     public static function rules(): Rules
     {
         return new Rules([
-            'username' => ['required', 'string', 'min:3'],
-            'password' => ['required', 'string', 'min:6'],
+            'customer_reference' => ['required', 'string', 'min:3'],
+            'api_password' => ['required', 'string', 'min:6'],
             'sandbox' => ['nullable', 'boolean'],
         ]);
     }

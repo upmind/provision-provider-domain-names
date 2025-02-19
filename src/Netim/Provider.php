@@ -578,8 +578,8 @@ class Provider extends DomainNames implements ProviderInterface
 
         if ($this->client === null) {
             $this->client = new APIRest(
-                $this->configuration->username,
-                $this->configuration->password,
+                $this->configuration->customer_reference,
+                $this->configuration->api_password,
                 $url,
                 $this->getLogger()
             );

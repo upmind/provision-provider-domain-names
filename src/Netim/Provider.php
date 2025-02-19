@@ -654,7 +654,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         return DomainResult::create()
-            ->setId($domainInfo->authID)
+            ->setId($domain)
             ->setDomain($domain)
             ->setStatuses($status)
             ->setLocked($domainInfo->domainIsLock === 1)

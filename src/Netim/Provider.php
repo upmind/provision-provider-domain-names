@@ -629,7 +629,7 @@ class Provider extends DomainNames implements ProviderInterface
     protected function getDomainInfo($domain): DomainResult
     {
         $domainInfo = $this->client()->domainInfo($domain);
-        $status = explode(',', $domainInfo->status);
+        $status = array_map('trim', explode(',', $domainInfo->status));
 
         if (isset($domainInfo->ns) && !empty($domainInfo->ns)) {
             $nsGet = $this->nsParser($domainInfo->ns);

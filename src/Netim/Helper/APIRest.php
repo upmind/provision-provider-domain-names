@@ -211,12 +211,6 @@ class APIRest
 
         $params['source'] = 'UPMIND=,PLUGIN=' . self::NETIM_MODULE_VERSION;
 
-        $this->logger->debug('Netim API Request', [
-            'uri' => $resource,
-            'http_method' => $httpVerb,
-            'request_params' => $params,
-        ]);
-
         try {
             //login
             if (!$this->_connected) {
@@ -251,10 +245,22 @@ class APIRest
             curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
             curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+
+            $this->logger->debug('Netim API Request', [
+                'uri' => $this->_apiURL . $resource,
+                'http_method' => $httpVerb,
+                'request_params' => $params,
+            ]);
+
             $json = curl_exec($ch);
             $result = json_decode($json, true);
             $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
+
+            $this->logger->debug('Netim API Response', [
+                'response_status' => $status_code,
+                'response_result' => $result ?? $json,
+            ]);
 
             $this->_lastHttpStatus = $status_code;
 
@@ -302,14 +308,6 @@ class APIRest
             $this->_lastError = $exception->getMessage();
             throw $exception;
         }
-
-        $this->logger->debug('Netim API Response', [
-            'uri' => $resource,
-            'http_method' => $httpVerb,
-            'request_params' => $params,
-            'response_status' => $status_code,
-            'response_result' => $json,
-        ]);
 
         if (is_array($result)) {
             if (!$this->isObject($result)) {

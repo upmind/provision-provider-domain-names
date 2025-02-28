@@ -35,6 +35,7 @@ use Upmind\ProvisionProviders\DomainNames\InternetX\Provider as InternetX;
 use Upmind\ProvisionProviders\DomainNames\EURID\Provider as EURID;
 use Upmind\ProvisionProviders\DomainNames\TPPWholesale\Provider as TPPWholesale;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Provider as SynergyWholesale;
+use Upmind\ProvisionProviders\DomainNames\Netim\Provider as Netim;
 use Upmind\ProvisionProviders\DomainNames\TwentyI\Provider as TwentyI;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
@@ -74,6 +75,7 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('domain-names', 'eurid', EURID::class);
         $this->bindProvider('domain-names', 'tpp-wholesale', TPPWholesale::class);
         $this->bindProvider('domain-names', 'synergy-wholesale', SynergyWholesale::class);
+        $this->bindProvider('domain-names', 'netim', Netim::class);
         $this->bindProvider('domain-names', '20i', TwentyI::class);
     }
 }

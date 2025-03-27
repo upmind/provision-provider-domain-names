@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.29](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.29) - 2025-03-27
+
+- Replace hexonet/php-sdk dependency with upmind/hexonet-php-sdk
+
 ## [v2.12.28](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.28) - 2025-02-19
 
 - Implement Netim provider

@@ -99,7 +99,7 @@ class SynergyWholesaleApi
 
     private function getResponseErrorMessage(string $command, array $responseData)
     {
-        if ($responseData['status'] != "OK") {
+        if (!in_array((string)$responseData['status'], ['OK', 'OK_ELIGIBILITY'])) {
             $errorMessage = 'Unknown error';
             if (isset($responseData['errorMessage'])) {
                 $errorMessage = $responseData['errorMessage'];
@@ -114,6 +114,17 @@ class SynergyWholesaleApi
         return $errorMessage ?? null;
     }
 
+    public function getDomainEligibilityFields(string $tld): array
+    {
+        $command = 'getDomainEligibilityFields';
+        $params = [
+            'extension' => $tld,
+        ];
+
+        $response = $this->makeRequest($command, $params);
+
+        return $response['fields'] ?? [];
+    }
 
     public function getDomainInfo(string $domainName): array
     {
@@ -286,15 +297,22 @@ class SynergyWholesaleApi
     }
 
 
-    public function register(string $domainName, int $years, array $contacts, array $nameServers)
-    {
+    public function register(
+        string $domainName,
+        int $years,
+        array $contacts,
+        array $nameServers,
+        bool $idProtect = false,
+        ?array $eligibilityFieldValues = null
+    ) {
         $command = 'domainRegister';
 
         $params = [
             'domainName' => $domainName,
             'years' => $years,
             'nameServers' => $nameServers,
-            'idProtect' => ''
+            'idProtect' => $idProtect,
+            'eligibility' => $eligibilityFieldValues ? json_encode($eligibilityFieldValues) : null,
         ];
 
         foreach ($contacts as $type => $contact) {

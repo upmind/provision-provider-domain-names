@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.32](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.32) - 2025-04-01
+
+- Fix DomainNameApi handling of domains without contacts
+
 ## [v2.12.31](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.31) - 2025-04-01
 
 - Update SynergyWholesaleApi::parseContact() to handle missing values

@@ -2,14 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
-## [v2.18.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.3) - 2025-04-01
-
-- Fix DomainNameApi handling of domains without contacts
-
 ## [v2.18.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.2) - 2025-04-01
 
 - Update SynergyWholesaleApi::parseContact() to handle missing values
 - Update SynergyWholesaleApi add support for eligibility fields during register
+- Fix DomainNameApi handling of domains without contacts
 
 ## [v2.18.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.1) - 2025-04-01
 
@@ -113,14 +110,11 @@ All notable changes to the package will be documented in this file.
 
 - Update library for PHP 8 + Base lib v4
 
-## [v2.12.32](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.32) - 2025-04-01
-
-- Fix DomainNameApi handling of domains without contacts
-
-## [v2.12.31](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.31) - 2025-04-01
+### [v2.12.31](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.31) - 2025-04-01
 
 - Update SynergyWholesaleApi::parseContact() to handle missing values
 - Update SynergyWholesaleApi add support for eligibility fields during register
+- Fix DomainNameApi handling of domains without contacts
 
 ## [v2.12.30](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.30) - 2025-04-01
 

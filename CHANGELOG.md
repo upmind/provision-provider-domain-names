@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.1) - 2025-04-01
+
+- Update SynergyWholesale provider configuration to optionally override default API hostname
+
 ## [v2.18.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.0) - 2025-02-19
 
 - Implement Netim provider
@@ -99,6 +103,14 @@ All notable changes to the package will be documented in this file.
 ## [v2.13.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.0) - 2024-07-29
 
 - Update library for PHP 8 + Base lib v4
+
+## [v2.12.30](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.30) - 2025-04-01
+
+- Update SynergyWholesale provider configuration to optionally override default API hostname
+
+## [v2.12.29](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.29) - 2025-03-27
+
+- Replace hexonet/php-sdk dependency with upmind/hexonet-php-sdk
 
 ## [v2.12.28](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.28) - 2025-02-19
 

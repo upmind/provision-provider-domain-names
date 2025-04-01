@@ -358,15 +358,27 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @return ContactResult[]|array<string,ContactResult>
      */
-    protected function getContactResults(string $domainName): array
+    protected function getContactResults(string $domainName, bool $throwIfMissing = true): array
     {
         $request = (new GetContactsRequest())
             ->setDomainName($domainName);
         $response = $this->api()->GetContacts(new GetContacts($request));
         $result = $response->getGetContactsResult();
 
+        if ($result === null) {
+            if ($throwIfMissing) {
+                $this->errorResult('Domain Contact details not found');
+            }
+
+            return [];
+        }
+
         if (!$result->getRegistrantContact()) {
-            $this->handleApiErrorResult($result, self::ERR_REGISTRANT_NOT_SET);
+            if ($throwIfMissing) {
+                $this->handleApiErrorResult($result, self::ERR_REGISTRANT_NOT_SET);
+            }
+
+            return [];
         }
 
         return [
@@ -418,8 +430,14 @@ class Provider extends DomainNames implements ProviderInterface
 
     protected function domainInfoToResult(DomainInfo $domainInfo): DomainResult
     {
-        $contacts = $this->getContactResults($domainInfo->getDomainName());
-        $nameservers = collect($domainInfo->getNameServerList()->getString())
+        $contacts = $this->getContactResults($domainInfo->getDomainName(), false);
+
+        $nameServersList = $domainInfo->getNameServerList();
+
+        // Empty array if nameServersList is null.
+        /** @var \Illuminate\Support\Collection $nameServersCollection */
+        $nameServersCollection = collect($nameServersList !== null ? $nameServersList->getString() : []);
+        $nameservers = $nameServersCollection
             ->mapWithKeys(fn ($host, $i) => ['ns' . ($i + 1) => ['host' => $host]]);
 
         $statuses = collect([$domainInfo->getStatus() ?? 'Unknown', $domainInfo->getStatusCode()])
@@ -434,10 +452,10 @@ class Provider extends DomainNames implements ProviderInterface
             'domain' => $domainInfo->getDomainName(),
             'statuses' => $statuses,
             'locked' => $domainInfo->getLockStatus(),
-            'registrant' => $contacts['registrant'],
-            'billing' => $contacts['billing'],
-            'tech' => $contacts['tech'],
-            'admin' => $contacts['admin'],
+            'registrant' => $contacts['registrant'] ?? null,
+            'billing' => $contacts['billing'] ?? null,
+            'tech' => $contacts['tech'] ?? null,
+            'admin' => $contacts['admin'] ?? null,
             'ns' => $nameservers,
             'created_at' => $this->formatDate($domainInfo->getTransferDate() ?? $domainInfo->getStartDate()),
             'updated_at' => $this->formatDate($domainInfo->getUpdatedDate()),

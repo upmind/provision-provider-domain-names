@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.31](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.31) - 2025-04-01
+
+- Update SynergyWholesaleApi::parseContact() to handle missing values
+- Update SynergyWholesaleApi add support for eligibility fields during register
+
 ## [v2.12.30](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.30) - 2025-04-01
 
 - Update SynergyWholesale provider configuration to optionally override default API hostname

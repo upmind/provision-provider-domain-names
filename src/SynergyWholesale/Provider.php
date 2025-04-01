@@ -307,8 +307,10 @@ class Provider extends DomainNames implements ProviderInterface
             return $this->api;
         }
 
+        $hostname = $this->configuration->custom_api_hostname ?: 'api.synergywholesale.com';
+
         try {
-            $client = new SoapClient("https://api.synergywholesale.com/?wsdl");
+            $client = new SoapClient(sprintf('https://%s/?wsdl', $hostname));
 
             return $this->api = new SynergyWholesaleApi($client, $this->configuration, $this->getLogger());
         } catch (Throwable $e) {

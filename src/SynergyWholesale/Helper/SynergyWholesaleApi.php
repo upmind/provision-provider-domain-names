@@ -401,14 +401,14 @@ class SynergyWholesaleApi
     {
         return ContactData::create([
             'organisation' => $contact['organisation'] ?? null,
-            'name' => $contact['firstname'] . ' ' . $contact['lastname'],
-            'address1' => $contact['address1'],
+            'name' => implode(' ', [$contact['firstname'] ?? '', $contact['lastname'] ?? '']),
+            'address1' => $contact['address1'] ?? null,
             'city' => $contact['suburb'],
             'state' => $contact['state'] ?? null,
-            'postcode' => $contact['postcode'],
-            'country_code' => Utils::normalizeCountryCode($contact['country']),
-            'email' => $contact['email'],
-            'phone' => $contact['phone'],
+            'postcode' => $contact['postcode'] ?? null,
+            'country_code' => Utils::normalizeCountryCode($contact['country'] ?? null),
+            'email' => $contact['email'] ?? null,
+            'phone' => $contact['phone'] ?? null,
         ]);
     }
 

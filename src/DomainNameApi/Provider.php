@@ -424,7 +424,7 @@ class Provider extends DomainNames implements ProviderInterface
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    protected function getContactResults(string $domainName): array
+    protected function getContactResults(string $domainName, bool $throwIfMissing = true): array
     {
         $request = (new GetContactsRequest())
             ->setDomainName($domainName);
@@ -432,11 +432,19 @@ class Provider extends DomainNames implements ProviderInterface
         $result = $response->getGetContactsResult();
 
         if ($result === null) {
-            $this->errorResult('Domain Contact details not found');
+            if ($throwIfMissing) {
+                $this->errorResult('Domain Contact details not found');
+            }
+
+            return [];
         }
 
         if (!$result->getRegistrantContact()) {
-            $this->handleApiErrorResult($result, self::ERR_REGISTRANT_NOT_SET);
+            if ($throwIfMissing) {
+                $this->handleApiErrorResult($result, self::ERR_REGISTRANT_NOT_SET);
+            }
+
+            return [];
         }
 
         return [
@@ -491,7 +499,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function domainInfoToResult(DomainInfo $domainInfo): DomainResult
     {
-        $contacts = $this->getContactResults($domainInfo->getDomainName());
+        $contacts = $this->getContactResults($domainInfo->getDomainName(), false);
 
         $nameServersList = $domainInfo->getNameServerList();
 
@@ -515,10 +523,10 @@ class Provider extends DomainNames implements ProviderInterface
             'domain' => $domainInfo->getDomainName(),
             'statuses' => $statuses,
             'locked' => $domainInfo->getLockStatus(),
-            'registrant' => $contacts['registrant'],
-            'billing' => $contacts['billing'],
-            'tech' => $contacts['tech'],
-            'admin' => $contacts['admin'],
+            'registrant' => $contacts['registrant'] ?? null,
+            'billing' => $contacts['billing'] ?? null,
+            'tech' => $contacts['tech'] ?? null,
+            'admin' => $contacts['admin'] ?? null,
             'ns' => $nameservers,
             'created_at' => $this->formatDate($domainInfo->getTransferDate() ?? $domainInfo->getStartDate()),
             'updated_at' => $this->formatDate($domainInfo->getUpdatedDate()),

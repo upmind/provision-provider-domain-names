@@ -36,6 +36,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
+use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Helper\AdditionalFieldNormaliser;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Helper\SynergyWholesaleApi;
 
 class Provider extends DomainNames implements ProviderInterface
@@ -45,12 +46,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected Configuration $configuration;
 
-
     /**
      * @var SynergyWholesaleApi
      */
     protected SynergyWholesaleApi $api;
 
+    protected ?AdditionalFieldNormaliser $additionalFields;
 
     public function __construct(Configuration $configuration)
     {
@@ -101,12 +102,23 @@ class Provider extends DomainNames implements ProviderInterface
             SynergyWholesaleApi::CONTACT_TYPE_BILLING => $params->billing->register,
         ];
 
+        // $this->api()->getDomainEligibilityFields(Utils::normalizeTld($params->tld));
+
+        $eligibilityValues = $this->additionalFields()
+            ->normalise(
+                $params->tld,
+                $params->additional_fields,
+                $params->registrant->register
+            );
+
         try {
             $this->api()->register(
                 $domainName,
                 intval($params->renew_years),
                 $contacts,
                 $params->nameservers->pluckHosts(),
+                (bool)$params->whois_privacy,
+                $eligibilityValues
             );
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
@@ -316,5 +328,14 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (Throwable $e) {
             $this->handleException($e);
         }
+    }
+
+    protected function additionalFields(): AdditionalFieldNormaliser
+    {
+        if (isset($this->additionalFields)) {
+            return $this->additionalFields;
+        }
+
+        return $this->additionalFields = new AdditionalFieldNormaliser();
     }
 }

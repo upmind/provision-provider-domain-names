@@ -819,7 +819,7 @@ class Provider extends DomainNames implements ProviderInterface
         string $email,
         string $telephone,
         string $name,
-        string $organization = null,
+        ?string $organization,
         string $address,
         string $postcode,
         string $city,

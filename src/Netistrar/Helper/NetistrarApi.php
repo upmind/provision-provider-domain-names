@@ -31,19 +31,22 @@ class NetistrarApi
     protected Client $client;
     protected Configuration $configuration; 
 
-    public const CONTACT_LTD="LTD"; // UK Limited Company
-    public const CONTACT_PLC = "PLC"; // UK Public Limited Company
-    public const CONTACT_PTNR = "PTNR"; // UK Partnership
-    public const CONTACT_STRA = "STRA"; // UK Sole Trader
-    public const CONTACT_LLP = "LLP"; // UK Limited Liability Partnership
-    public const CONTACT_IP = "IP"; // UK Industrial/Provident Company
-    public const CONTACT_IND = "IND"; // UK Individual (natural person)
-    public const CONTACT_SCH = "SCH"; // UK School 
-    public const CONTACT_RCHAR = "RCHAR"; // UK Registered Charity 
-    public const CONTACT_GOV = "GOV"; // UK Government Body 
-    public const CONTACT_CRC = "CRC"; // UK Corporation by Royal Charter
-    public const CONTACT_STAT = "STAT"; // UK Statutory Body
-    public const CONTACT_OTHER = "OTHER"; // UK Entity that does not fit into any of the above (clubs, associations, etc)
+    enum NominetRegistrantType: string
+    {
+        case LTD = "LTD"; // UK Limited Company
+        case PLC = "PLC"; // UK Public Limited Company
+        case PTNR = "PTNR"; // UK Partnership
+        case STRA = "STRA"; // UK Sole Trader
+        case LLP = "LLP"; // UK Limited Liability Partnership
+        case IP = "IP"; // UK Industrial/Provident Company
+        case IND = "IND"; // UK Individual (natural person)
+        case SCH = "SCH"; // UK School
+        case RCHAR = "RCHAR"; // UK Registered Charity
+        case GOV = "GOV"; // UK Government Body
+        case CRC = "CRC"; // UK Corporation by Royal Charter
+        case STAT = "STAT"; // UK Statutory Body
+        case OTHER = "OTHER"; // Other entities (clubs, associations, etc.)
+    }
 
     public function __construct(Client $client, Configuration $configuration)
     {
@@ -52,25 +55,10 @@ class NetistrarApi
     }
 
     /**
-     * Returns an array of Nominet registrant types that are valid for UK domains.
+     * Returns an array of Nominet registrant types that are valid for UK domains, utilizing enums.
      */
     private static function getNominentRegistrantTypes() : array {
-        // Nominet registrant types
-        return [
-            self::CONTACT_LTD, 
-            self::CONTACT_PLC, 
-            self::CONTACT_PTNR, 
-            self::CONTACT_STRA, 
-            self::CONTACT_LLP, 
-            self::CONTACT_IP, 
-            self::CONTACT_IND, 
-            self::CONTACT_SCH, 
-            self::CONTACT_RCHAR, 
-            self::CONTACT_GOV, 
-            self::CONTACT_CRC, 
-            self::CONTACT_STAT, 
-            self::CONTACT_OTHER
-        ];
+        return array_map(fn($type) => $type->value, NominetRegistrantType::cases());
     }
 
     /**
@@ -252,7 +240,6 @@ class NetistrarApi
         $endpoint = "domains/renew/{$domainName}/{$params->renew_years}/";
 
         $query = [];
-        // $query['premiumRenewalCode'] = $params->premiumRenewalCode; //TODO: acquire & renew with premium renewal code automagically?
         return $this->apiCall($endpoint, $query, [], 'GET');//yes, new is a GET request
     }
 
@@ -326,8 +313,6 @@ class NetistrarApi
             'transferIdentifiers' => [ $transferIdentifier ],
             'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $is_uk_domain),
             'privacyProxy' => $params->whois_privacy ? 0 : 1,
-            //TODO: add `autoRenew`
-            //TODO: add `premiumTransferCodes`
         ];
 
         if (isset($params->admin->register)) {

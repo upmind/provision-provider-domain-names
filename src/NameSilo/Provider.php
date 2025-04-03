@@ -263,14 +263,14 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $info = $this->_getDomain($domain, 'Domain active in registrar account', false);
 
-            if (in_array(['Active'], $info->statuses)) {
+            if (in_array('Active', $info->statuses)) {
                 return $info;
             }
 
             if ($transferStatus && $this->transferStatusInProgress($transferStatus)) {
                 throw $this->errorResult(
                     sprintf('Domain transfer in progress since %s', $info->created_at),
-                    array_merge($info, ['transfer_status' => $transferStatus])
+                    array_merge(['transfer_status' => $transferStatus], $info->toArray())
                 );
             }
 

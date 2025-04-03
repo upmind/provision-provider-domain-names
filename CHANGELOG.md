@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.6) - 2025-04-03
+
+- Update DomainNameApi to fail gracefully when failing to connect
+
 ## [v2.18.5](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.5) - 2025-04-03
 
 - Fix Netim contact name parsing
@@ -121,6 +125,10 @@ All notable changes to the package will be documented in this file.
 ## [v2.13.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.0) - 2024-07-29
 
 - Update library for PHP 8 + Base lib v4
+
+## [v2.12.34](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.34) - 2025-04-03
+
+- Update DomainNameApi to fail gracefully when failing to connect
 
 ## [v2.12.33](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.33) - 2025-04-03
 

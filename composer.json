@@ -34,9 +34,9 @@
         "fakerphp/faker": "^1.0",
         "guzzlehttp/guzzle": "^6.3|^7.0",
         "metaregistrar/php-epp-client": "^1.0.12",
-        "pragmarx/countries": "^0.8.2",
         "propaganistas/laravel-phone": "^4.2 || ^5.0",
         "upmind/domainnameapi-sdk": "^1.1",
+        "upmind/pragmarx-countries": "^0.9.0",
         "upmind/provision-provider-base": "^4.0"
     },
     "require-dev": {

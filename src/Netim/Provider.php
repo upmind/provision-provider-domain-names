@@ -685,12 +685,16 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @param ContactParams $params
+     *
+     * @return string Contact ID
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function createContact($params, $isOwner = 0)
     {
         try {
-            $nameArray = $this->splitFullName($params->name);
+            $nameArray = $this->splitFullName($params->name ?: $params->organisation);
 
             $normalizedContact = new NormalizedContact(
                 $nameArray['first_name'],
@@ -718,7 +722,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function normalizeContactToArray($params, $isOwner = 0): array
     {
-        $nameArray = $this->splitFullName($params->name);
+        $nameArray = $this->splitFullName($params->name ?: $params->organisation);
 
         $normalizedContact = new NormalizedContact(
             $nameArray['first_name'],

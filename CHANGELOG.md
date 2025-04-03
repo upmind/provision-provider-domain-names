@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.4](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.4) - 2025-04-03
+
+- Fix Namesilo transfer() error for completed domain transfers
+
 ## [v2.18.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.3) - 2025-04-03
 
 - Replace pragmarx/countries with fork for php 8 + psr/simple-cache 3 compatibility
@@ -113,6 +117,10 @@ All notable changes to the package will be documented in this file.
 ## [v2.13.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.0) - 2024-07-29
 
 - Update library for PHP 8 + Base lib v4
+
+### [v2.12.32](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.32) - 2025-04-01
+
+- Fix Namesilo transfer() error for completed domain transfers
 
 ### [v2.12.31](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.31) - 2025-04-01
 

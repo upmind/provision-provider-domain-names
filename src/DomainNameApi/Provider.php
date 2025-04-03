@@ -7,6 +7,7 @@ namespace Upmind\ProvisionProviders\DomainNames\DomainNameApi;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Throwable;
 use Upmind\DomainNameApiSdk\Client as DomainNameApiSdkClient;
 use Upmind\DomainNameApiSdk\ClientFactory;
 use Upmind\DomainNameApiSdk\SDK\ArrayType\ArrayOfstring;
@@ -537,11 +538,15 @@ class Provider extends DomainNames implements ProviderInterface
             return $this->apiClient;
         }
 
-        return $this->apiClient = (new ClientFactory())->create(
-            $this->configuration->username,
-            $this->configuration->password,
-            $this->configuration->sandbox ? ClientFactory::ENV_TEST : ClientFactory::ENV_LIVE,
-            $this->configuration->debug ? $this->getLogger() : null
-        );
+        try {
+            return $this->apiClient = (new ClientFactory())->create(
+                $this->configuration->username,
+                $this->configuration->password,
+                $this->configuration->sandbox ? ClientFactory::ENV_TEST : ClientFactory::ENV_LIVE,
+                $this->configuration->debug ? $this->getLogger() : null
+            );
+        } catch (Throwable $e) {
+            $this->errorResult('Failed to connect to API', ['exception' => $e->getMessage()], [], $e);
+        }
     }
 }

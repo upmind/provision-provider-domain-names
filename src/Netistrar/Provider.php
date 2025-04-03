@@ -75,7 +75,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
-        //TESTED - http://localhost:8000/provision_requests/324
         $sld = $params->sld;
         
         foreach ($params->tlds as $tld) {
@@ -107,13 +106,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
-        //TODO: verify "password" has no implementation
-        //TODO: if premium domain, handle premium registration code? request #335 was "premiumSupported"
-        //TODO: Leave auto renew to default to false?
-
-        //TESTED (UK): http://localhost:8000/provision_requests/334
-        //TESTED (NON-UK): http://localhost:8000/provision_requests/335
-        //TESTED FAILURE: http://localhost:8000/provision_requests/331
         $result = $this->api()->createDomain($params);
         return $this->getInfo(DomainInfoParams::create([
             'sld' => $params->sld,
@@ -126,9 +118,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function transfer(TransferParams $params): DomainResult
     {
-        //TESTED - http://localhost:8000/provision_requests/421
-        //TESTED FAILURE (domain already in account - transfer in create) - http://localhost:8000/provision_requests/412
-
         $result = $this->api()->transferDomain($params);
         
         $domainName = self::getDomainName($params);
@@ -142,9 +131,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function renew(RenewParams $params): DomainResult
     {
-        //TESTED - http://localhost:8000/provision_requests/337
-        //TESTED FAILURE - http://localhost:8000/provision_requests/340
-
         $this->api()->renewDomain($params);
         
         $domainName = self::getDomainName($params);
@@ -167,8 +153,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getInfo(DomainInfoParams $params): DomainResult
     {
-        //TESTED - http://localhost:8000/provision_requests/348
-        //TESTED FAILURE (Not owned domain) - TODO: handle error? http://localhost:8000/provision_requests/345 (internal provision provider error)
         $domainName = self::getDomainName($params);
 
         try {
@@ -183,8 +167,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        //TESTED - http://localhost:8000/provision_requests/364
-        //TESTED FAILURE (Not owned domain) - http://localhost:8000/provision_requests/365
         $domainName = self::getDomainName($params);
         $updateResults = $this->api()->updateRegistrantContact($domainName, $params);
         $domainInfo = $this->api()->getDomainInfo($domainName);
@@ -205,10 +187,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
-        //TESTED - http://localhost:8000/provision_requests/366
-        //TESTED FAILURE (Not owned domain) - http://localhost:8000/provision_requests/368
-        //TESTED FAILURE (Invalid nameserver) - http://localhost:8000/provision_requests/367
-        //TESTED FAILURE (Duplicate nameservers) - http://localhost:8000/provision_requests/369
         $domainName = self::getDomainName($params);
         $this->api()->updateDomainNameservers($domainName, $params);
 
@@ -222,9 +200,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setLock(LockParams $params): DomainResult
     {
-        //TESTED - Unlock - http://localhost:8000/provision_requests/371
-        //TESTED - Lock - http://localhost:8000/provision_requests/372
-        //TESTEDD FAILURE (Not owned domain) - http://localhost:8000/provision_requests/373
         $domainName = self::getDomainName($params);
         $this->api()->updateDomainLock($domainName, ($params->lock==="1"));
         return $this->_getInfo($domainName, 'Domain lock updated');
@@ -237,9 +212,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
-        //TESTED - AutoRenew Enabled - http://localhost:8000/provision_requests/376
-        //TESTED - AutoRenew Disabled - http://localhost:8000/provision_requests/377
-        //TESTED FAILURE (Not owned domain) - http://localhost:8000/provision_requests/378
         $domainName = self::getDomainName($params);
         $this->api()->updateAutoRenew($domainName, ($params->auto_renew==="1"));
         return $this->_getInfo($domainName, 'Domain autorenew updated');
@@ -252,9 +224,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
-        //TESTED (UK Domain) - http://localhost:8000/provision_requests/380
-        //TESTED FAILURE (Not owned domain) - http://localhost:8000/provision_requests/383
-        //TESTED FAILURE (non-UK domain) - http://localhost:8000/provision_requests/381
         $domainName = self::getDomainName($params);
         if (!NetistrarApi::is_uk_domain($domainName)) {
             $this->errorResult('Operation not available for this TLD');
@@ -269,8 +238,6 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        //TESTED (Non-UK Domain): http://localhost:8000/provision_requests/394 - kitchenhubredo3.site; Says it succeeds but "tags" property on $domainInfo is not updated.
-        //TESTED FAILURE (UK Domain): http://localhost:8000/provision_requests/395
         $domainName = self::getDomainName($params);
         if (NetistrarApi::is_uk_domain($domainName)) {
             $this->errorResult('Operation not available for this TLD');

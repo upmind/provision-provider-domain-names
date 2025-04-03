@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.3) - 2025-04-03
+
+- Replace pragmarx/countries with fork for php 8 + psr/simple-cache 3 compatibility
+
 ## [v2.18.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.2) - 2025-04-01
 
 - Update SynergyWholesaleApi::parseContact() to handle missing values

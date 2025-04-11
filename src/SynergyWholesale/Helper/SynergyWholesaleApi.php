@@ -99,7 +99,7 @@ class SynergyWholesaleApi
 
     private function getResponseErrorMessage(string $command, array $responseData)
     {
-        if (!in_array((string)$responseData['status'], ['OK', 'OK_ELIGIBILITY'])) {
+        if (!in_array((string)$responseData['status'], ['OK', 'OK_ELIGIBILITY', 'OK_PENDING_COR'])) {
             $errorMessage = 'Unknown error';
             if (isset($responseData['errorMessage'])) {
                 $errorMessage = $responseData['errorMessage'];
@@ -138,7 +138,11 @@ class SynergyWholesaleApi
         return [
             'id' => $response['domainRoid'],
             'domain' => (string)$response['domainName'],
-            'statuses' => [$response['domain_status']],
+            'statuses' => collect([$response['status'], $response['domain_status']])
+                ->map('strtoupper')
+                ->unique()
+                ->values()
+                ->toArray(),
             'locked' => $response['domain_status'] == 'clientTransferProhibited',
             'registrant' => isset($response['contacts']['registrant'])
                 ? $this->parseContact($response['contacts']['registrant'])

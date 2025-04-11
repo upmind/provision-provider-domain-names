@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.36](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.36) - 2025-04-11
+
+- Fix php version compatibility of status mapping in SynergyWholesale
+
 ## [v2.12.35](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.35) - 2025-04-11
 
 - Fix SynergyWholesale support for domains with OK_PENDING_COR status

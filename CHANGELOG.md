@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.7](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.7) - 2025-04-11
+
+- Fix SynergyWholesale support for domains with OK_PENDING_COR status
+
 ## [v2.18.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.6) - 2025-04-03
 
 - Update DomainNameApi to fail gracefully when failing to connect
@@ -125,6 +129,10 @@ All notable changes to the package will be documented in this file.
 ## [v2.13.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.0) - 2024-07-29
 
 - Update library for PHP 8 + Base lib v4
+
+## [v2.12.35](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.35) - 2025-04-11
+
+- Fix SynergyWholesale support for domains with OK_PENDING_COR status
 
 ## [v2.12.34](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.34) - 2025-04-03
 

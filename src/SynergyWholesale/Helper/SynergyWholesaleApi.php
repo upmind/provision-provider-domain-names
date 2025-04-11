@@ -139,7 +139,7 @@ class SynergyWholesaleApi
             'id' => $response['domainRoid'],
             'domain' => (string)$response['domainName'],
             'statuses' => collect([$response['status'], $response['domain_status']])
-                ->map('strtoupper')
+                ->map(fn ($status) => strtoupper($status))
                 ->unique()
                 ->values()
                 ->toArray(),

@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.37](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.37) - 2025-04-15
+
+- Fix SoapFault handling in SynergyWholesale
+
 ## [v2.12.36](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.36) - 2025-04-11
 
 - Fix php version compatibility of status mapping in SynergyWholesale

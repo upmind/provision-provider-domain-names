@@ -102,7 +102,7 @@ class Provider extends DomainNames implements ProviderInterface
             SynergyWholesaleApi::CONTACT_TYPE_BILLING => $params->billing->register,
         ];
 
-        // $this->api()->getDomainEligibilityFields(Utils::normalizeTld($params->tld));
+        // dd($this->api()->getDomainEligibilityFields(Utils::normalizeTld($params->tld)));
 
         $eligibilityValues = $this->additionalFields()
             ->normalise(
@@ -294,11 +294,11 @@ class Provider extends DomainNames implements ProviderInterface
                     'code' => $e->getCode(),
                     'message' => $e->getMessage(),
                     'soap_fault' => [
-                        'code' => $e->faultcode,
-                        'string' => $e->faultstring,
-                        'detail' => $e->detail,
-                        'actor' => $e->faultactor,
-                        'headerfault' => $e->headerfault,
+                        'code' => $e->faultcode ?? null,
+                        'string' => $e->faultstring ?? null,
+                        'detail' => $e->detail ?? null,
+                        'actor' => $e->faultactor ?? null,
+                        'headerfault' => $e->headerfault ?? null,
                     ],
                 ],
             ];

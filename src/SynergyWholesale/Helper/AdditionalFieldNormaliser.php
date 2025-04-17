@@ -27,16 +27,16 @@ class AdditionalFieldNormaliser
             return $fieldValues;
         }
 
-        return [
-            'registrantName' => $fieldValues['registrantName'] ?? $registrant->name ?: null,
+        return array_filter([
+            'registrantName' => $fieldValues['registrantName'] ?? $registrant->organisation ?: $registrant->name ?: null,
             'registrantID' => $fieldValues['registrantID'] ?? $fieldValues['RegistrantID'] ?? null,
             'registrantIDType' => $fieldValues['registrantIDType'] ?? $this->normaliseRegistrantIdType($fieldValues['RegistrantIDType'] ?? null),
             'eligibilityType' => $fieldValues['eligibilityType'] ?? $this->normaliseEligibilityType($fieldValues['EligibilityType'] ?? null),
             'eligibilityName' => $fieldValues['eligibilityName'] ?? $fieldValues['EligibilityName'] ?? null,
             'eligibilityIDType' => $fieldValues['eligibilityIDType'] ?? $this->normaliseEligibilityIdType($fieldValues['EligibilityIDType'] ?? null),
             'eligibilityID' => $fieldValues['eligibilityID'] ?? $fieldValues['EligibilityID'] ?? null,
-            'eligibilityReason' => $fieldValues['eligibilityReason'] ?? $this->normaliseEligibilityReason($fieldValues['EligibilityReason'] ?? null),
-        ];
+            'policyReason' => $fieldValues['policyReason'] ?? $this->normaliseEligibilityReason($fieldValues['EligibilityReason'] ?? null),
+        ]);
     }
 
     /**
@@ -183,6 +183,14 @@ class AdditionalFieldNormaliser
                 return '101'; // Exact match to a name of the applicant
             case '2':
                 return '102'; // Closely and substantially connected to a name of the applicant
+            case '3':
+                return '103'; // An acronym of a name of the applicant
+            case '4':
+                return '104'; // An abbreviation of a name of the registrant
+            case '5':
+                return '105'; // Reference to the name of a program or program of the applicant
+            case '6':
+                return '106'; // Makes and has Ministerial approval to reference "university"
             default:
                 return is_numeric($value)
                     ? Str::start($value, '10')

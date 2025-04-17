@@ -102,8 +102,6 @@ class Provider extends DomainNames implements ProviderInterface
             SynergyWholesaleApi::CONTACT_TYPE_BILLING => $params->billing->register,
         ];
 
-        // dd($this->api()->getDomainEligibilityFields(Utils::normalizeTld($params->tld)));
-
         $eligibilityValues = $this->additionalFields()
             ->normalise(
                 $params->tld,

@@ -322,11 +322,16 @@ class Provider extends DomainNames implements ProviderInterface
         $hostname = $this->configuration->custom_api_hostname ?: 'api.synergywholesale.com';
 
         try {
+            // apparently the only way to set the actual timeout for SoapClient
+            $defaultTimeout = ini_set("default_socket_timeout", 5);
+
             $client = new SoapClient(sprintf('https://%s/?wsdl', $hostname));
 
             return $this->api = new SynergyWholesaleApi($client, $this->configuration, $this->getLogger());
         } catch (Throwable $e) {
             $this->handleException($e);
+        } finally {
+            ini_set("default_socket_timeout", $defaultTimeout);
         }
     }
 

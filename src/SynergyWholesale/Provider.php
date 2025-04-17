@@ -321,7 +321,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             // apparently the only way to set the actual timeout for SoapClient
-            $defaultTimeout = ini_set("default_socket_timeout", 5);
+            $defaultTimeout = ini_set("default_socket_timeout", "5");
 
             $client = new SoapClient(sprintf('https://%s/?wsdl', $hostname));
 

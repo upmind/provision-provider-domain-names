@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.38](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.38) - 2025-04-17
+
+- Tweak SynergyWholesale AdditionalFieldNormaliser for .edu.au
+- Add 5 second connection timeout to SynergyWholesale SOAP service
+
 ## [v2.12.37](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.37) - 2025-04-15
 
 - Fix SoapFault handling in SynergyWholesale

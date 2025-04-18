@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.40](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.40) - 2025-04-18
+
+- Fix SynergyWholesale checkMultipleDomains premium flag
+
 ## [v2.12.39](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.39) - 2025-04-17
 
 - Fix timeout type error in SynergyWholesale provider

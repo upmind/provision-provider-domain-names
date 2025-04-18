@@ -201,7 +201,7 @@ class SynergyWholesaleApi
                 'tld' => Utils::getTld($result['domain']),
                 'can_register' => $available,
                 'can_transfer' => !$available,
-                'is_premium' => isset($result["premium"]) ?: 0,
+                'is_premium' => boolval($result["premium"] ?? false),
             ]);
         }
 

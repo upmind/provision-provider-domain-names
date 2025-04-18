@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.12](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.12) - 2025-04-18
+
+- Fix SynergyWholesale checkMultipleDomains premium flag
+
 ## [v2.18.11](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.11) - 2025-04-17
 
 - Fix timeout type error in SynergyWholesale provider
@@ -146,6 +150,10 @@ All notable changes to the package will be documented in this file.
 ## [v2.13.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.0) - 2024-07-29
 
 - Update library for PHP 8 + Base lib v4
+
+## [v2.12.40](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.40) - 2025-04-18
+
+- Fix SynergyWholesale checkMultipleDomains premium flag
 
 ## [v2.12.39](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.39) - 2025-04-17
 

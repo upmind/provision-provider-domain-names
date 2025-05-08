@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.41](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.41) - 2025-05-08
+
+- Relax ContactResult validation rules to allow empty return fields
+
 ## [v2.12.40](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.40) - 2025-04-18
 
 - Fix SynergyWholesale checkMultipleDomains premium flag

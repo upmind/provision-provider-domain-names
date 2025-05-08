@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.13](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.13) - 2025-05-08
+
+- Relax ContactResult validation rules to allow empty return fields
+
 ## [v2.18.12](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.12) - 2025-04-18
 
 - Fix SynergyWholesale checkMultipleDomains premium flag
@@ -150,6 +154,10 @@ All notable changes to the package will be documented in this file.
 ## [v2.13.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.13.0) - 2024-07-29
 
 - Update library for PHP 8 + Base lib v4
+
+## [v2.12.41](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.41) - 2025-05-08
+
+- Relax ContactResult validation rules to allow empty return fields
 
 ## [v2.12.40](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.40) - 2025-04-18
 

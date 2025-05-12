@@ -135,10 +135,13 @@ class SynergyWholesaleApi
         $response = $this->makeRequest($command, $params)['domainList'][0];
         $this->parseResponseData($command, $response);
 
+        /** @var \Illuminate\Support\Collection $statusesCollection */
+        $statusesCollection = collect([$response['status'], $response['domain_status']]);
+
         return [
             'id' => $response['domainRoid'],
             'domain' => (string)$response['domainName'],
-            'statuses' => collect([$response['status'], $response['domain_status']])
+            'statuses' => $statusesCollection
                 ->map(fn ($status) => strtoupper($status))
                 ->unique()
                 ->values()

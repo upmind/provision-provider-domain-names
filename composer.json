@@ -22,6 +22,11 @@
             "Upmind\\ProvisionProviders\\DomainNames\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Upmind\\ProvisionProviders\\DomainNames\\Tests\\": "tests/"
+        }
+    },
     "require": {
         "upmind/provision-provider-base": "^3.7",
         "metaregistrar/php-epp-client": "^1.0.12",

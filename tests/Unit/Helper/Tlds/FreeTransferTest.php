@@ -56,6 +56,16 @@ class FreeTransferTest extends TestCase
         '.com.se',
     ];
 
+    public function test_list_of_domains_support_free_transfer(): void
+    {
+        foreach ($this->freeTransferTlds as $tld) {
+            $this->assertTrue(
+                FreeTransfer::tldIsSupported($tld),
+                'Failed asserting that `' . $tld . '` supports free transfer.'
+            );
+        }
+    }
+
     public function test_com_tld_does_not_support_free_transfer(): void
     {
         $this->assertFalse(FreeTransfer::tldIsSupported('.com'));

@@ -38,9 +38,7 @@ class CentralNicResellerApi
 
     public function __destruct()
     {
-        if (isset($this->client)) {
-            $this->client->logout();
-        }
+        $this->client->logout();
     }
 
     /**

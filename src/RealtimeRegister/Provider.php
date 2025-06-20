@@ -205,6 +205,10 @@ class Provider extends DomainNames implements ProviderInterface
         ];
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function transfer(TransferParams $params): DomainResult
     {
         $sld = Utils::normalizeSld($params->sld);
@@ -236,7 +240,7 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->_getInfo($domainName, 'Domain active in registrar account');
             } catch (\Throwable $e) {
                 throw $this->errorResult(
-                    sprintf('Domain transfer initiated and now in progress', $domainName),
+                    sprintf('Domain `%s` transfer initiated and now in progress', $domainName),
                     ['transfer_id' => $transferId],
                     [],
                     $e

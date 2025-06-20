@@ -567,7 +567,8 @@ class Provider extends DomainNames implements ProviderInterface
             'cl' => 'ClContact',
             'cn' => 'CnContact',
             'co' => 'CoContact',
-            'co' => 'CoopContact',
+            // ToDo: Remove dupe entry if not needed and was added by mistake.
+//            'co' => 'CoopContact', This is a dupe entry, and the first mapping will be used.
             'de' => 'DeContact',
             'es' => 'EsContact',
             'eu' => 'EuContact',

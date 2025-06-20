@@ -144,8 +144,10 @@ class Client extends EPPClient
     protected function login($newPassword = false)
     {
         try {
-            parent::login();
+            $response = parent::login($newPassword);
             $this->loggedIn = true;
+
+            return $response;
         } catch (Exception $e) {
             $this->error(
                 sprintf(
@@ -160,12 +162,12 @@ class Client extends EPPClient
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function connect()
+    public function connect($newPassword = false)
     {
         try {
-            return parent::connect();
+            return parent::connect($newPassword);
         } catch (Exception $e) {
-            if (Str::contains($e->getMessage(), ['Timeout', 'timeout', 'timed out'])) {
+            if (Str::contains($e->getMessage(), ['Timeout', 'timeout', 'timed out', 'problem initializing socket'])) {
                 $this->error(
                     sprintf('Registry Connection Error: %s', $e->getMessage()),
                     $e

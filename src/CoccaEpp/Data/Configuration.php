@@ -8,14 +8,13 @@ use Upmind\ProvisionBase\Provider\DataSet\DataSet;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
 /**
- * Nira configuration.
- *
  * @property-read string $epp_username
  * @property-read string $epp_password
  * @property-read string $hostname
  * @property-read integer|null $port
  * @property-read string|null $certificate
  * @property-read string|null $supported_tlds
+ * @property-read bool|null $verify_peer_name
  */
 class Configuration extends DataSet
 {
@@ -28,6 +27,7 @@ class Configuration extends DataSet
             'port' => ['nullable', 'integer', 'min:1'],
             'certificate' => ['nullable', 'certificate_pem'],
             'supported_tlds' => ['nullable', 'string'],
+            'verify_peer_name' => ['nullable', 'boolean'],
         ]);
     }
 }

@@ -76,7 +76,12 @@ class Provider extends DomainNames implements ProviderInterface
             $this->configuration->certificate
                 ? $this->getCertificatePath($this->configuration->certificate)
                 : __DIR__ . '/default_cert.pem',
-            $this->getLogger()
+            $this->getLogger(),
+            [
+                // Pass verify_peer_name config as boolean.
+                // Cast to boolean, so nullable defaults to false and the rest are handled correctly even if string/int.
+                'verify_peer_name' => (bool) $this->configuration->verify_peer_name
+            ]
         );
     }
 

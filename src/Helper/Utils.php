@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberUtil;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\FreeTransfer;
 use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\WhoisPrivacy;
 
 class Utils
@@ -341,5 +342,10 @@ class Utils
         }
 
         return Countries::stateCodeToName($countryCode, $stateCode) ?? $stateCode;
+    }
+
+    public static function tldSupportsFreeTransfer(string $tld): bool
+    {
+        return FreeTransfer::tldIsSupported($tld);
     }
 }

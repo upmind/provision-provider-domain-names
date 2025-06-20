@@ -318,7 +318,8 @@ class Provider extends DomainNames implements ProviderInterface
             // ignore error and attempt to initiate transfer
         }
 
-        $period = Arr::get($params, 'renew_years', 1);
+        // OpenSRS requires 0 years renewal period as default, if the TLD has free transfer
+        $period = Utils::tldSupportsFreeTransfer($tld) ? 0 : Arr::get($params, 'renew_years', 1);
         $eppCode = Arr::get($params, 'epp_code', "");
 
         $contacts = [];

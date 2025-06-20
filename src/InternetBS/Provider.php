@@ -233,7 +233,6 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainInfo = $this->api()->getDomainInfo($domainName);
 
-        /** @var DomainResult */
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
@@ -355,6 +354,8 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @return no-return
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function handleException(Throwable $e): void

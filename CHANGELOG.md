@@ -159,6 +159,10 @@ All notable changes to the package will be documented in this file.
 
 - Update library for PHP 8 + Base lib v4
 
+## [v2.12.42](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.42) - 2025-06-20
+
+- Add verify_peer configuration option to CoccaEpp client (fixes KENIC connections)
+
 ## [v2.12.41](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.41) - 2025-05-08
 
 - Relax ContactResult validation rules to allow empty return fields

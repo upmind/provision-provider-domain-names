@@ -532,11 +532,11 @@ class EppHelper
         $checkData = $transferCheck->getData();
 
         if (!$transferCheck->isAvailable()) {
-            return self::errorResult($transferCheck->getResultReason(), $checkData);
+            self::errorResult($transferCheck->getResultReason(), $checkData);
         }
 
         if (!empty($checkData['TRANSFERLOCK'])) {
-            return self::errorResult('Domain is currently transfer-locked', $checkData);
+            self::errorResult('Domain is currently transfer-locked', $checkData);
         }
 
         // Get Domain Info
@@ -591,6 +591,10 @@ class EppHelper
         return $connection->request($transferRequest);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws eppException
+     */
     public static function checkTransfer(
         eppConnection $connection,
         string $domain,
@@ -613,19 +617,19 @@ class EppHelper
         $checkData = $response->getData();
 
         if (!empty($checkData['TRANSFERLOCK'])) {
-            throw self::errorResult('Domain is currently transfer-locked', ['check_data' => $checkData]);
+            self::errorResult('Domain is currently transfer-locked', ['check_data' => $checkData]);
         }
 
         if ($checkData['AUTHISVALID'] === 'NO') {
-            throw self::errorResult('EPP Code is invalid', ['check_data' => $checkData]);
+            self::errorResult('EPP Code is invalid', ['check_data' => $checkData]);
         }
 
         if (empty($eppCode) && !empty($checkData['AUTHREQUIRED'])) {
-            throw self::errorResult('EPP Code is required to initiate transfer', ['check_data' => $checkData]);
+            self::errorResult('EPP Code is required to initiate transfer', ['check_data' => $checkData]);
         }
 
         if (!$response->isAvailable()) {
-            throw self::errorResult($response->getUnavailableReason(), ['check_data' => $checkData]);
+            self::errorResult($response->getUnavailableReason(), ['check_data' => $checkData]);
         }
 
         return $response;
@@ -672,7 +676,7 @@ class EppHelper
 
         // Check if we have the name servers yet
         if (count($domain->getHosts()) < 1) {
-            return self::errorResult('We were unable to add name servers for the domain!', [
+            self::errorResult('We were unable to add name servers for the domain!', [
                 'domain' => $domainName,
                 'nameservers' => $nameServers
             ]);
@@ -969,6 +973,8 @@ class EppHelper
      * @param bool $sandbox
      * @param array $eppConnectionData
      * @return array
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public static function validateParseEppConnectionData(bool $sandbox, array $eppConnectionData): array
     {
@@ -1018,6 +1024,8 @@ class EppHelper
      * @param array $debug Error debug
      * @param Throwable|null $previous Encountered exception
      *
+     * @return no-return
+     *
      * @throws ProvisionFunctionError
      */
     public static function errorResult($message, $data = [], $debug = [], ?Throwable $previous = null): void
@@ -1030,6 +1038,7 @@ class EppHelper
     /**
      * Generates a random auth code containing lowercase letters, uppercase letters, numbers and special characters.
      *
+     * @param  int  $length
      * @return string
      */
     private static function generateValidAuthCode(int $length = 12): string

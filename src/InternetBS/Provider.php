@@ -62,11 +62,18 @@ class Provider extends DomainNames implements ProviderInterface
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/internetbs-logo@2x.png');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function poll(PollParams $params): PollResult
     {
         throw $this->errorResult('Operation not supported');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
         $sld = Utils::normalizeSld($params->sld);
@@ -78,11 +85,16 @@ class Provider extends DomainNames implements ProviderInterface
 
         $dacDomains = $this->api()->checkMultipleDomains($domains);
 
+        /** @var DacResult */
         return DacResult::create([
             'domains' => $dacDomains,
         ]);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function register(RegisterDomainParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -122,6 +134,9 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     private function checkRegisterParams(RegisterDomainParams $params): void
     {
         if (!Arr::has($params, 'registrant.register')) {
@@ -141,6 +156,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function transfer(TransferParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -154,7 +173,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         if (!Arr::has($params, 'registrant.register')) {
-            return $this->errorResult('Registrant contact data is required!');
+            $this->errorResult('Registrant contact data is required!');
         }
 
         $contacts = array_filter([
@@ -179,6 +198,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function renew(RenewParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -191,6 +214,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function getInfo(DomainInfoParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -209,6 +236,10 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -216,12 +247,17 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $contact = $this->api()->updateRegistrantContact($domainName, $params->contact);
 
+            /** @var ContactResult */
             return ContactResult::create($contact);
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -239,6 +275,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function setLock(LockParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -262,6 +302,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -277,6 +321,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function getEppCode(EppParams $params): EppCodeResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -285,9 +333,10 @@ class Provider extends DomainNames implements ProviderInterface
             $eppCode = $this->api()->getDomainEppCode($domainName);
 
             if (!$eppCode) {
-                return $this->errorResult('Unable to obtain EPP code for this domain!');
+                $this->errorResult('Unable to obtain EPP code for this domain!');
             }
 
+            /** @var EppCodeResult */
             return EppCodeResult::create([
                 'epp_code' => $eppCode,
             ])->setMessage('EPP/Auth code obtained');
@@ -296,13 +345,18 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
         throw $this->errorResult('Operation not supported');
     }
 
     /**
-     * @throws Throwable
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function handleException(Throwable $e): void
     {
@@ -310,6 +364,7 @@ class Provider extends DomainNames implements ProviderInterface
             $e = new ProvisionFunctionError('Unexpected Provider Error', $e->getCode(), $e);
         }
 
+        /** @var \Upmind\ProvisionBase\Exception\ProvisionFunctionError $e */
         throw $e;
     }
 

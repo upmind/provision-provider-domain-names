@@ -308,6 +308,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @return no-return
      * @throws ProvisionFunctionError
+     * @throws Throwable
      */
     protected function handleException(Throwable $e, $params = null): void
     {
@@ -323,7 +324,7 @@ class Provider extends DomainNames implements ProviderInterface
                     $errorMessage = 'Invalid request data';
                 }
 
-                throw $this->errorResult(
+                $this->errorResult(
                     sprintf('Provider API Error [%s]: %s', $responseData['code'] ?? 'unknown', $errorMessage),
                     ['response_data' => $responseData],
                     [],
@@ -331,6 +332,8 @@ class Provider extends DomainNames implements ProviderInterface
                 );
             }
         }
+
+        throw $e;
     }
 
     protected function api(): GoDaddyApi

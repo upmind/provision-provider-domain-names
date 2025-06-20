@@ -205,6 +205,10 @@ class Provider extends DomainNames implements ProviderInterface
         ];
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function transfer(TransferParams $params): DomainResult
     {
         $sld = Utils::normalizeSld($params->sld);
@@ -236,7 +240,7 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->_getInfo($domainName, 'Domain active in registrar account');
             } catch (\Throwable $e) {
                 throw $this->errorResult(
-                    sprintf('Domain transfer initiated and now in progress', $domainName),
+                    sprintf('Domain `%s` transfer initiated and now in progress', $domainName),
                     ['transfer_id' => $transferId],
                     [],
                     $e
@@ -280,6 +284,8 @@ class Provider extends DomainNames implements ProviderInterface
     private function _getInfo(string $domainName, string $message): DomainResult
     {
         $domainInfo = $this->api()->getDomainInfo($domainName);
+
+        /** @var DomainResult */
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
@@ -339,6 +345,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
         $domainName = Utils::getDomain(
@@ -357,6 +367,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function getEppCode(EppParams $params): EppCodeResult
     {
         $domainName = Utils::getDomain(
@@ -371,6 +385,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $eppCode = $this->api()->setAuthCode($domainName);
             }
 
+            /** @var EppCodeResult */
             return EppCodeResult::create([
                 'epp_code' => $eppCode,
             ])->setMessage('EPP/Auth code obtained');
@@ -379,6 +394,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
         $domainName = Utils::getDomain(
@@ -395,6 +414,12 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     protected function handleException(Throwable $e, $params = null): void
     {
         if ($e instanceof RequestException) {

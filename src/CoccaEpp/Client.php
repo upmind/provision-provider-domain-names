@@ -144,8 +144,10 @@ class Client extends EPPClient
     protected function login($newPassword = false)
     {
         try {
-            parent::login();
+            $response = parent::login($newPassword);
             $this->loggedIn = true;
+
+            return $response;
         } catch (Exception $e) {
             $this->error(
                 sprintf(

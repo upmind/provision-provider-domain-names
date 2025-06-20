@@ -167,7 +167,7 @@ class Client extends EPPClient
         try {
             return parent::connect($newPassword);
         } catch (Exception $e) {
-            if (Str::contains($e->getMessage(), ['Timeout', 'timeout', 'timed out'])) {
+            if (Str::contains($e->getMessage(), ['Timeout', 'timeout', 'timed out', 'problem initializing socket'])) {
                 $this->error(
                     sprintf('Registry Connection Error: %s', $e->getMessage()),
                     $e

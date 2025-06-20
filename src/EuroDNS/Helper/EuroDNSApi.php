@@ -42,6 +42,7 @@ class EuroDNSApi
     private $contactAdminId;
     private $nameServers;
     private $logger;
+    private $request;
 
     public function __construct(Configuration $configuration, LoggerInterface $logger = null)
     {

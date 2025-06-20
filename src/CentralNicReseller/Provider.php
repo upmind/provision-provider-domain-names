@@ -119,11 +119,11 @@ class Provider extends DomainNames implements ProviderInterface
         $checkResult = $this->epp()->checkMultipleDomains([$domainName]);
 
         if (count($checkResult) < 1) {
-            throw $this->errorResult('Empty domain availability check result');
+            $this->errorResult('Empty domain availability check result');
         }
 
         if (!$checkResult[0]->can_register) {
-            throw $this->errorResult('This domain is not available to register');
+            $this->errorResult('This domain is not available to register');
         }
 
         //$contactIds = $this->getRegisterContactIds($params);
@@ -149,7 +149,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
@@ -179,7 +179,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $params->billing ?? null
             );
 
-            throw $this->errorResult(sprintf('Transfer for %s domain successfully initiated!', $domainName), [
+            $this->errorResult(sprintf('Transfer for %s domain successfully initiated!', $domainName), [
                 'transfer_id' => $transferId
             ]);
         } catch (eppException $e) {
@@ -201,7 +201,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return $this->_getInfo($domainName, sprintf('Renewal for %s domain was successful!', $domainName));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
@@ -215,7 +215,7 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             return $this->_getInfo($domainName);
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
@@ -238,7 +238,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return ContactResult::create($contact);
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
@@ -266,7 +266,7 @@ class Provider extends DomainNames implements ProviderInterface
             return NameserversResult::create($result)
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domainName));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
@@ -300,7 +300,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return $this->_getInfo($domainName, sprintf("Lock %s!", $lock ? 'enabled' : 'disabled'));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
@@ -318,7 +318,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return $this->_getInfo($domainName, 'Auto-renew mode updated');
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
@@ -336,15 +336,20 @@ class Provider extends DomainNames implements ProviderInterface
                 'epp_code' => $eppCode,
             ])->setMessage('EPP/Auth code obtained');
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e);
+            $this->_eppExceptionHandler($e);
         }
     }
 
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        throw $this->errorResult('Not implemented');
+        $this->errorResult('Not implemented');
     }
 
+    /**
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     private function _eppExceptionHandler(eppException $exception, array $data = [], array $debug = []): void
     {
         $data['error_reason'] = $exception->getReason();
@@ -365,7 +370,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $errorMessage = $exception->getMessage();
         }
 
-        throw $this->errorResult(sprintf('Registry Error: %s', $errorMessage), $data, $debug, $exception);
+        $this->errorResult(sprintf('Registry Error: %s', $errorMessage), $data, $debug, $exception);
     }
 
     protected function connect(): EppConnection
@@ -397,9 +402,9 @@ class Provider extends DomainNames implements ProviderInterface
                     $errorMessage = 'Unexpected provider connection error';
             }
 
-            throw $this->errorResult(trim(sprintf('%s %s', $e->getCode() ?: null, $errorMessage)), [], [], $e);
+            $this->errorResult(trim(sprintf('%s %s', $e->getCode() ?: null, $errorMessage)), [], [], $e);
         } catch (ErrorException $e) {
-            throw $this->errorResult('Unexpected provider connection error', [], [], $e);
+            $this->errorResult('Unexpected provider connection error', [], [], $e);
         }
     }
 

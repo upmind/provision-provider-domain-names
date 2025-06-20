@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.18.14](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.14) - 2025-06-20
+
+- Add `verify_peer` configuration option to CoccaEpp client (fixes KENIC connections)
+
 ## [v2.18.13](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.13) - 2025-05-08
 
 - Relax ContactResult validation rules to allow empty return fields

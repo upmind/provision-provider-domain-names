@@ -157,10 +157,13 @@ class Client extends EPPClient
         }
     }
 
-    public function connect()
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function connect($newPassword = false)
     {
         try {
-            return parent::connect();
+            return parent::connect($newPassword);
         } catch (Exception $e) {
             if (Str::contains($e->getMessage(), ['Timeout', 'timeout', 'timed out'])) {
                 throw $this->error(

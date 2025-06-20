@@ -14,7 +14,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read integer|null $port
  * @property-read string|null $certificate
  * @property-read string|null $supported_tlds
- * @property-read boolean|null verify_peer_name
+ * @property-read bool|null $verify_peer_name
  */
 class Configuration extends DataSet
 {

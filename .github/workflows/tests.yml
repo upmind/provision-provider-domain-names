@@ -1,5 +1,5 @@
 # Workflow name
-name: Static Analysis
+name: Unit Tests
 
 # Triggers
 on:

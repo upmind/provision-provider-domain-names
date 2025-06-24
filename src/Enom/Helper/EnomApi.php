@@ -381,15 +381,32 @@ class EnomApi
      */
     public function renew(string $sld, string $tld, int $period, bool $renewIdProtect = false): int
     {
-        // Renew command params
-        $params = [
-            'command' => 'extend',
-            'SLD' => $sld,
-            'TLD' => $tld,
-            'NumYears' => $period,
-            'OverrideOrder' => 1 // allow multiple renewal orders in the same day
-        ];
+        // Check if already expired
+        $domainData = $this->getDomainWhois($sld, $tld);
+        $domainIsExpired = ($domainData['expires_at'] < date('Y-m-d'));
 
+        if($domainIsExpired)
+        {
+            // Renew expired domain command params
+            $params = [
+                'command' => 'UpdateExpiredDomains',
+                'DomainName' => $sld.'.'.$tld,
+                'NumYears' => $period,
+            ];
+        }
+
+        if(!$domainIsExpired)
+        {
+            // Renew command params
+            $params = [
+                'command' => 'extend',
+                'SLD' => $sld,
+                'TLD' => $tld,
+                'NumYears' => $period,
+                //'OverrideOrder' => 1 // allow multiple renewal orders in the same day
+            ];
+        }
+        
         $result = $this->makeRequest($params);
 
         $orderId = (int) $result->OrderID;

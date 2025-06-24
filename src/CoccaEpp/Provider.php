@@ -343,26 +343,26 @@ class Provider extends DomainNames implements ProviderInterface
 
         $client = $this->getClient();
 
-        $infoFrame = new \AfriCC\EPP\Frame\Command\Info\Domain();
-        $infoFrame->setDomain($domainName);
+        // Set new random authcode
+        $updateFrame = new \AfriCC\EPP\Frame\Command\Update\Domain(); 
+        $updateFrame->setDomain($domainName);
+        $newAuthCode = $updateFrame->changeAuthInfo();
+        
+        $xmlResponse = $client->request($updateFrame);
 
-        $xmlResponse = $client->request($infoFrame);
-
-        $domainData = $xmlResponse->data();
-
-        if (empty($domainData) || !isset($domainData['infData'])) {
+        if (empty($newAuthCode)) {
             $codeRes = $xmlResponse->getElementsByTagName('result')->item(0)->getAttribute('code');
             $msg = $xmlResponse->getElementsByTagName('msg')->item(0)->nodeValue;
 
             throw $this->errorResult(
                 'Unable to obtain EPP code for this domain',
-                ['code' => $codeRes, 'msg' => $msg, 'data' => $domainData],
+                ['code' => $codeRes, 'msg' => $msg, 'data' => $newAuthCode],
                 ['xml' => (string)$xmlResponse]
             );
         }
 
         return EppCodeResult::create([
-            'epp_code' => ($domainData['infData']['authInfo']['pw'])
+            'epp_code' => ($newAuthCode)
         ])->setMessage('EPP/Auth code obtained');
     }
 

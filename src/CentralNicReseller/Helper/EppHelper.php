@@ -187,7 +187,7 @@ class EppHelper
         return [
             'domain' => $response->getDomainName(),
             'created_at' => Utils::formatDate($response->getDomainCreateDate()),
-            'expires_at' => Utils::formatDate($response->getDomainExpirationDate())
+            'expires_at' => Utils::formatDate($response->queryPath('/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:punDate'))
         ];
     }
 
@@ -219,7 +219,7 @@ class EppHelper
             'ns' => $this->parseNameServers($response->getDomainNameservers() ?? []),
             'created_at' => Utils::formatDate($response->getDomainCreateDate()),
             'updated_at' => Utils::formatDate($response->getDomainUpdateDate() ?: $response->getDomainCreateDate()),
-            'expires_at' => Utils::formatDate($response->getDomainExpirationDate()),
+            'expires_at' => Utils::formatDate($response->queryPath('/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:punDate')),
         ];
     }
 
@@ -258,7 +258,7 @@ class EppHelper
         /** @var \Metaregistrar\EPP\eppInfoDomainResponse $response */
         $response = $this->connection->request($info);
 
-        $expiresAt = Utils::formatDate($response->getDomainExpirationDate(), 'Y-m-d');
+        $expiresAt = Utils::formatDate($response->queryPath('/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:punDate'), 'Y-m-d');
 
         $renewRequest = new eppRenewRequest($domainData, $expiresAt);
 

@@ -398,22 +398,6 @@ class SynergyWholesaleApi
             "nexusCategory" => "",
         ];
 
-        $info = $this->getDomainInfo($domainName);
-
-
-        $contacts = [
-            self::CONTACT_TYPE_ADMIN => $info['admin'],
-            self::CONTACT_TYPE_TECH => $info['tech'],
-            self::CONTACT_TYPE_BILLING => $info['billing'],
-        ];
-
-        foreach ($contacts as $type => $contact) {
-            if ($contact) {
-                $contactParams = $this->setContactData($contact, $type);
-                $params = array_merge($params, $contactParams);
-            }
-        }
-
         $params = array_merge($params, $this->setContactParams($registrantParams, self::CONTACT_TYPE_REGISTRANT));
 
         $this->makeRequest($command, $params);

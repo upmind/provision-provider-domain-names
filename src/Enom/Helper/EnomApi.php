@@ -390,7 +390,7 @@ class EnomApi
             // Renew expired domain command params
             $params = [
                 'command' => 'UpdateExpiredDomains',
-                'DomainName' => $sld.'.'.$tld,
+                'DomainName' => Utils::getDomain($sld, $tld),
                 'NumYears' => $period,
             ];
         }

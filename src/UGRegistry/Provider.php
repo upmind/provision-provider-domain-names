@@ -655,7 +655,7 @@ class Provider extends DomainNames implements ProviderInterface
         ];
 
         try {
-            $this->_updateDomain($domain, $contacts, []);
+            $this->_updateDomain($domain, $contacts, $ns);
         } catch (ProvisionFunctionError $e) {
             if (Str::contains($e->getMessage(), 'domain is locked')) {
                 return;

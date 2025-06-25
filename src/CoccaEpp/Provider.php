@@ -350,15 +350,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         $xmlResponse = $client->request($updateFrame);
 
-        $this->checkResponse(
-            $xmlResponse,
-            'Unable to obtain EPP code for this domain',
-            [
-                'data' => [
-                    'domain' => $domainName
-                ]
-            ]
-        );
+        $this->checkResponse($xmlResponse, 'Unable to obtain EPP code for this domain', ['data' => ['domain' => $domainName]]);
 
         return EppCodeResult::create([
             'epp_code' => ($newAuthCode)

@@ -136,7 +136,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function poll(PollParams $params): PollResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
     /**
@@ -159,7 +159,7 @@ class Provider extends DomainNames implements ProviderInterface
 
                 // Validate the contactId
                 if (!EppHelper::isValidContactId($connection, $registrantId)) {
-                    throw $this->errorResult("Invalid registrant ID provided!", $params);
+                    $this->errorResult("Invalid registrant ID provided!", $params);
                 }
             } else {
                 // Try to set contact type
@@ -323,7 +323,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return $this->_getInfo($domain, sprintf('Domain %s was registered successfully!', $domain));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -352,7 +352,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             $transferQuery = EppHelper::queryTransferList($connection, $domain);
             if ($transferQuery->transferExists()) {
-                throw $this->errorResult(
+                $this->errorResult(
                     sprintf('Transfer already initiated %s', $transferQuery->transferDate()->diffForHumans()),
                     $transferQuery->getData()
                 );
@@ -464,7 +464,7 @@ class Provider extends DomainNames implements ProviderInterface
             //         $errorMessage = sprintf('EPP/Auth Code required to initiate transfer of %s', $domain);
             //     }
 
-            //     throw $this->errorResult($errorMessage, $params, [], $e);
+            //     $this->errorResult($errorMessage, $params, [], $e);
             // }
 
             try {
@@ -472,12 +472,12 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->_getInfo($domain, 'Domain exists in registrar account');
             } catch (eppException $e) {
                 // domain transfer in progress
-                throw $this->errorResult(sprintf('Transfer of %s initiated and now in progress', $domain), [
+                $this->errorResult(sprintf('Transfer of %s initiated and now in progress', $domain), [
                     'domain' => $domain
                 ]);
             }
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -510,7 +510,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return $this->_getInfo($domain, sprintf('Renewal for %s domain was successful!', $domain));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -528,7 +528,7 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             return $this->_getInfo($domain);
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -597,7 +597,7 @@ class Provider extends DomainNames implements ProviderInterface
             return NameserversResult::create($returnNameservers)
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domain));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -623,7 +623,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'epp_code' => $eppCode,
             ])->setMessage('EPP/Auth code obtained');
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -635,7 +635,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        throw $this->errorResult('Operation not supported', $params);
+        $this->errorResult('Operation not supported', $params);
     }
 
     /**
@@ -688,7 +688,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return $this->updateContact($contactId, $params->contact);
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -751,7 +751,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setMessage(sprintf("Lock %s!", $lock ? 'enabled' : 'disabled'))
                 ->setDebug($setLock->getHash());
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -773,12 +773,12 @@ class Provider extends DomainNames implements ProviderInterface
 
             // Process Response
             if (isset($setRenewalMode['error'])) {
-                throw $this->errorResult($setRenewalMode['error'], $params, $setRenewalMode);
+                $this->errorResult($setRenewalMode['error'], $params, $setRenewalMode);
             }
 
             return $this->_getInfo($domain, 'Auto-renew mode updated');
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
@@ -826,7 +826,7 @@ class Provider extends DomainNames implements ProviderInterface
             try {
                 $contactInfo = EppHelper::getContactInfo($connection, $contactId);
             } catch (eppException $e) {
-                throw $this->errorResult('Invalid registrant ID provided!', compact('contactId', 'params'), [], $e);
+                $this->errorResult('Invalid registrant ID provided!', compact('contactId', 'params'), [], $e);
             }
 
             // Set Parameters for the update query
@@ -874,10 +874,16 @@ class Provider extends DomainNames implements ProviderInterface
 
             return ContactResult::create($contactUpdate);
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params);
+            $this->_eppExceptionHandler($e, $params);
         }
     }
 
+    /**
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws eppException
+     */
     protected function _eppExceptionHandler(eppException $exception, $data = [], $debug = []): void
     {
         if ($exception->getCode() == 2001) {
@@ -887,7 +893,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         $errorMessage = $exception->getReason() ?: $exception->getMessage();
 
-        throw $this->errorResult($errorMessage, $data, $debug, $exception);
+        $this->errorResult($errorMessage, $data, $debug, $exception);
     }
 
     /**
@@ -915,7 +921,7 @@ class Provider extends DomainNames implements ProviderInterface
                     $errorMessage = 'Unexpected provider connection error';
             }
 
-            throw $this->errorResult(sprintf('%s %s', $e->getCode(), $errorMessage), [], [], $e);
+            $this->errorResult(sprintf('%s %s', $e->getCode(), $errorMessage), [], [], $e);
         }
     }
 

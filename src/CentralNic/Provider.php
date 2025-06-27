@@ -83,6 +83,9 @@ class Provider extends DomainNames implements ProviderInterface
             ->setDescription('Register, transfer, renew and manage CentralNic domains');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function poll(PollParams $params): PollResult
     {
         $since = $params->after_date ? Carbon::parse($params->after_date) : null;
@@ -298,6 +301,9 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo, false)->setMessage($msg);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
         $domainName = Utils::getDomain(
@@ -310,10 +316,13 @@ class Provider extends DomainNames implements ProviderInterface
 
             return ContactResult::create($contact);
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params->toArray());
+            $this->_eppExceptionHandler($e, $params->toArray());
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
         $sld = Utils::normalizeSld($params->sld);
@@ -342,7 +351,7 @@ class Provider extends DomainNames implements ProviderInterface
             return NameserversResult::create($returnNameservers)
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domainName));
         } catch (eppException $e) {
-            return $this->_eppExceptionHandler($e, $params->toArray());
+            $this->_eppExceptionHandler($e, $params->toArray());
         }
     }
 
@@ -403,11 +412,19 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
         throw $this->errorResult('Not implemented');
     }
 
+    /**
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     private function _eppExceptionHandler(eppException $exception, array $data = [], array $debug = []): void
     {
         if ($response = $exception->getResponse()) {

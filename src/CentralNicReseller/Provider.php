@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use ErrorException;
 use Illuminate\Support\Arr;
 use Metaregistrar\EPP\eppException;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -160,6 +161,14 @@ class Provider extends DomainNames implements ProviderInterface
             );
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
+        } catch (ProvisionFunctionError $e) {
+            // Handle specific ProvisionFunctionError if needed
+            $this->errorResult(
+                sprintf('Domain %s registration  error: %s', $domainName, $e->getMessage()),
+                $e->getData(),
+                array_merge($e->getDebug(), $params->toArray()),
+                $e
+            );
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e);
         }
@@ -220,6 +229,14 @@ class Provider extends DomainNames implements ProviderInterface
             $this->epp()->renew($domainName, $period);
 
             return $this->_getInfo($domainName, sprintf('Renewal for %s domain was successful!', $domainName));
+        } catch (ProvisionFunctionError $e) {
+            // Handle specific ProvisionFunctionError if needed
+            $this->errorResult(
+                sprintf('Domain %s renewal  error: %s', $domainName, $e->getMessage()),
+                $e->getData(),
+                array_merge($e->getDebug(), $params->toArray()),
+                $e
+            );
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e);
         }
@@ -237,6 +254,14 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             return $this->_getInfo($domainName);
+        } catch (ProvisionFunctionError $e) {
+            // Handle specific ProvisionFunctionError if needed
+            $this->errorResult(
+                sprintf('Domain %s get info  error: %s', $domainName, $e->getMessage()),
+                $e->getData(),
+                array_merge($e->getDebug(), $params->toArray()),
+                $e
+            );
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e);
         }

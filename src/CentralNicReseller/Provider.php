@@ -269,6 +269,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function _getInfo(string $domain, $msg = 'Domain data obtained'): DomainResult
     {

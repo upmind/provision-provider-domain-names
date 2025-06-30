@@ -160,6 +160,7 @@ class EppHelper
      * @param Nameserver[]  $nameServers
      *
      * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(
         string $domainName,
@@ -197,6 +198,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getDomainInfo(string $domainName): array
     {
@@ -251,6 +253,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(string $domainName, int $period): void
     {

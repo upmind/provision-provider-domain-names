@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\Enom\Helper;
 
 use Carbon\Carbon;
+use DateTimeImmutable;
+use DateTimeZone;
 use GuzzleHttp\Client;
 use InvalidArgumentException;
 use RuntimeException;
@@ -378,17 +380,48 @@ class EnomApi
 
     /**
      * @return int Order ID
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function renew(string $sld, string $tld, int $period, bool $renewIdProtect = false): int
     {
-        // Renew command params
-        $params = [
-            'command' => 'extend',
-            'SLD' => $sld,
-            'TLD' => $tld,
-            'NumYears' => $period,
-            'OverrideOrder' => 1 // allow multiple renewal orders in the same day
-        ];
+        $domainInfo = $this->getDomainInfo($sld, $tld);
+
+        // `expires_at` is in `Y-m-d H:i:s` format and should be parsed as UTC
+        $expiresAt = DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $domainInfo['expires_at'],
+            new DateTimeZone('UTC')
+        );
+
+        if ($expiresAt === false) {
+            throw ProvisionFunctionError::create('Invalid Expiry Date')
+                ->withData([
+                    'sld' => $sld,
+                    'tld' => $tld,
+                    'expires_at' => $domainInfo['expires_at'] ?? null,
+                ]);
+        }
+
+        $now = new DateTimeImmutable('now', 'UTC');
+
+        // The API call is different if domain has expired, ie expiration date is in the past or not
+        $params = $expiresAt < $now
+            // If the domain has expired, we need to use UpdateExpiredDomains command
+            ? [
+                'command' => 'UpdateExpiredDomains',
+                'DomainName' => Utils::getDomain($sld, $tld),
+                'NumYears' => $period,
+            ]
+            // If the domain has not expired, we can just use the Renew command
+            : [
+                'command' => 'extend',
+                'SLD' => $sld,
+                'TLD' => $tld,
+                'NumYears' => $period,
+//                'OverrideOrder' => 1 // allow multiple renewal orders in the same day
+            ];
 
         $result = $this->makeRequest($params);
 

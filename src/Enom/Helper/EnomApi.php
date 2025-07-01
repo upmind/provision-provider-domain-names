@@ -420,7 +420,7 @@ class EnomApi
                 'SLD' => $sld,
                 'TLD' => $tld,
                 'NumYears' => $period,
-                'OverrideOrder' => 1 // allow multiple renewal orders in the same day
+//                'OverrideOrder' => 1 // allow multiple renewal orders in the same day
             ];
 
         $result = $this->makeRequest($params);

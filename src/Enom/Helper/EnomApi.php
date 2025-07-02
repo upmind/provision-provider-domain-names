@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\Enom\Helper;
 
 use Carbon\Carbon;
-use DateTimeImmutable;
-use DateTimeZone;
 use GuzzleHttp\Client;
 use InvalidArgumentException;
 use RuntimeException;
@@ -380,50 +378,17 @@ class EnomApi
 
     /**
      * @return int Order ID
-     *
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function renew(string $sld, string $tld, int $period, bool $renewIdProtect = false): int
     {
-        $domainInfo = $this->getDomainInfo($sld, $tld);
-
-        // `expires_at` is in `Y-m-d H:i:s` format and should be parsed as UTC
-        $expiresAt = DateTimeImmutable::createFromFormat(
-            'Y-m-d H:i:s',
-            $domainInfo['expires_at'],
-            new DateTimeZone('UTC')
-        );
-
-        if ($expiresAt === false) {
-            throw ProvisionFunctionError::create('Invalid Expiry Date')
-                ->withData([
-                    'sld' => $sld,
-                    'tld' => $tld,
-                    'expires_at' => $domainInfo['expires_at'] ?? null,
-                ]);
-        }
-
-        $now = new DateTimeImmutable('now', 'UTC');
-
-        // The API call is different if domain has expired, ie expiration date is in the past or not
-        // But also check that status is also expired.
-        // @see https://api.enom.com/docs/updateexpireddomains
-        $params = $expiresAt < $now && $this->hasDomainExpired($sld, $tld)
-            // If the domain has expired, we need to use UpdateExpiredDomains command
-            ? [
-                'command' => 'UpdateExpiredDomains',
-                'DomainName' => Utils::getDomain($sld, $tld),
-                'NumYears' => $period,
-            ]
-            // If the domain has not expired, we can just use the Renew command
-            : [
-                'command' => 'extend',
-                'SLD' => $sld,
-                'TLD' => $tld,
-                'NumYears' => $period,
-//                'OverrideOrder' => 1 // allow multiple renewal orders in the same day
-            ];
+        // Renew command params
+        $params = [
+            'command' => 'extend',
+            'SLD' => $sld,
+            'TLD' => $tld,
+            'NumYears' => $period,
+            'OverrideOrder' => 1 // allow multiple renewal orders in the same day
+        ];
 
         $result = $this->makeRequest($params);
 
@@ -639,56 +604,6 @@ class EnomApi
         $order['transferorderdetail'] = (array)$order['transferorderdetail'];
 
         return $order;
-    }
-
-    /**
-     * To retrieve a list of expired domains, use the "GetDomains" command with parameter "Tab=ExpiredDomains".
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \RuntimeException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function hasDomainExpired(string $sld, string $tld): bool
-    {
-        try {
-            $this->makeRequest([
-                'command' => 'GetDomains',
-                'Tab' => 'ExpiredDomains',
-                'Domain' => Utils::getDomain($sld, $tld), // Domain name in format sld.tld
-            ]);
-
-            // If the request was successful, it means the domain was found in the expired domain list,
-            // otherwise we would have caught an error.
-            return true;
-        } catch (ProvisionFunctionError $e) {
-            // If the domain is not expired, the API will return a not found error
-            if (empty($e->getData())) {
-                throw $e;
-            }
-
-            // If the response does not contain the expected structure, rethrow the exception
-            if (!isset(
-                $e->getData()['response'],
-                $e->getData()['response']->responses,
-                $e->getData()['response']->responses->response,
-                $e->getData()['response']->responses->response->ResponseNumber
-            )) {
-                throw $e;
-            }
-
-            // Check the response Number matches domain not found validation error,
-            // in which case, domain is not expired.
-            // @see https://api.enom.com/docs/api-error-codes
-            // - 3xxxxx 	Validation error
-            // - x08xxx 	Failed to retrieve
-            // - xxx153 	Domain name
-            if ((int) $e->getData()['response']->responses->response->ResponseNumber === 308153) {
-                return false;
-            }
-
-            // Otherwise, throw exception as is because we have a different error.
-            throw $e;
-        }
     }
 
     /**

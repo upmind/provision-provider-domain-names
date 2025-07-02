@@ -617,7 +617,10 @@ class Provider extends DomainNames implements ProviderInterface
                 $this->configuration->username,
                 $this->configuration->password,
                 $this->configuration->sandbox ? ClientFactory::ENV_TEST : ClientFactory::ENV_LIVE,
-                $this->getLogger()
+                $this->getLogger(),
+                [
+                    'keep_alive' => false
+                ]
             );
         } catch (Throwable $e) {
             $this->errorResult('Failed to connect to API', ['exception' => $e->getMessage()], [], $e);

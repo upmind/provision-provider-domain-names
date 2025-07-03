@@ -2,12 +2,15 @@
 
 All notable changes to the package will be documented in this file.
 
-## [v2.12.43](https://github.com/upmind/provision-provider-domain-names/releases/tag/v2.12.44) - 2025-07-03
+## [v2.12.44](https://github.com/upmind/provision-provider-domain-names/releases/tag/v2.12.44) - 2025-07-03
 
 - Change how CoccaEpp provider returns the eppCode (previously returned hashed, documentation advise to manually reset it)
 - Fix getInfo() for UGRegistry provider error, using existing nameservers
 - Prevent keeping open connection for providers with SOAP Client implementation, ie SynergyWholesale & DomainNameApi
 
+## [v2.12.43](https://github.com/upmind/provision-provider-domain-names/releases/tag/v2.12.43) - 2025-06-27
+
+- Improvements to dev tooling and testing
 
 ## [v2.12.42](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.42) - 2025-06-20
 

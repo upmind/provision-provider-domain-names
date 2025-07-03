@@ -344,22 +344,21 @@ class Provider extends DomainNames implements ProviderInterface
         $client = $this->getClient();
 
         // Set new random authcode
-        $updateFrame = new \AfriCC\EPP\Frame\Command\Update\Domain(); 
+        $updateFrame = new \AfriCC\EPP\Frame\Command\Update\Domain();
         $updateFrame->setDomain($domainName);
         $newAuthCode = $updateFrame->changeAuthInfo();
-        
+
         $xmlResponse = $client->request($updateFrame);
 
-        if (empty($newAuthCode)) {
-            $codeRes = $xmlResponse->getElementsByTagName('result')->item(0)->getAttribute('code');
-            $msg = $xmlResponse->getElementsByTagName('msg')->item(0)->nodeValue;
-
-            throw $this->errorResult(
-                'Unable to obtain EPP code for this domain',
-                ['code' => $codeRes, 'msg' => $msg, 'data' => $newAuthCode],
-                ['xml' => (string)$xmlResponse]
-            );
-        }
+        $this->checkResponse(
+            $xmlResponse,
+            'Unable to obtain EPP code for this domain',
+            [
+                'data' => [
+                    'domain' => $domainName
+                ]
+            ]
+        );
 
         return EppCodeResult::create([
             'epp_code' => ($newAuthCode)

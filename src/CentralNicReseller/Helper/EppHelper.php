@@ -216,8 +216,8 @@ class EppHelper
         return [
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
-            'statuses' => $response->getDomainStatuses() ?? [],
-            'locked' => boolval(array_intersect($this->lockedStatuses, $response->getDomainStatuses() ?? [])),
+            'statuses' => $this->statusesToStrings($response->getDomainStatuses() ?? []),
+            'locked' => boolval(array_intersect($this->lockedStatuses, $this->statusesToStrings($response->getDomainStatuses() ?? []))),
             'registrant' => $registrantId ? $this->getContactInfo($registrantId) : null,
             'billing' => $billingId ? $this->getContactInfo($billingId) : null,
             'tech' => $techId ? $this->getContactInfo($techId) : null,
@@ -227,6 +227,22 @@ class EppHelper
             'updated_at' => Utils::formatDate($response->getDomainUpdateDate() ?: $response->getDomainCreateDate()),
             'expires_at' => Utils::formatDate($this->getDomainExpirationDateFromResponse($response)),
         ];
+    }
+
+    /**
+     * @param string[]|\Metaregistrar\EPP\eppStatus[] $statuses
+     *
+     * @return string[]
+     */
+    protected function statusesToStrings(array $statuses): array
+    {
+        return array_map(function ($status) {
+            if ($status instanceof \Metaregistrar\EPP\eppStatus) {
+                return $status->getStatusname();
+            }
+
+            return (string)$status;
+        }, $statuses);
     }
 
     /**

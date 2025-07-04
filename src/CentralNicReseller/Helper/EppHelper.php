@@ -618,7 +618,8 @@ class EppHelper
      */
     private function getDomainExpirationDateFromResponse(eppResponse $response): string
     {
-        $expirationDate = $response->queryPath('/epp:epp/epp:response/epp:resData/domain:creData/domain:exDate');
+        $expirationDate = $response->queryPath('/epp:epp/epp:response/epp:resData/domain:infData/domain:exDate')
+            ?? $response->queryPath('/epp:epp/epp:response/epp:resData/domain:creData/domain:exDate');
 
         $paidUntilDate = $response->queryPath(
             '/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:punDate'

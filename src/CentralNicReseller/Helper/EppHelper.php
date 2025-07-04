@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Helper;
 
 use Carbon\Carbon;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Illuminate\Support\Str;
+use Metaregistrar\EPP\eppResponse;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Helper;
 use Metaregistrar\EPP\rrpproxyEppRenewalmodeRequest;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
@@ -156,6 +160,7 @@ class EppHelper
      * @param Nameserver[]  $nameServers
      *
      * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(
         string $domainName,
@@ -187,12 +192,13 @@ class EppHelper
         return [
             'domain' => $response->getDomainName(),
             'created_at' => Utils::formatDate($response->getDomainCreateDate()),
-            'expires_at' => Utils::formatDate($response->getDomainExpirationDate())
+            'expires_at' => Utils::formatDate($this->getDomainExpirationDateFromResponse($response))
         ];
     }
 
     /**
      * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getDomainInfo(string $domainName): array
     {
@@ -210,8 +216,8 @@ class EppHelper
         return [
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
-            'statuses' => $response->getDomainStatuses() ?? [],
-            'locked' => boolval(array_intersect($this->lockedStatuses, $response->getDomainStatuses() ?? [])),
+            'statuses' => $this->statusesToStrings($response->getDomainStatuses() ?? []),
+            'locked' => boolval(array_intersect($this->lockedStatuses, $this->statusesToStrings($response->getDomainStatuses() ?? []))),
             'registrant' => $registrantId ? $this->getContactInfo($registrantId) : null,
             'billing' => $billingId ? $this->getContactInfo($billingId) : null,
             'tech' => $techId ? $this->getContactInfo($techId) : null,
@@ -219,8 +225,24 @@ class EppHelper
             'ns' => $this->parseNameServers($response->getDomainNameservers() ?? []),
             'created_at' => Utils::formatDate($response->getDomainCreateDate()),
             'updated_at' => Utils::formatDate($response->getDomainUpdateDate() ?: $response->getDomainCreateDate()),
-            'expires_at' => Utils::formatDate($response->getDomainExpirationDate()),
+            'expires_at' => Utils::formatDate($this->getDomainExpirationDateFromResponse($response)),
         ];
+    }
+
+    /**
+     * @param string[]|\Metaregistrar\EPP\eppStatus[] $statuses
+     *
+     * @return string[]
+     */
+    protected function statusesToStrings(array $statuses): array
+    {
+        return array_map(function ($status) {
+            if ($status instanceof \Metaregistrar\EPP\eppStatus) {
+                return $status->getStatusname();
+            }
+
+            return (string)$status;
+        }, $statuses);
     }
 
     /**
@@ -247,6 +269,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(string $domainName, int $period): void
     {
@@ -258,7 +281,7 @@ class EppHelper
         /** @var \Metaregistrar\EPP\eppInfoDomainResponse $response */
         $response = $this->connection->request($info);
 
-        $expiresAt = Utils::formatDate($response->getDomainExpirationDate(), 'Y-m-d');
+        $expiresAt = Utils::formatDate($this->getDomainExpirationDateFromResponse($response), 'Y-m-d');
 
         $renewRequest = new eppRenewRequest($domainData, $expiresAt);
 
@@ -594,5 +617,49 @@ class EppHelper
         }
 
         return $uncreatedHosts;
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getDomainExpirationDateFromResponse(eppResponse $response): string
+    {
+        $expirationDate = $response->queryPath('/epp:epp/epp:response/epp:resData/domain:infData/domain:exDate')
+            ?? $response->queryPath('/epp:epp/epp:response/epp:resData/domain:creData/domain:exDate');
+
+        $paidUntilDate = $response->queryPath(
+            '/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:punDate'
+        );
+
+        $renewalDate = $response->queryPath(
+            '/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:renDate'
+        );
+
+        // If all potential expiration dates are null, throw error
+        if ($expirationDate === null && $paidUntilDate === null && $renewalDate === null) {
+            throw new ProvisionFunctionError('No expiration date found in EPP response.');
+        }
+
+        // If only the expiration date is available, return it
+        if ($paidUntilDate === null && $renewalDate === null) {
+            return $expirationDate;
+        }
+
+        // Now we handle cases where either paidUntilDate or renewalDate is available
+        if ($paidUntilDate !== null && $renewalDate === null) {
+            return $paidUntilDate;
+        }
+
+        if ($paidUntilDate === null && $renewalDate !== null) {
+            return $renewalDate;
+        }
+
+        // Lastly, if both paidUntilDate and renewalDate are available,
+        // compare the two dates,
+        // and return the earliest one.
+        $paidUntil = DateTimeImmutable::createFromFormat(DateTimeInterface::RFC3339_EXTENDED, $paidUntilDate);
+        $renewal = DateTimeImmutable::createFromFormat(DateTimeInterface::RFC3339_EXTENDED, $renewalDate);
+
+        return $paidUntil <= $renewal ? $paidUntilDate : $renewalDate;
     }
 }

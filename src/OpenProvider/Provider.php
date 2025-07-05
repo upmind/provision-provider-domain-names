@@ -43,6 +43,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\OpenProvider\Data\OpenProviderConfiguration;
+use Upmind\ProvisionProviders\DomainNames\OpenProvider\Helper\AddressUtils;
 
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
@@ -808,6 +809,8 @@ class Provider extends DomainNames implements ProviderInterface
             $organization = null; // convert empty string / whitespace to null
         }
 
+        $normalisedState = Utils::normalizeState($tld, $state, $postcode);
+
         $data = [
             'name' => [
                 'first_name' => $nameParts[0],
@@ -824,13 +827,15 @@ class Provider extends DomainNames implements ProviderInterface
             'email' => $email,
             'company_name' => $organization,
             'address' => [
-                'city' => $city,
+                'city' => AddressUtils::sanitiseCityOrState($city),
                 'country' => Utils::normalizeCountryCode($countryName),
                 'number' => '',
-                'state' => Utils::normalizeState($tld, $state, $postcode) ?? Utils::normalizeCountryCode($countryName),
+                'state' => $normalisedState !== null
+                    ? AddressUtils::sanitiseCityOrState($normalisedState)
+                    : Utils::normalizeCountryCode($countryName),
                 'street' => $address,
                 'suffix' => '',
-                'zipcode' => $postcode,
+                'zipcode' => AddressUtils::sanitisePostCode($postcode),
             ],
         ];
 

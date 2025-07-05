@@ -544,16 +544,18 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         if ($postcode) {
-            $postcode = $this->normalizePostCode($postcode, $country);
+            $postcode = AddressUtils::sanitisePostCode($this->normalizePostCode($postcode, $country));
         }
+
+        $normalisedState = Utils::normalizeState($tld, $state, $postcode);
 
         $params = [
             'email' => $email,
             'address' => [
-                'city' => $city,
-                'country' => Utils::normalizeCountryCode($country),
+                'city' => $city !== null ? AddressUtils::sanitiseCityOrState($city) : $city,
+                'country' => $country,
                 'number' => '',
-                'state' => Utils::normalizeState($tld, $state, $postcode) ?? Utils::normalizeCountryCode($country),
+                'state' => $normalisedState !== null ? AddressUtils::sanitiseCityOrState($normalisedState) : $country,
                 'street' => $address,
                 'suffix' => '',
                 'zipcode' => $postcode,

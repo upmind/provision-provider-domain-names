@@ -400,20 +400,31 @@ class SynergyWholesaleApi
 
         $info = $this->getDomainInfo($domainName);
 
+        // If we force use of registrant contact for admin/tech/billing, we will use the same contact data.
+        // Otherwise, we will use the existing admin/tech/billing contacts.
+        $useRegistrantContact = (bool) $this->configuration->use_registrant_contact_for_admin_tech_billing;
 
         $contacts = [
-            self::CONTACT_TYPE_ADMIN => $info['admin'],
-            self::CONTACT_TYPE_TECH => $info['tech'],
-            self::CONTACT_TYPE_BILLING => $info['billing'],
+            self::CONTACT_TYPE_ADMIN => $useRegistrantContact ? $registrantParams : $info['admin'],
+            self::CONTACT_TYPE_TECH => $useRegistrantContact ? $registrantParams : $info['tech'],
+            self::CONTACT_TYPE_BILLING => $useRegistrantContact ? $registrantParams : $info['billing'],
         ];
 
         foreach ($contacts as $type => $contact) {
-            if ($contact) {
-                $contactParams = $this->setContactData($contact, $type);
-                $params = array_merge($params, $contactParams);
+            if (empty($contact)) {
+                continue;
             }
+
+            // Different parsing methods for ContactParams and ContactData
+            $contactParams = $useRegistrantContact
+                ? $this->setContactParams($contact, $type)
+                : $this->setContactData($contact, $type);
+
+            $contacts[$type] = $contactParams;
         }
 
+        // Set the different contact types in the params, filtering out empty contacts.
+        $params = array_merge($params, array_values(array_filter($contacts)));
         $params = array_merge($params, $this->setContactParams($registrantParams, self::CONTACT_TYPE_REGISTRANT));
 
         $this->makeRequest($command, $params);

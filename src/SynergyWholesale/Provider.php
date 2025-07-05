@@ -95,11 +95,19 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Registrant contact data is required!');
         }
 
+        $useRegistrantContact = (bool) $this->configuration->use_registrant_contact_for_admin_tech_billing;
+
         $contacts = [
             SynergyWholesaleApi::CONTACT_TYPE_REGISTRANT => $params->registrant->register,
-            SynergyWholesaleApi::CONTACT_TYPE_ADMIN => $params->admin->register,
-            SynergyWholesaleApi::CONTACT_TYPE_TECH => $params->tech->register,
-            SynergyWholesaleApi::CONTACT_TYPE_BILLING => $params->billing->register,
+            SynergyWholesaleApi::CONTACT_TYPE_ADMIN => $useRegistrantContact
+                ? $params->registrant->register
+                : $params->admin->register,
+            SynergyWholesaleApi::CONTACT_TYPE_TECH => $useRegistrantContact
+                ? $params->registrant->register
+                : $params->tech->register,
+            SynergyWholesaleApi::CONTACT_TYPE_BILLING => $useRegistrantContact
+                ? $params->registrant->register
+                : $params->billing->register,
         ];
 
         $eligibilityValues = $this->additionalFields()

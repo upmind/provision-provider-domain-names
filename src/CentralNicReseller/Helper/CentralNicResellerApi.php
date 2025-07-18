@@ -21,9 +21,19 @@ class CentralNicResellerApi
     /**
      * @throws \Exception
      */
-    public function __construct(Configuration $configuration, LoggerInterface $logger)
+    public function __construct(Configuration $configuration, LoggerInterface $logger, string $registrar = 'cnr')
     {
-        $this->client = $this->establishConnection($configuration, $logger);
+        switch (mb_strtolower($registrar)) {
+            case 'moniker':
+                $registrar = 'MONIKER'; // Use MONIKER for Moniker registrar
+                break;
+            case 'centralnic-reseller':
+            case 'cnr':
+            default:
+                $registrar = 'CNR'; // CNR is the default registrar
+        }
+
+        $this->client = $this->establishConnection($configuration, $logger, $registrar);
     }
 
     public function __destruct()
@@ -36,11 +46,14 @@ class CentralNicResellerApi
      *
      * @throws \Exception
      */
-    protected function establishConnection(Configuration $configuration, LoggerInterface $logger): CentralNicResellerClient
-    {
+    protected function establishConnection(
+        Configuration $configuration,
+        LoggerInterface $logger,
+        string $registrar = 'CNR' // Default to CNR if not specified
+    ): CentralNicResellerClient {
         /** @var \CNIC\CNR\SessionClient $client */
         $client = CF::getClient([
-            "registrar" => "CNR"
+            'registrar' => $registrar
         ]);
 
         $client->setCredentials($configuration->username, $configuration->password);

@@ -22,7 +22,7 @@ shell:
 
 # Run Static Analysis (PHPStan)
 static-analysis:
-	docker compose exec provision-providerdomain-names ./vendor/bin/phpstan analyse --memory-limit=1G
+	docker compose exec provision-provider-domain-names ./vendor/bin/phpstan analyse --memory-limit=1G
 
 coding-standards:
 	docker compose exec provision-provider-domain-names php ./bin/php-cs-fixer-v3.phar fix --config=./.php-cs-fixer.dist.php

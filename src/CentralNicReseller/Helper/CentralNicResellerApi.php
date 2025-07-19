@@ -33,7 +33,7 @@ class CentralNicResellerApi
 
     public function __construct(Configuration $configuration, LoggerInterface $logger)
     {
-        $this->client = self::establishConnection($configuration, $logger);
+        $this->client = $this->establishConnection($configuration, $logger);
     }
 
     public function __destruct()

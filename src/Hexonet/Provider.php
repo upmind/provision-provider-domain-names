@@ -1044,7 +1044,8 @@ class Provider extends DomainNames implements ProviderInterface
                 $configuration = new MonikerConfiguration([
                     'username' => $this->configuration->username,
                     'password' => $this->configuration->password,
-                    'sandbox' => $this->configuration->sandbox
+                    'sandbox' => $this->configuration->sandbox,
+                    'debug' => $this->configuration->debug,
                 ]);
 
                 $this->migratedProvider = new MonikerProvider($configuration);

@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppContactHandle;
 use Metaregistrar\EPP\eppException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Data\Configuration as CentralNicResellerConfiguration;
+use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Provider as CentralNicResellerProvider;
 use Upmind\ProvisionProviders\DomainNames\Hexonet\Helper\EppHelper;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -39,6 +41,8 @@ use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\Hexonet\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Hexonet\EppExtension\EppConnection;
 use Upmind\ProvisionProviders\DomainNames\Hexonet\Helper\HexonetApi;
+use Upmind\ProvisionProviders\DomainNames\Moniker\Data\Configuration as MonikerConfiguration;
+use Upmind\ProvisionProviders\DomainNames\Moniker\Provider as MonikerProvider;
 
 /**
  * "Curiosity killed the cat..."
@@ -101,10 +105,24 @@ class Provider extends DomainNames implements ProviderInterface
     public const CONTACT_INT = 'int';
     public const CONTACT_AUTO = 'auto';
 
+    private bool $migrated;
+    private ?ProviderInterface $migratedProvider = null;
+
     public function __construct(Configuration $configuration)
     {
         // dont connect straight away - wait until function call for any connection errors to surface
         $this->configuration = $configuration;
+
+        switch ($this->configuration->migrated) {
+            case 'centralnic-reseller':
+            case 'moniker':
+                $this->migrated = true;
+                break;
+            case 'not-migrated':
+            case null:
+            default:
+                $this->migrated = false; // Default to not migrated
+        }
     }
 
     public function __destruct()
@@ -127,6 +145,10 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->domainAvailabilityCheck($params);
+        }
+
         $dac = new Dac($this->configuration, new Client([
             'handler' => $this->getGuzzleHandlerStack(!!$this->configuration->sandbox),
         ]));
@@ -136,6 +158,10 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function poll(PollParams $params): PollResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->poll($params);
+        }
+
         $this->errorResult('Operation not supported');
     }
 
@@ -147,6 +173,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->register($params);
+        }
+
         $domain = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
 
         // Establish connection to Hexonet API via EPP protocol
@@ -335,6 +365,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function transfer(TransferParams $params): DomainResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->transfer($params);
+        }
+
         // Get the domain name
         $domain = Utils::getDomain($params->sld, $params->tld);
         $eppCode = $params->epp_code;
@@ -489,6 +523,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function renew(RenewParams $params): DomainResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->renew($params);
+        }
+
         // Get the domain name
         $tld = Arr::get($params, 'tld');
 
@@ -522,6 +560,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getInfo(DomainInfoParams $params): DomainResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->getInfo($params);
+        }
+
         // Get the domain name
         $domain = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
 
@@ -575,6 +617,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->updateNameservers($params);
+        }
+
         // Get Domain Name and NameServers
         $domain = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
 
@@ -609,6 +655,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->getEppCode($params);
+        }
+
         // Get the domain name
         $domain = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
 
@@ -635,6 +685,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->updateIpsTag($params);
+        }
+
         $this->errorResult('Operation not supported', $params);
     }
 
@@ -646,6 +700,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->updateRegistrantContact($params);
+        }
+
         // Dont use this approach for now - for registrant name/org changes it throws an error requiring a trade
         // return to it when we next have an example of a domain with 531 Authorization Error for registrant updates:
         // $api = HexonetHelper::establishConnection($this->configuration->toArray());
@@ -704,6 +762,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setLock(LockParams $params): DomainResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->setLock($params);
+        }
+
         // Get the domain name
         $domain = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
         $lock = Arr::get($params, 'lock');
@@ -763,6 +825,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->setAutoRenew($params);
+        }
+
         // Get the domain name
         $domain = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
         $autoRenew = !!$params->auto_renew;
@@ -938,5 +1004,62 @@ class Provider extends DomainNames implements ProviderInterface
     protected function api(): HexonetApi
     {
         return $this->hexonetApi ??= new HexonetApi($this->configuration, $this->getLogger());
+    }
+
+    /**
+     * @return \Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getMigratedProvider(): ProviderInterface
+    {
+        // Not migrated, don't call this method
+        if (!$this->migrated) {
+            $this->errorResult(
+                'Migrated Provider is not set in the configuration',
+                [],
+                [
+                    'migrated' => $this->configuration->migrated,
+                ]
+            );
+        }
+
+        // If we have already instantiated the migrated provider instance, return it
+        if ($this->migratedProvider !== null) {
+            return $this->migratedProvider;
+        }
+
+        switch ($this->configuration->migrated) {
+            case 'centralnic-reseller':
+                $configuration = new CentralNicResellerConfiguration([
+                    'username' => $this->configuration->username,
+                    'password' => $this->configuration->password,
+                    'sandbox' => $this->configuration->sandbox,
+                    'debug' => $this->configuration->debug,
+                ]);
+
+                $this->migratedProvider = new CentralNicResellerProvider($configuration);
+                break;
+            case 'moniker':
+                $configuration = new MonikerConfiguration([
+                    'username' => $this->configuration->username,
+                    'password' => $this->configuration->password,
+                    'sandbox' => $this->configuration->sandbox
+                ]);
+
+                $this->migratedProvider = new MonikerProvider($configuration);
+                break;
+            default:
+                $this->errorResult(
+                    'Migrated Provider is not set in the configuration',
+                    [],
+                    [
+                        'migrated' => $this->configuration->migrated,
+                    ]
+                );
+        }
+
+        /** @var \Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category */
+        return $this->migratedProvider;
     }
 }

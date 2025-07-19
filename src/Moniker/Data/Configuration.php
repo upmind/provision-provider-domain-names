@@ -12,6 +12,7 @@ use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Data\Configuration 
  * @property-read string $username
  * @property-read string $password
  * @property-read bool|null $sandbox
+ * @property-read bool|null $debug Whether or not to enable debug logging
  */
 class Configuration extends CentralNicResellerConfiguration
 {

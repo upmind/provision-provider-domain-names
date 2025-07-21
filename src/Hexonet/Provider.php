@@ -999,6 +999,8 @@ class Provider extends DomainNames implements ProviderInterface
                 );
         }
 
+        $this->migratedProvider->setLogger($this->getLogger());
+
         /** @var \Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category */
         return $this->migratedProvider;
     }

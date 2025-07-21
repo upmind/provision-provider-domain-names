@@ -22,7 +22,7 @@ class Configuration extends DataSet
     {
         return new Rules([
             'username' => ['required', 'string', 'min:3'],
-            'password' => ['required', 'string', 'min:6', 'max:16'],
+            'password' => ['required', 'string', 'min:6'],
             'migrated' => ['nullable', 'string', 'in:not-migrated,centralnic-reseller,moniker'],
             'sandbox' => ['nullable', 'boolean'],
             'debug' => ['nullable', 'boolean'],

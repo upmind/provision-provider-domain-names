@@ -106,6 +106,10 @@ class Provider extends DomainNames implements ProviderInterface
     public const CONTACT_AUTO = 'auto';
 
     private bool $migrated;
+
+    /**
+     * @var (\Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category)|null
+     */
     private ?ProviderInterface $migratedProvider = null;
 
     public function __construct(Configuration $configuration)

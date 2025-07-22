@@ -152,7 +152,7 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (ProvisionFunctionError $e) {
             // Handle specific ProvisionFunctionError if needed
             $this->errorResult(
-                sprintf('Domain %s registration  error: %s', $domainName, $e->getMessage()),
+                sprintf('Domain %s registration error: %s', $domainName, $e->getMessage()),
                 $e->getData(),
                 array_merge($e->getDebug(), $params->toArray()),
                 $e
@@ -212,7 +212,7 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (ProvisionFunctionError $e) {
             // Handle specific ProvisionFunctionError if needed
             $this->errorResult(
-                sprintf('Domain %s renewal  error: %s', $domainName, $e->getMessage()),
+                sprintf('Domain %s renewal error: %s', $domainName, $e->getMessage()),
                 $e->getData(),
                 array_merge($e->getDebug(), $params->toArray()),
                 $e
@@ -234,7 +234,7 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (ProvisionFunctionError $e) {
             // Handle specific ProvisionFunctionError if needed
             $this->errorResult(
-                sprintf('Domain %s get info  error: %s', $domainName, $e->getMessage()),
+                sprintf('Domain %s get info error: %s', $domainName, $e->getMessage()),
                 $e->getData(),
                 array_merge($e->getDebug(), $params->toArray()),
                 $e

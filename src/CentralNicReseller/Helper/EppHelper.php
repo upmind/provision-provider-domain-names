@@ -398,7 +398,7 @@ class EppHelper
         /** @var eppInfoDomainResponse */
         $response = $this->connection->request($info);
 
-        return $response->getDomainStatuses();
+        return $this->statusesToStrings($response->getDomainStatuses() ?? []);
     }
 
     public function getLockedStatuses(): array

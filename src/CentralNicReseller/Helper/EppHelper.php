@@ -175,6 +175,8 @@ class EppHelper
     /**
      * @param string[] $contactIds
      * @param Nameserver[] $nameServers
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(
         string $domainName,
@@ -210,6 +212,9 @@ class EppHelper
         ];
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function getDomainInfo(string $domainName): array
     {
         $domain = new eppDomain($domainName);
@@ -274,6 +279,9 @@ class EppHelper
         return $this->connection->request($transferRequest);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function renew(string $domainName, int $period): void
     {
         $domainData = new eppDomain($domainName);

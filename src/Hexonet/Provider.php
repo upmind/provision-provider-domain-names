@@ -77,6 +77,10 @@ class Provider extends DomainNames implements ProviderInterface
     protected $hexonetApi;
 
     private bool $migrated;
+
+    /**
+     * @var (\Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category)|null
+     */
     private ?ProviderInterface $migratedProvider = null;
 
     // Name Servers for Hexonet

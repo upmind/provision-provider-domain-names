@@ -948,7 +948,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @return \Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category
+     * @return \Upmind\ProvisionBase\Provider\Contract\ProviderInterface
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -1001,7 +1001,6 @@ class Provider extends DomainNames implements ProviderInterface
 
         $this->migratedProvider->setLogger($this->getLogger());
 
-        /** @var \Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category */
         return $this->migratedProvider;
     }
 }

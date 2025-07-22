@@ -138,6 +138,37 @@ class Provider extends DomainNames implements ProviderInterface
                             ->setDescription($e->getMessage());
                     }
 
+                    $errorData = $e->getData();
+
+                    if (isset($errorData['status'])
+                        && (int) $errorData['is_success'] === 0
+                        && (!isset($errorData['response_code']) || $errorData['response_code'] === '')
+                        && (!isset($errorData['response_text']) || $errorData['response_text'] === '')
+                        && (!isset($errorData['attributes']['status']) || $errorData['attributes']['status'] === '')
+                    ) {
+                        // In some cases, OpenSRS returns an error without a proper response code or text,
+                        // usually when the TLD is not supported or the domain syntax is invalid on the lookup call.
+                        // Log the error and return a DacDomain with the error message
+                        $this->getLogger()->error(
+                            'Domain availability check failed',
+                            [
+                                'sld' => $params->sld,
+                                'tld' => $tld,
+                                'error' => $e->getMessage(),
+                                'data' => $errorData,
+                                'debug' => $e->getDebug()
+                            ]
+                        );
+
+                        return DacDomain::create()
+                            ->setDomain(Utils::getDomain($params->sld, $tld))
+                            ->setTld($tld)
+                            ->setCanRegister(false)
+                            ->setCanTransfer(false)
+                            ->setIsPremium(false)
+                            ->setDescription('Invalid/Unsupported TLD or domain syntax');
+                    }
+
                     throw $e;
                 });
         }, $params->tlds);

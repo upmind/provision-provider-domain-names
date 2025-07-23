@@ -33,6 +33,7 @@
         "ext-dom": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*",
+        "ext-soap": "*",
         "ext-xml": "*",
         "africc/php-epp2": "^2.0",
         "centralnic-reseller/php-sdk": "^8.0",

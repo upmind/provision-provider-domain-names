@@ -28,6 +28,12 @@
         }
     },
     "require": {
+        "ext-curl": "*",
+        "ext-dom": "*",
+        "ext-libxml": "*",
+        "ext-simplexml": "*",
+        "ext-soap": "*",
+        "ext-xml": "*",
         "upmind/provision-provider-base": "^3.7",
         "metaregistrar/php-epp-client": "^1.0.12",
         "propaganistas/laravel-phone": "^4.2",

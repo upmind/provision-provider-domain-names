@@ -84,7 +84,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function poll(PollParams $params): PollResult
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
     public function register(RegisterDomainParams $params): DomainResult
@@ -92,7 +92,7 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         if (!Arr::has($params, 'registrant.register')) {
-            throw $this->errorResult('Registrant contact data is required!');
+            $this->errorResult('Registrant contact data is required!');
         }
 
         $useRegistrantContact = (bool) $this->configuration->use_registrant_contact_for_admin_tech_billing;
@@ -147,7 +147,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         if (!Arr::has($params, 'registrant.register')) {
-            throw $this->errorResult('Registrant contact data is required!');
+            $this->errorResult('Registrant contact data is required!');
         }
 
         try {
@@ -157,7 +157,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $params->registrant->register,
             );
 
-            throw $this->errorResult(sprintf('Transfer for %s domain successfully created!', $domainName), [
+            $this->errorResult(sprintf('Transfer for %s domain successfully created!', $domainName), [
                 'transaction_id' => null
             ]);
         } catch (\Throwable $e) {
@@ -281,7 +281,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        throw $this->errorResult('Operation not supported');
+        $this->errorResult('Operation not supported');
     }
 
     /**

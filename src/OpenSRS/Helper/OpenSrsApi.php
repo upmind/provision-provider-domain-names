@@ -185,7 +185,7 @@ class OpenSrsApi
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function makeRequestAsync(array $params): PromiseInterface
+    public function makeRequestAsync(array $params, array $requestOptions = []): PromiseInterface
     {
         // Request Template
         $xmlDataBlock = self::array2xml($params);
@@ -201,7 +201,7 @@ class OpenSrsApi
             self::XML_INDENT . '</body>' . self::CRLF .
             '</OPS_envelope>';
 
-        return $this->client->requestAsync('POST', $this->getApiEndpoint(), [
+        return $this->client->requestAsync('POST', $this->getApiEndpoint(), array_merge($requestOptions, [
             'body' => $xml,
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/OpenSRS',
@@ -210,7 +210,7 @@ class OpenSrsApi
                 'X-Signature' => md5(md5($xml . $this->configuration->key) . $this->configuration->key),
                 'Content-Length' => strlen($xml)
             ],
-        ])->then(function (Response $response) {
+        ]))->then(function (Response $response) {
             $result = $response->getBody()->getContents();
 
             if (empty($result)) {
@@ -351,7 +351,8 @@ class OpenSrsApi
         }
 
         if ((int)$data['is_success'] === 0 && !in_array($data['response_code'], [200, 212])) {
-            $errorMessage = 'Registrar API Error: ' . $data['response_text'];
+            $providerMessage = $data['response_text'] ?? 'Empty response from provider';
+            $errorMessage = 'Registrar API Error: ' . $providerMessage;
 
             if ($data['response_code'] == 400) {
                 $errorMessage = 'Registrar API Authentication Error';

@@ -108,6 +108,8 @@ class Provider extends DomainNames implements ProviderInterface
                         'domain' => Utils::getDomain($params->sld, $tld),
                         'no_cache' => 0,
                     ],
+                ], [
+                    'timeout' => 10, // Set a reduced timeout for the request
                 ])
                 ->then(function (array $result) use ($params, $tld): DacDomain {
                     $register = $result['attributes']['status'] === 'available';
@@ -128,17 +130,13 @@ class Provider extends DomainNames implements ProviderInterface
                         ->setDescription($description);
                 })
                 ->otherwise(function (ProvisionFunctionError $e) use ($params, $tld): DacDomain {
-                    if (Str::contains($e->getMessage(), ['TLD not serviced', 'Invalid domain syntax'])) {
-                        return DacDomain::create()
-                            ->setDomain(Utils::getDomain($params->sld, $tld))
-                            ->setTld($tld)
-                            ->setCanRegister(false)
-                            ->setCanTransfer(false)
-                            ->setIsPremium(false)
-                            ->setDescription($e->getMessage());
-                    }
-
-                    throw $e;
+                    return DacDomain::create()
+                        ->setDomain(Utils::getDomain($params->sld, $tld))
+                        ->setTld($tld)
+                        ->setCanRegister(false)
+                        ->setCanTransfer(false)
+                        ->setIsPremium(false)
+                        ->setDescription($e->getMessage());
                 });
         }, $params->tlds);
 

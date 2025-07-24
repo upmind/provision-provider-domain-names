@@ -9,6 +9,10 @@ All notable changes to the package will be documented in this file.
 - Add Moniker provider
 - Add migrated property to Hexonet Configuration; proxy requests to either CentralnicReseller or Moniker
 - Add property to SynergyWholesale configuration to use registrant contact for all other contact types
+- Update OpenSRS domainAvailabilityCheck()
+  - Improve error handling so failed lookups on particular TLDs don't fail the entire result
+  - Reduce timeout to 10s per request
+- Improve OpenSRS error handling for empty responses
 
 ## [v2.18.15](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.18.15) - 2025-07-03
 

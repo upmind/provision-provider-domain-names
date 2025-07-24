@@ -2,6 +2,14 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.44](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.44) - 2025-07-24
+
+- Fix CentralnicReseller expiry date returned in DomainResult
+- Fix Enom renew() to restore domains in grace period
+- Add Moniker provider
+- Add migrated property to Hexonet Configuration; proxy requests to either CentralnicReseller or Moniker
+- Add property to SynergyWholesale configuration to use registrant contact for all other contact types
+
 ## [v2.12.44](https://github.com/upmind/provision-provider-domain-names/releases/tag/v2.12.44) - 2025-07-03
 
 - Change how CoccaEpp provider returns the eppCode (previously returned hashed, documentation advise to manually reset it)

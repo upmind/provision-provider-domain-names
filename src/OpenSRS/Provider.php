@@ -108,6 +108,8 @@ class Provider extends DomainNames implements ProviderInterface
                         'domain' => Utils::getDomain($params->sld, $tld),
                         'no_cache' => 0,
                     ],
+                ], [
+                    'timeout' => 10, // Set a reduced timeout for the request
                 ])
                 ->then(function (array $result) use ($params, $tld): DacDomain {
                     $register = $result['attributes']['status'] === 'available';

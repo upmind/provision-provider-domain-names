@@ -8,6 +8,7 @@ use Upmind\ProvisionBase\Laravel\ProvisionServiceProvider;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
 use Upmind\ProvisionProviders\DomainNames\Example\Provider as ExampleProvider;
 use Upmind\ProvisionProviders\DomainNames\Demo\Provider as DemoProvider;
+use Upmind\ProvisionProviders\DomainNames\Moniker\Provider as Moniker;
 use Upmind\ProvisionProviders\DomainNames\Namecheap\Provider as Namecheap;
 use Upmind\ProvisionProviders\DomainNames\Nominet\Provider as Nominet;
 use Upmind\ProvisionProviders\DomainNames\Hexonet\Provider as Hexonet;
@@ -75,5 +76,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('domain-names', 'tpp-wholesale', TPPWholesale::class);
         $this->bindProvider('domain-names', 'synergy-wholesale', SynergyWholesale::class);
         $this->bindProvider('domain-names', 'netim', Netim::class);
+        $this->bindProvider('domain-names', 'moniker', Moniker::class);
     }
 }

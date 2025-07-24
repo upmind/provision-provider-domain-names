@@ -36,7 +36,7 @@
         "africc/php-epp2": "^2.0",
         "upmind/domainnameapi-sdk": "^1.0",
         "fakerphp/faker": "^1.0",
-        "centralnic-reseller/php-sdk": "^8.0",
+        "centralnic-reseller/php-sdk": "^11",
         "upmind/hexonet-php-sdk": "^5.8"
     },
     "require-dev": {

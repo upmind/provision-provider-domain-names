@@ -349,7 +349,8 @@ class OpenSrsApi
         }
 
         if ((int)$data['is_success'] === 0 && !in_array($data['response_code'], [200, 212])) {
-            $errorMessage = 'Registrar API Error: ' . $data['response_text'];
+            $providerMessage = $data['response_text'] ?? 'Empty response from provider';
+            $errorMessage = 'Registrar API Error: ' . $providerMessage;
 
             if ($data['response_code'] == 400) {
                 $errorMessage = 'Registrar API Authentication Error';

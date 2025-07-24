@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.19.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.19.1) - 2025-07-24
+
+- Fix Moniker provider binding in Laravel service
+
 ## [v2.19.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.19.0) - 2025-07-24
 
 - Fix CentralnicReseller expiry date returned in DomainResult

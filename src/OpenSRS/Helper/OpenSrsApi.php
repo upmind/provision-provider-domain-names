@@ -183,7 +183,7 @@ class OpenSrsApi
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function makeRequestAsync(array $params): PromiseInterface
+    public function makeRequestAsync(array $params, array $requestOptions = []): PromiseInterface
     {
         // Request Template
         $xmlDataBlock = self::array2xml($params);
@@ -199,7 +199,7 @@ class OpenSrsApi
             self::XML_INDENT . '</body>' . self::CRLF .
             '</OPS_envelope>';
 
-        return $this->client->requestAsync('POST', $this->getApiEndpoint(), [
+        return $this->client->requestAsync('POST', $this->getApiEndpoint(), array_merge([
             'body' => $xml,
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/OpenSRS',
@@ -208,7 +208,7 @@ class OpenSrsApi
                 'X-Signature' => md5(md5($xml . $this->configuration->key) . $this->configuration->key),
                 'Content-Length' => strlen($xml)
             ],
-        ])->then(function (Response $response) {
+        ], $requestOptions))->then(function (Response $response) {
             $result = $response->getBody()->getContents();
 
             if (empty($result)) {

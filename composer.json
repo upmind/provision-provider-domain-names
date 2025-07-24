@@ -35,7 +35,7 @@
         "ext-simplexml": "*",
         "ext-xml": "*",
         "africc/php-epp2": "^2.0",
-        "centralnic-reseller/php-sdk": "^8.0",
+        "centralnic-reseller/php-sdk": "^11",
         "fakerphp/faker": "^1.0",
         "guzzlehttp/guzzle": "^6.3|^7.0",
         "metaregistrar/php-epp-client": "^1.0.12",

@@ -199,7 +199,7 @@ class OpenSrsApi
             self::XML_INDENT . '</body>' . self::CRLF .
             '</OPS_envelope>';
 
-        return $this->client->requestAsync('POST', $this->getApiEndpoint(), array_merge([
+        return $this->client->requestAsync('POST', $this->getApiEndpoint(), array_merge($requestOptions, [
             'body' => $xml,
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/OpenSRS',
@@ -208,7 +208,7 @@ class OpenSrsApi
                 'X-Signature' => md5(md5($xml . $this->configuration->key) . $this->configuration->key),
                 'Content-Length' => strlen($xml)
             ],
-        ], $requestOptions))->then(function (Response $response) {
+        ]))->then(function (Response $response) {
             $result = $response->getBody()->getContents();
 
             if (empty($result)) {

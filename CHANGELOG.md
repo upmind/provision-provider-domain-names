@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.19.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.19.2) - 2025-07-25
+
+- Fix Enom provider DateTimeImmutable instantiation
+
 ## [v2.19.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.19.1) - 2025-07-24
 
 - Fix Moniker provider binding in Laravel service

@@ -404,7 +404,7 @@ class EnomApi
                 ]);
         }
 
-        $now = new DateTimeImmutable('now', 'UTC');
+        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         // The API call is different if domain has expired, ie expiration date is in the past or not
         // But also check that status is also expired.

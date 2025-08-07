@@ -29,7 +29,7 @@ class Provider extends CentralNicResellerProvider
                 'Moniker, Built For Domain Investors. '
                 . 'Buy, sell, manage, and monetize domain names.'
             )
-            ->setLogoUrl('https://api.upmind.io/images/logos/provision/moniker-logo_2x.png');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/moniker-logo.svg');
     }
 
     /**

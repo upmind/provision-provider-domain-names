@@ -167,7 +167,7 @@ class OpenSrsApi
      * @param array $params
      * @return array
      *
-     * @throws ProvisionFunctionError
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function makeRequest(array $params): array
     {

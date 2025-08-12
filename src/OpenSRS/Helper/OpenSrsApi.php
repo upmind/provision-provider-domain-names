@@ -217,6 +217,8 @@ class OpenSrsApi
             }
 
             return self::parseResponseData($result);
+        })->otherwise(function (Throwable $t) {
+            static::errorResult($t->getMessage(), [], [], $t);
         });
     }
 

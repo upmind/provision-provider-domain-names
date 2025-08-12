@@ -168,7 +168,6 @@ class OpenSrsApi
      * @param  array  $params
      * @return array
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function makeRequest(array $params): array

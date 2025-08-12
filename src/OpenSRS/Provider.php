@@ -97,6 +97,10 @@ class Provider extends DomainNames implements ProviderInterface
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/opensrs-logo@2x.png');
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
         $promises = array_map(function (string $tld) use ($params): PromiseInterface {
@@ -129,14 +133,26 @@ class Provider extends DomainNames implements ProviderInterface
                         ->setIsPremium($premium)
                         ->setDescription($description);
                 })
-                ->otherwise(function (ProvisionFunctionError $e) use ($params, $tld): DacDomain {
-                    return DacDomain::create()
-                        ->setDomain(Utils::getDomain($params->sld, $tld))
-                        ->setTld($tld)
-                        ->setCanRegister(false)
-                        ->setCanTransfer(false)
-                        ->setIsPremium(false)
-                        ->setDescription($e->getMessage());
+                ->otherwise(function (Throwable $e) use ($params, $tld): DacDomain {
+                    if ($e instanceof ProvisionFunctionError) {
+                        return DacDomain::create()
+                            ->setDomain(Utils::getDomain($params->sld, $tld))
+                            ->setTld($tld)
+                            ->setCanRegister(false)
+                            ->setCanTransfer(false)
+                            ->setIsPremium(false)
+                            ->setDescription($e->getMessage());
+                    }
+
+                    $this->errorResult(
+                        'Error checking domain availability: ' . $e->getMessage(),
+                        [
+                            'params' => $params,
+                            'tld' => $tld
+                        ],
+                        [],
+                        $e
+                    );
                 });
         }, $params->tlds);
 

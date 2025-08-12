@@ -179,10 +179,6 @@ class OpenSrsApi
     /**
      * Send request and return the response.
      *
-     * @param  array  $params
-     * @return PromiseInterface
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function makeRequestAsync(array $params, array $requestOptions = []): PromiseInterface

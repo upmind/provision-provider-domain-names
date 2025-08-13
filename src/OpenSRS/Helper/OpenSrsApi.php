@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\OpenSRS\Helper;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Str;
@@ -215,7 +217,20 @@ class OpenSrsApi
 
             return self::parseResponseData($result);
         })->otherwise(function (Throwable $t) {
-            static::errorResult($t->getMessage(), [], [], $t);
+            if ($t instanceof TransferException) {
+                $errorMessage = 'Provider API Connection Error: ' . $t->getMessage();
+                $errorData = [];
+
+                if ($t instanceof RequestException && ($response = $t->getResponse())) {
+                    $errorMessage = 'Provider API Response Error: ' . $response->getReasonPhrase();
+                    $errorData['http_code'] = $response->getStatusCode();
+                    $errorData['response_body'] = $response->getBody()->__toString();
+                }
+
+                static::errorResult($errorMessage, $errorData, [], $t);
+            }
+
+            throw $t;
         });
     }
 

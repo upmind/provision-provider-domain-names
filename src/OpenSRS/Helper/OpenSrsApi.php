@@ -181,6 +181,7 @@ class OpenSrsApi
      * Send request and return the response.
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function makeRequestAsync(array $params, array $requestOptions = []): PromiseInterface
     {
@@ -212,7 +213,7 @@ class OpenSrsApi
 
             if (empty($result)) {
                 // Something bad happened...
-                throw new RuntimeException('Problem while sending OpenSRS request.');
+                static::errorResult('Provider API Error: Unexpected Empty Response');
             }
 
             return self::parseResponseData($result);

@@ -511,10 +511,10 @@ class Provider extends DomainNames implements ProviderInterface
             'locked' => $domainData['is_locked'],
             // 'renew' => $renew,
             'whois_privacy' => $domainData['is_private_whois_enabled'],
-            'registrant' => $this->_parseContactInfo($domainData['owner_handle'], 'customers'),
-            'billing' => $this->_parseContactInfo($domainData['billing_handle'], 'customers'),
-            'admin' => $this->_parseContactInfo($domainData['admin_handle'], 'customers'),
-            'tech' => $this->_parseContactInfo($domainData['tech_handle'], 'customers'),
+            'registrant' => $this->_parseContactInfo($domainData['owner_handle'] ?? null, 'customers'),
+            'billing' => $this->_parseContactInfo($domainData['billing_handle'] ?? null, 'customers'),
+            'admin' => $this->_parseContactInfo($domainData['admin_handle'] ?? null, 'customers'),
+            'tech' => $this->_parseContactInfo($domainData['tech_handle'] ?? null, 'customers'),
             'ns' => $ns,
             'created_at' => $domainData['creation_date'] ?? null,
             'updated_at' => $domainData['last_changed'] ?? null,
@@ -927,7 +927,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function _parseContactInfo(string $handle, string $path)
+    private function _parseContactInfo(?string $handle, string $path)
     {
         if (!$handle) {
             return [];

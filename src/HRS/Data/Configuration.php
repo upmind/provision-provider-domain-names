@@ -13,6 +13,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string $username Username of the account
  * @property-read string $key API key of the account
  * @property-read bool|null $debug Whether or not to debug log
+ * @property-read bool|null $skip_ssl_verification Whether to skip SSL verification during API requests
  */
 class Configuration extends DataSet
 {
@@ -24,6 +25,7 @@ class Configuration extends DataSet
             'username' => ['required', 'string', 'min:3'],
             'key' => ['required', 'string', 'min:6'],
             'debug' => ['boolean'],
+            'skip_ssl_verification' => ['nullable', 'boolean'],
         ]);
     }
 }

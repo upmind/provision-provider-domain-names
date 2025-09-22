@@ -49,6 +49,7 @@ class Provider extends OpenSRSProvider
             'connect_timeout' => 10,
             'timeout' => 60,
             'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
+            'verify' => $this->configuration->skip_ssl_verification ? false : true,
         ]);
 
         return $this->apiClient = new HrsApi($client, $this->configuration);

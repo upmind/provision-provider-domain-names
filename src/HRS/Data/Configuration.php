@@ -15,6 +15,7 @@ use Upmind\ProvisionProviders\DomainNames\OpenSRS\Data\OpenSrsConfiguration;
  * @property-read int|null $port Port of the HRS API
  * @property-read string $username Username of the account
  * @property-read string $key API key of the account
+ * @property-read bool|null $skip_ssl_verification Whether to skip SSL verification during API requests
  */
 class Configuration extends OpenSrsConfiguration
 {
@@ -25,6 +26,7 @@ class Configuration extends OpenSrsConfiguration
             'port' => ['nullable', 'numeric'],
             'username' => ['required', 'string', 'min:3'],
             'key' => ['required', 'string', 'min:6'],
+            'skip_ssl_verification' => ['nullable', 'boolean'],
         ]);
     }
 }

@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.50](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.50) - 2025-09-22
+
+- Add HRS configuration setting to skip SSL verification
+
 ## [v2.12.49](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.49) - 2025-09-11
 
 - Fix OpenProvider _getDomain() undefined contact handle index errors

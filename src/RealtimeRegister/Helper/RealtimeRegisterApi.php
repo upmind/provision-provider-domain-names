@@ -474,7 +474,7 @@ class RealtimeRegisterApi
 
         // Remove epp/auth code if not supported on transfer.
         if (NoEppCodeTransfer::tldIsSupported($domainName)) {
-            unset($body['epp_code']);
+            unset($body['authcode']);
         }
 
         $response = $this->makeRequest($command, null, $body, "POST");

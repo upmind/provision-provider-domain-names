@@ -18,7 +18,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
-use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\RequiresTransferAuthCode;
+use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\NoEppCodeTransfer;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\RealtimeRegister\Data\Configuration;
 
@@ -536,7 +536,7 @@ class RealtimeRegisterApi
         }
 
         // Remove epp/auth code if not supported on transfer.
-        if (!RequiresTransferAuthCode::tldRequiresAuthCode($domainName)) {
+        if (NoEppCodeTransfer::tldIsSupported($domainName)) {
             unset($body['epp_code']);
         }
 

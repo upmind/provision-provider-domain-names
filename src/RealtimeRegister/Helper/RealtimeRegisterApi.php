@@ -18,6 +18,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
+use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\NoEppCodeTransfer;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\RealtimeRegister\Data\Configuration;
 
@@ -532,6 +533,11 @@ class RealtimeRegisterApi
 
         if (!$this->domainAllowsTransferPeriod($domainName)) {
             unset($body['period']);
+        }
+
+        // Remove epp/auth code if not supported on transfer.
+        if (NoEppCodeTransfer::tldIsSupported($domainName)) {
+            unset($body['authcode']);
         }
 
         $response = $this->makeRequest($command, null, $body, "POST");

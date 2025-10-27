@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Netistrar;
 
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Str;
 use GuzzleHttp\Client;
+use Throwable;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -40,9 +38,8 @@ use Upmind\ProvisionProviders\DomainNames\Netistrar\Helper\NetistrarApi;
  */
 class Provider extends DomainNames implements ProviderInterface
 {
-    protected NetistrarApi $api;
+    protected ?NetistrarApi $api = null;
     protected Configuration $configuration;
-    protected APIProvider $provider;
 
     public function __construct(Configuration $configuration)
     {
@@ -56,7 +53,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         return AboutData::create()
             ->setName('Netistrar')
-            ->setLogoUrl('https://netistrar.com/images/v2/netistrar_logo_full.png')
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/netistrar-logo.png')
             ->setDescription('Netistrar provider for domain names');
     }
 
@@ -76,7 +73,9 @@ class Provider extends DomainNames implements ProviderInterface
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
         $sld = $params->sld;
-        
+
+        $dacDomains = [];
+
         foreach ($params->tlds as $tld) {
             $result = $this->api()->liveAvailability($sld . "." . $tld);
 
@@ -89,8 +88,8 @@ class Provider extends DomainNames implements ProviderInterface
                 ),
                 'tld' => $tld,
                 'can_register' => $canRegister,
-                'can_transfer' => !$canRegister 
-                    && isset($result->additionalData->transferType) 
+                'can_transfer' => !$canRegister
+                    && isset($result->additionalData->transferType)
                     && $result->additionalData->transferType === 'pull',
                 'is_premium' => $result->premiumSupported ?? false,
             ]);
@@ -106,7 +105,8 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
-        $result = $this->api()->createDomain($params);
+        $this->api()->createDomain($params);
+
         return $this->getInfo(DomainInfoParams::create([
             'sld' => $params->sld,
             'tld' => $params->tld,
@@ -118,9 +118,9 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function transfer(TransferParams $params): DomainResult
     {
-        $result = $this->api()->transferDomain($params);
-        
-        $domainName = self::getDomainName($params);
+        $this->api()->transferDomain($params);
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         $domainInfo = $this->api()->getDomainInfo($domainName);
 
         return DomainResult::create($domainInfo)->setMessage('Domain transferred');
@@ -132,13 +132,13 @@ class Provider extends DomainNames implements ProviderInterface
     public function renew(RenewParams $params): DomainResult
     {
         $this->api()->renewDomain($params);
-        
-        $domainName = self::getDomainName($params);
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         $domainInfo = $this->api()->getDomainInfo($domainName);
 
         return DomainResult::create($domainInfo)->setMessage('Domain renewed');
     }
-    
+
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
@@ -153,12 +153,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getInfo(DomainInfoParams $params): DomainResult
     {
-        $domainName = self::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
             return $this->_getInfo($domainName, 'Domain data obtained');
         } catch (Throwable $e) {
-            $this->handleException($e, $params);
+            $this->errorResult($e->getMessage(), [], $params->toArray());
         }
     }
 
@@ -167,7 +167,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        $domainName = self::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         $updateResults = $this->api()->updateRegistrantContact($domainName, $params);
         $domainInfo = $this->api()->getDomainInfo($domainName);
         $logger = $this->getLogger();
@@ -187,11 +187,11 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
-        $domainName = self::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         $this->api()->updateDomainNameservers($domainName, $params);
 
         $domainInfo = $this->api()->getDomainInfo($domainName);
-        
+
         return NameserversResult::create($domainInfo->ns)->setMessage('Netistrar domain nameservers updated');
     }
 
@@ -200,8 +200,9 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setLock(LockParams $params): DomainResult
     {
-        $domainName = self::getDomainName($params);
-        $this->api()->updateDomainLock($domainName, ($params->lock==="1"));
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+        $this->api()->updateDomainLock($domainName, (bool) $params->lock);
+
         return $this->_getInfo($domainName, 'Domain lock updated');
     }
 
@@ -212,8 +213,9 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
-        $domainName = self::getDomainName($params);
-        $this->api()->updateAutoRenew($domainName, ($params->auto_renew==="1"));
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+        $this->api()->updateAutoRenew($domainName, (bool) $params->auto_renew);
+
         return $this->_getInfo($domainName, 'Domain autorenew updated');
     }
 
@@ -224,7 +226,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
-        $domainName = self::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         if (!NetistrarApi::is_uk_domain($domainName)) {
             $this->errorResult('Operation not available for this TLD');
         }
@@ -238,7 +240,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        $domainName = self::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         if (NetistrarApi::is_uk_domain($domainName)) {
             $this->errorResult('Operation not available for this TLD');
         }
@@ -250,7 +252,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         $this->api()->updateIpsTag($domainName, $params->ips_tag, $domainInfo->tags);
-        
+
         $domainInfo = $this->api()->getDomainInfo($domainName, ['tags']);
         return ResultData::create()->setMessage('Domain IPS tag updated');
     }
@@ -260,7 +262,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function api(): NetistrarApi
     {
-        if (isset($this->api) && is_a($this->api, NetistrarApi::class)) {
+        if (isset($this->api)) {
             return $this->api;
         }
 
@@ -277,18 +279,6 @@ class Provider extends DomainNames implements ProviderInterface
             'handler' => $this->getGuzzleHandlerStack(),
         ]);
 
-        return $this->api = new NetistrarApi($client, $this->configuration, $this->getLogger());
-    }
-
-    public static function getDomainName(object $params) : string 
-    {
-        if (!isset($params->sld) || !isset($params->tld)) {
-            $this->errorResult('Domain SLD or TLD not found');        
-        }
-
-        return Utils::getDomain(
-            Utils::normalizeSld($params->sld),
-            Utils::normalizeTld($params->tld)
-        );
+        return $this->api = new NetistrarApi($client, $this->configuration);
     }
 }

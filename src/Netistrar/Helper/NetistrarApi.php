@@ -29,7 +29,7 @@ use Upmind\ProvisionProviders\DomainNames\Netistrar\Provider;
 class NetistrarApi
 {
     protected Client $client;
-    protected Configuration $configuration; 
+    protected Configuration $configuration;
 
     public const CONTACT_LTD="LTD"; // UK Limited Company
     public const CONTACT_PLC = "PLC"; // UK Public Limited Company
@@ -38,9 +38,9 @@ class NetistrarApi
     public const CONTACT_LLP = "LLP"; // UK Limited Liability Partnership
     public const CONTACT_IP = "IP"; // UK Industrial/Provident Company
     public const CONTACT_IND = "IND"; // UK Individual (natural person)
-    public const CONTACT_SCH = "SCH"; // UK School 
-    public const CONTACT_RCHAR = "RCHAR"; // UK Registered Charity 
-    public const CONTACT_GOV = "GOV"; // UK Government Body 
+    public const CONTACT_SCH = "SCH"; // UK School
+    public const CONTACT_RCHAR = "RCHAR"; // UK Registered Charity
+    public const CONTACT_GOV = "GOV"; // UK Government Body
     public const CONTACT_CRC = "CRC"; // UK Corporation by Royal Charter
     public const CONTACT_STAT = "STAT"; // UK Statutory Body
     public const CONTACT_OTHER = "OTHER"; // UK Entity that does not fit into any of the above (clubs, associations, etc)
@@ -57,25 +57,25 @@ class NetistrarApi
     private static function getNominentRegistrantTypes() : array {
         // Nominet registrant types
         return [
-            self::CONTACT_LTD, 
-            self::CONTACT_PLC, 
-            self::CONTACT_PTNR, 
-            self::CONTACT_STRA, 
-            self::CONTACT_LLP, 
-            self::CONTACT_IP, 
-            self::CONTACT_IND, 
-            self::CONTACT_SCH, 
-            self::CONTACT_RCHAR, 
-            self::CONTACT_GOV, 
-            self::CONTACT_CRC, 
-            self::CONTACT_STAT, 
+            self::CONTACT_LTD,
+            self::CONTACT_PLC,
+            self::CONTACT_PTNR,
+            self::CONTACT_STRA,
+            self::CONTACT_LLP,
+            self::CONTACT_IP,
+            self::CONTACT_IND,
+            self::CONTACT_SCH,
+            self::CONTACT_RCHAR,
+            self::CONTACT_GOV,
+            self::CONTACT_CRC,
+            self::CONTACT_STAT,
             self::CONTACT_OTHER
         ];
     }
 
     /**
      * Checks if the provided domain name is a UK domain.
-     * 
+     *
      * @params string $domainName The domain name to check
      */
     public static function is_uk_domain(string $domainName) : bool {
@@ -139,7 +139,7 @@ class NetistrarApi
                 }
                 $this->throwError(implode(" ", $errorMessages), ['response' => $parsedResult]);
             }
-            
+
             return $parsedResult;
         } catch (ConnectException $e) {
             $errorMessage = 'Provider API connection failed';
@@ -163,7 +163,7 @@ class NetistrarApi
         if (isset($apiResult->exceptionClass)) {
             $this->throwError('Unable to get domain info', ['response' => $apiResult->message]);
         }
-        
+
         $nameservers = [];
         for ($i=0; $i<6; $i++) {
             if (isset($apiResult->nameservers[$i])) {
@@ -204,7 +204,7 @@ class NetistrarApi
         if (isset($apiResult->exceptionClass)) {
             $this->throwError('Unable to get domain info', ['response' => $apiResult->message]);
         }
-        
+
         return EppCodeResult::create([
             'epp_code' => $apiResult->authCode,
         ]);
@@ -225,14 +225,14 @@ class NetistrarApi
             'country' => $contact->country_code,
         ];
 
-        if ($is_uk_domain && isset($contact->type) 
+        if ($is_uk_domain && isset($contact->type)
             && in_array($contact->type, self::getNominentRegistrantTypes(), true)) {
             $contact['additionalData']['nominetRegistrantType'] = $contact->type;
         }
 
         return $contact;
     }
-    
+
     private function transformNetisrarContactToContact(\stdClass $contact) : ContactParams {
         return ContactParams::create([
             'name' => $contact->name,
@@ -248,7 +248,7 @@ class NetistrarApi
     }
 
     public function renewDomain(RenewParams $params) : object|bool {
-        $domainName = Provider::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         $endpoint = "domains/renew/{$domainName}/{$params->renew_years}/";
 
         $query = [];
@@ -256,9 +256,9 @@ class NetistrarApi
     }
 
     public function createDomain(RegisterDomainParams $params) : object|bool {
-        
+
         $endpoint = "domains";
-        $domainName = Provider::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         $is_uk_domain = self::is_uk_domain($domainName);
 
         $nameservers = [];
@@ -312,15 +312,15 @@ class NetistrarApi
     }
 
     public function transferDomain(TransferParams $params) : object|bool {
-        $domainName = Provider::getDomainName($params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
 
         $transferIdentifier = $domainName;
         $is_uk_domain = self::is_uk_domain($domainName);
-        
+
         if (!$is_uk_domain) {
             $transferIdentifier .= "," .$params->epp_code;
         }
-        
+
         $data = [
             'transferIdentifiers' => [ $transferIdentifier ],
             'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $is_uk_domain),
@@ -338,7 +338,7 @@ class NetistrarApi
         }
 
         $validateResults = $this->validateIncomingTransferDomains($data);
-        
+
         $endpoint = "domains/transfer/";
         $results = $this->apiCall($endpoint, [], $data, 'POST');
 
@@ -398,7 +398,7 @@ class NetistrarApi
             'nameservers' => $nameservers,
         ];
         $results = $this->updateDomain($data);
-        
+
         if ($results->transactionStatus == "ALL_ELEMENTS_FAILED") {
             $this->throwError('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
         }
@@ -416,7 +416,7 @@ class NetistrarApi
 
         return $results;
     }
-    
+
     /**
      * @return no-return
      *

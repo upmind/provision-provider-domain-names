@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.19.7](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.19.7) - 2025-10-27
+
+- Remove `authcode` parameter when transfering a `.lu` domain via Realtime Register, as not required.
+
 ## [v2.19.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.19.6) - 2025-10-23
 
 - Remove `period` parameter when transfering a `.lu` domain via Realtime Register, as they are automatically renewed for 1 year.

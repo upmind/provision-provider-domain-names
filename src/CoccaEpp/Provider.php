@@ -34,6 +34,10 @@ use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 
 class Provider extends DomainNames implements ProviderInterface
@@ -759,4 +763,21 @@ class Provider extends DomainNames implements ProviderInterface
         $handle = "$stamp$randStr";
         return $handle;
     }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
 }

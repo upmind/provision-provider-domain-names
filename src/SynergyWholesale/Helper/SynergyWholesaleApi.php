@@ -475,4 +475,49 @@ class SynergyWholesaleApi
 
         $this->makeRequest($command, $params);
     }
+
+    /**
+     * Get domain verification info (ICANN and AU eligibility).
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @return array Verification status data
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getDomainVerificationInfo(string $domainName): array
+    {
+        $response = $this->makeRequest('domainInfo', [
+            'domainName' => $domainName,
+        ]);
+
+        $isAuDomain = Str::endsWith($domainName, '.au');
+
+        return [
+            'verification_status' => $response['icannStatus'] ?? 'unknown',
+            'verification_type' => $isAuDomain ? 'both' : 'icann',
+            'verification_deadline' => $response['icannVerificationDateEnd'] ?? null,
+            'au_eligibility_valid' => $response['au_valid_eligibility'] ?? null,
+            'provider_specific_data' => [
+                'au_eligibility_last_check' => $response['au_eligibility_last_check'] ?? null,
+            ],
+        ];
+    }
+
+    /**
+     * Resend verification email for a domain.
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @return array Success result
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(string $domainName): array
+    {
+        $response = $this->makeRequest('resendVerificationEmail', [
+            'domainName' => $domainName,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => $response['message'] ?? 'Verification email sent successfully',
+        ];
+    }
 }

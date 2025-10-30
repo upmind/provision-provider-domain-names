@@ -511,4 +511,66 @@ class OpenSrsApi
     {
         return sprintf('OpenSRS API Error: %s', implode(', ', $xmlErrors));
     }
+
+    /**
+     * Get registrant verification status for a domain.
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @return array Verification status data
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getRegistrantVerificationStatus(string $domainName): array
+    {
+        $response = $this->makeRequest([
+            'protocol' => 'XCP',
+            'action' => 'get_registrant_verification_status',
+            'object' => 'domain',
+            'attributes' => [
+                'domain' => $domainName,
+            ],
+        ]);
+
+        if (!isset($response['is_success']) || $response['is_success'] != 1) {
+            $errorMessage = $response['response_text'] ?? 'Unknown error';
+            static::errorResult(sprintf('Failed to get verification status: %s', $errorMessage), $response);
+        }
+
+        $attributes = $response['attributes'] ?? [];
+
+        return [
+            'verification_status' => $attributes['status'] ?? 'unknown',
+            'verification_deadline' => $attributes['deadline'] ?? null,
+            'days_to_suspend' => $attributes['days_to_suspend'] ?? null,
+            'email_bounced' => isset($attributes['email_bounced']) ? (bool)$attributes['email_bounced'] : null,
+        ];
+    }
+
+    /**
+     * Send registrant verification email for a domain.
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @return array Success result
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function sendRegistrantVerificationEmail(string $domainName): array
+    {
+        $response = $this->makeRequest([
+            'protocol' => 'XCP',
+            'action' => 'send_registrant_verification_email',
+            'object' => 'domain',
+            'attributes' => [
+                'domain' => $domainName,
+            ],
+        ]);
+
+        if (!isset($response['is_success']) || $response['is_success'] != 1) {
+            $errorMessage = $response['response_text'] ?? 'Unknown error';
+            static::errorResult(sprintf('Failed to send verification email: %s', $errorMessage), $response);
+        }
+
+        return [
+            'success' => true,
+            'message' => $response['response_text'] ?? 'Verification email sent successfully',
+        ];
+    }
 }

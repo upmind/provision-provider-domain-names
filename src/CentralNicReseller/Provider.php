@@ -38,6 +38,11 @@ use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\EppExtension\EppConnection;
 
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+
 /**
  * CentralNicReseller provider.
  */
@@ -520,4 +525,21 @@ class Provider extends DomainNames implements ProviderInterface
 
         return $this->api ??= new CentralNicResellerApi($this->configuration, $this->getLogger());
     }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
 }

@@ -32,6 +32,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Helper\NetistrarApi;
+use Upmind\ProvisionProviders\DomainNames\Netistrar\Helper\NetistrarUtils;
 
 /**
  * Netistrar domain provider
@@ -240,10 +241,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
-        $domainName = Utils::getDomain($params->sld, $params->tld);
-        if (!NetistrarApi::is_uk_domain($domainName)) {
+        if (!NetistrarUtils::isUkTld($params->tld)) {
             $this->errorResult('Operation not available for this TLD');
         }
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
         return $this->api()->getEppCode($domainName);
     }
 
@@ -254,10 +257,11 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
-        $domainName = Utils::getDomain($params->sld, $params->tld);
-        if (NetistrarApi::is_uk_domain($domainName)) {
+        if (NetistrarUtils::isUkTld($params->tld)) {
             $this->errorResult('Operation not available for this TLD');
         }
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
 
         $domainInfo = $this->api()->getDomainInfo($domainName, ['tags']);
 

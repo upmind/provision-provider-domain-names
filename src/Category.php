@@ -25,6 +25,10 @@ use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 
 abstract class Category extends BaseCategory
 {
@@ -95,4 +99,18 @@ abstract class Category extends BaseCategory
      * Release a domain name to a new IPS tag (UK-only).
      */
     abstract public function updateIpsTag(IpsTagParams $params): ResultData;
+
+    /**
+     * Get domain verification status (ICANN, AU eligibility, etc.)
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    abstract public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult;
+
+    /**
+     * Resend domain verification email to registrant.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    abstract public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult;
 }

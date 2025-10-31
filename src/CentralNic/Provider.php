@@ -33,6 +33,10 @@ use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\CentralNic\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\CentralNic\EppExtension\EppConnection;
 use Upmind\ProvisionProviders\DomainNames\CentralNic\Helper\CentralNicApi;
@@ -552,5 +556,21 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         return true;
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        $this->errorResult('Operation not supported', $params);
     }
 }

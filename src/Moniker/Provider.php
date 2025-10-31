@@ -9,6 +9,11 @@ use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Helper\CentralNicRe
 use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Provider as CentralNicResellerProvider;
 use Upmind\ProvisionProviders\DomainNames\Moniker\Data\Configuration;
 
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+
 /**
  * Moniker provider.
  *
@@ -45,4 +50,21 @@ class Provider extends CentralNicResellerProvider
 
         return $this->api;
     }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
 }

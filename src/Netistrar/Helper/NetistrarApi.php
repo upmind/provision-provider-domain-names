@@ -52,28 +52,6 @@ class NetistrarApi
     }
 
     /**
-     * Returns an array of Nominet registrant types that are valid for UK domains
-     */
-    private static function getNominentRegistrantTypes() : array {
-        // Nominet registrant types
-        return [
-            self::CONTACT_LTD,
-            self::CONTACT_PLC,
-            self::CONTACT_PTNR,
-            self::CONTACT_STRA,
-            self::CONTACT_LLP,
-            self::CONTACT_IP,
-            self::CONTACT_IND,
-            self::CONTACT_SCH,
-            self::CONTACT_RCHAR,
-            self::CONTACT_GOV,
-            self::CONTACT_CRC,
-            self::CONTACT_STAT,
-            self::CONTACT_OTHER
-        ];
-    }
-
-    /**
      * Checks if the provided domain name is a UK domain.
      *
      * @params string $domainName The domain name to check
@@ -183,7 +161,7 @@ class NetistrarApi
         ];
 
         if ($is_uk_domain && isset($contact->type)
-            && in_array($contact->type, self::getNominentRegistrantTypes(), true)) {
+            && in_array($contact->type, $this->getNominentRegistrantTypes(), true)) {
             $contactData['additionalData']['nominetRegistrantType'] = $contact->type;
         }
 
@@ -428,6 +406,28 @@ class NetistrarApi
         }
 
         return $results;
+    }
+
+    /**
+     * Returns an array of Nominet registrant types that are valid for UK domains
+     */
+    private function getNominentRegistrantTypes() : array {
+        // Nominet registrant types
+        return [
+            self::CONTACT_LTD,
+            self::CONTACT_PLC,
+            self::CONTACT_PTNR,
+            self::CONTACT_STRA,
+            self::CONTACT_LLP,
+            self::CONTACT_IP,
+            self::CONTACT_IND,
+            self::CONTACT_SCH,
+            self::CONTACT_RCHAR,
+            self::CONTACT_GOV,
+            self::CONTACT_CRC,
+            self::CONTACT_STAT,
+            self::CONTACT_OTHER
+        ];
     }
 
     /**

@@ -52,17 +52,6 @@ class NetistrarApi
     }
 
     /**
-     * Checks if the provided domain name is a UK domain.
-     *
-     * @params string $domainName The domain name to check
-     */
-    public static function is_uk_domain(string $domainName): bool
-    {
-        // Check if the domain is a UK domain
-        return \Str::endsWith($domainName, '.uk');
-    }
-
-    /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
@@ -207,7 +196,7 @@ class NetistrarApi
 
         $endpoint = "domains";
         $domainName = Utils::getDomain($params->sld, $params->tld);
-        $is_uk_domain = self::is_uk_domain($domainName);
+        $isUkDomain = NetistrarUtils::isUkTld($params->tld);
 
         $nameservers = [];
         $keys = ['ns1', 'ns2', 'ns3', 'ns4', 'ns5'];  // List of nameserver keys
@@ -219,20 +208,20 @@ class NetistrarApi
 
         $data = [
             'domainNames' => [ $domainName ],
-            'registrationYears' => (int)$params->renew_years,
-            'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $is_uk_domain ),
+            'registrationYears' => (int) $params->renew_years,
+            'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $isUkDomain),
             'nameservers' => $nameservers,
             'privacyProxy' => $params->whois_privacy ? 0 : 1,
         ];
 
         if (isset($params->admin->register)) {
-            $data['adminContact'] = $this->transformContactToNetistrarContact($params->admin->register, $is_uk_domain);
+            $data['adminContact'] = $this->transformContactToNetistrarContact($params->admin->register, $isUkDomain);
         }
         if (isset($params->tech->register)) {
-            $data['technicalContact'] = $this->transformContactToNetistrarContact($params->tech->register, $is_uk_domain);
+            $data['technicalContact'] = $this->transformContactToNetistrarContact($params->tech->register, $isUkDomain);
         }
         if (isset($params->billing->register)) {
-            $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $is_uk_domain);
+            $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $isUkDomain);
         }
 
         $results = $this->apiCall($endpoint, [], $data, 'POST');
@@ -275,26 +264,26 @@ class NetistrarApi
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         $transferIdentifier = $domainName;
-        $is_uk_domain = self::is_uk_domain($domainName);
+        $isUkDomain = NetistrarUtils::isUkTld($params->tld);
 
-        if (!$is_uk_domain) {
+        if (!$isUkDomain) {
             $transferIdentifier .= "," .$params->epp_code;
         }
 
         $data = [
             'transferIdentifiers' => [ $transferIdentifier ],
-            'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $is_uk_domain),
+            'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $isUkDomain),
             'privacyProxy' => $params->whois_privacy ? 0 : 1,
         ];
 
         if (isset($params->admin->register)) {
-            $data['adminContact'] = $this->transformContactToNetistrarContact($params->admin->register, $is_uk_domain);
+            $data['adminContact'] = $this->transformContactToNetistrarContact($params->admin->register, $isUkDomain);
         }
         if (isset($params->tech->register)) {
-            $data['technicalContact'] = $this->transformContactToNetistrarContact($params->tech->register, $is_uk_domain);
+            $data['technicalContact'] = $this->transformContactToNetistrarContact($params->tech->register, $isUkDomain);
         }
         if (isset($params->billing->register)) {
-            $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $is_uk_domain);
+            $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $isUkDomain);
         }
 
         $validateResults = $this->validateIncomingTransferDomains($data);
@@ -331,11 +320,14 @@ class NetistrarApi
      */
     public function updateRegistrantContact(string $domainName, UpdateDomainContactParams $params)
     {
-        $is_uk_domain = self::is_uk_domain($domainName);
         $data = [
-            'domainNames' => [ $domainName ],
-            'ownerContact' => $this->transformContactToNetistrarContact($params->contact, $is_uk_domain),
+            'domainNames' => [$domainName],
+            'ownerContact' => $this->transformContactToNetistrarContact(
+                $params->contact,
+                NetistrarUtils::isUkTld($params->tld)
+            )
         ];
+
         return $this->updateDomain($data);
     }
 

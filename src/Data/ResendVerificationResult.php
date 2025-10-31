@@ -12,7 +12,6 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  *
  * @property-read bool $success Whether resend was successful
  * @property-read string $message Result message
- * @property-read string $verification_type Type of verification email sent
  */
 class ResendVerificationResult extends ResultData
 {
@@ -21,7 +20,6 @@ class ResendVerificationResult extends ResultData
         return new Rules([
             'success' => ['required', 'boolean'],
             'message' => ['required', 'string'],
-            'verification_type' => ['required', 'string'],
         ]);
     }
 
@@ -40,15 +38,6 @@ class ResendVerificationResult extends ResultData
     public function setMessage($message): self
     {
         $this->setValue('message', $message);
-        return $this;
-    }
-
-    /**
-     * @return static $this
-     */
-    public function setVerificationType(string $type): self
-    {
-        $this->setValue('verification_type', $type);
         return $this;
     }
 }

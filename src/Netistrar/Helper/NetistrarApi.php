@@ -4,27 +4,27 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Netistrar\Helper;
 
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\TransferException;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\Response;
+use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberUtil;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
-use GuzzleHttp\RequestOptions;
-use InvalidArgumentException;
-use RuntimeException;
-use SimpleXMLElement;
+use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
-use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
-use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
-use Upmind\ProvisionProviders\DomainNames\Netistrar\Provider;
 
 class NetistrarApi
 {
@@ -78,90 +78,26 @@ class NetistrarApi
      *
      * @params string $domainName The domain name to check
      */
-    public static function is_uk_domain(string $domainName) : bool {
+    public static function is_uk_domain(string $domainName): bool
+    {
         // Check if the domain is a UK domain
         return \Str::endsWith($domainName, '.uk');
     }
 
-    /**
-     * @param string $endpoint API endpoint
-     * @param mixed[] $query Query params
-     * @param mixed[] $data Body params
-     * @param string $method Request method type
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
-     */
-    private function apiCall(string $endpoint, array $query = [], array $data = [], string $method = 'GET'): object|bool
+    public function liveAvailability(string $domainName)
     {
-        try {
-            $requestParams = [];
-
-            $default_query['apiKey'] = $this->configuration->getApiKey();
-            $default_query['apiSecret'] = $this->configuration->getApiSecret();
-            $requestParams[RequestOptions::QUERY] = array_merge($query, $default_query);
-
-            if (!empty($data)) {
-                $requestParams[RequestOptions::JSON] = $data;
-            }
-
-            $response = $this->client->request($method, $endpoint, $requestParams);
-
-            // Check for 204 No Content
-            if ($response->getStatusCode() == 204) {
-                return true;
-            }
-
-            $result = $response->getBody()->getContents();
-            $response->getBody()->close();
-
-            if ($result === '') {
-                $this->throwError('Unknown Provider API Error', ['response' => $response]);
-            }
-
-            if ($result === "[]") {
-                $result = "{}";
-            }
-
-            $parsedResult = json_decode($result);
-            if (empty($parsedResult)) {
-                $this->throwError('Unknown Provider API Error', ['response' => $response]);
-            }
-
-            if (isset($parsedResult->transactionStatus) && $parsedResult->transactionStatus === 'ALL_ELEMENTS_FAILED'){
-                // Handle transaction failure
-                $errorMessages = [];
-                foreach($parsedResult->transactionElements as $element) {
-                    foreach($element->elementErrors as $error) {
-                        $errorMessages[] = $error->message; // Concatenate all error messages for each element
-                    }
-                }
-                $this->throwError(implode(" ", $errorMessages), ['response' => $parsedResult]);
-            }
-
-            return $parsedResult;
-        } catch (ConnectException $e) {
-            $errorMessage = 'Provider API connection failed';
-            if (Str::contains($e->getMessage(), ['timeout', 'timed out'])) {
-                $errorMessage = 'Provider API request timeout';
-            }
-
-            $this->throwError($errorMessage, [], [], $e);
-        }
-    }
-
-    public function liveAvailability(string $domainName) : object|bool {
         $endpoint = "domains/available/{$domainName}";
+
         return $this->apiCall($endpoint, []);
     }
 
-    public function getDomainInfo(string $domainName, array $additionalFields = []) : DomainResult {
+    public function getDomainInfo(string $domainName, array $additionalFields = []): DomainResult
+    {
         $endpoint = "domains/{$domainName}";
         $apiResult = $this->apiCall($endpoint, []);
 
         if (isset($apiResult->exceptionClass)) {
-            $this->throwError('Unable to get domain info', ['response' => $apiResult->message]);
+            $this->errorResult('Unable to get domain info', ['response' => $apiResult->message]);
         }
 
         $nameservers = [];
@@ -197,12 +133,13 @@ class NetistrarApi
         return DomainResult::create($domainResultData);
     }
 
-    public function getEppCode(string $domainName) : EppCodeResult {
+    public function getEppCode(string $domainName): EppCodeResult
+    {
         $endpoint = "domains/{$domainName}";
         $apiResult = $this->apiCall($endpoint, []);
 
         if (isset($apiResult->exceptionClass)) {
-            $this->throwError('Unable to get domain info', ['response' => $apiResult->message]);
+            $this->errorResult('Unable to get domain info', ['response' => $apiResult->message]);
         }
 
         return EppCodeResult::create([
@@ -210,7 +147,8 @@ class NetistrarApi
         ]);
     }
 
-    private function transformContactToNetistrarContact(ContactParams $contact, bool $is_uk_domain) : array {
+    private function transformContactToNetistrarContact(ContactParams $contact, bool $is_uk_domain): array
+    {
         $phone = PhoneNumberUtil::getInstance()->parse($contact->phone, null);
         $contact = [
             'name' => $contact->name,
@@ -233,7 +171,8 @@ class NetistrarApi
         return $contact;
     }
 
-    private function transformNetisrarContactToContact(\stdClass $contact) : ContactParams {
+    private function transformNetisrarContactToContact(\stdClass $contact): ContactParams
+    {
         return ContactParams::create([
             'name' => $contact->name,
             'email' => $contact->emailAddress,
@@ -247,7 +186,8 @@ class NetistrarApi
         ]);
     }
 
-    public function renewDomain(RenewParams $params) : object|bool {
+    public function renewDomain(RenewParams $params)
+    {
         $domainName = Utils::getDomain($params->sld, $params->tld);
         $endpoint = "domains/renew/{$domainName}/{$params->renew_years}/";
 
@@ -255,7 +195,8 @@ class NetistrarApi
         return $this->apiCall($endpoint, $query, [], 'GET');//yes, new is a GET request
     }
 
-    public function createDomain(RegisterDomainParams $params) : object|bool {
+    public function createDomain(RegisterDomainParams $params)
+    {
 
         $endpoint = "domains";
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -290,13 +231,14 @@ class NetistrarApi
         $results = $this->apiCall($endpoint, [], $data, 'POST');
 
         if ($results->transactionStatus == "ALL_ELEMENTS_FAILED") {
-            $this->throwError('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
+            $this->errorResult('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
         }
 
         return $results;
     }
 
-    private function validateIncomingTransferDomains(array $data) : object|bool {
+    private function validateIncomingTransferDomains(array $data)
+    {
         $endpoint = "/domains/transfer/validate/";
         $validationResults = $this->apiCall($endpoint, [], $data, 'POST');
 
@@ -305,13 +247,14 @@ class NetistrarApi
             foreach( $validationResults->transactionErrors as $err) {
                 $reasonMessages[] = $err->message;
             }
-            $this->throwError('Unable to validate transfer domains', ['response' => implode(' ',$reasonMessages)]);
+            $this->errorResult('Unable to validate transfer domains', ['response' => implode(' ',$reasonMessages)]);
         }
 
         return true;
     }
 
-    public function transferDomain(TransferParams $params) : object|bool {
+    public function transferDomain(TransferParams $params)
+    {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         $transferIdentifier = $domainName;
@@ -343,13 +286,14 @@ class NetistrarApi
         $results = $this->apiCall($endpoint, [], $data, 'POST');
 
         if ($results->transactionStatus == "ALL_ELEMENTS_FAILED") {
-            $this->throwError('Unable to transfer domain', ['response' => $results->transactionElements->{$domainName}->elementErrors]);
+            $this->errorResult('Unable to transfer domain', ['response' => $results->transactionElements->{$domainName}->elementErrors]);
         }
 
         return $results;
     }
 
-    public function updateIpsTag(string $domainName, string $addTags, array $removeTags) : object|bool {
+    public function updateIpsTag(string $domainName, string $addTags, array $removeTags)
+    {
         $data = [
             'domainNames' => [ $domainName ],
             'addTags' => $addTags,
@@ -358,7 +302,8 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
-    public function updateRegistrantContact(string $domainName, UpdateDomainContactParams $params) : object|bool {
+    public function updateRegistrantContact(string $domainName, UpdateDomainContactParams $params)
+    {
         $is_uk_domain = self::is_uk_domain($domainName);
         $data = [
             'domainNames' => [ $domainName ],
@@ -367,7 +312,8 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
-    public function updateDomainLock(string $domainName, bool $lock) : object|bool {
+    public function updateDomainLock(string $domainName, bool $lock)
+    {
         $data = [
             'domainNames' => [ $domainName ],
             'locked' => $lock,
@@ -375,7 +321,8 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
-    public function updateAutoRenew(string $domainName, bool $autoRenew) : object|bool {
+    public function updateAutoRenew(string $domainName, bool $autoRenew)
+    {
         $data = [
             'domainNames' => [ $domainName ],
             'autoRenew' => $autoRenew,
@@ -383,7 +330,8 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
-    public function updateDomainNameservers(string $domainName, UpdateNameserversParams $params) : object|bool {
+    public function updateDomainNameservers(string $domainName, UpdateNameserversParams $params)
+    {
         $nameservers = [];
         $keys = ['ns1', 'ns2', 'ns3', 'ns4', 'ns5'];  // List of nameserver keys
 
@@ -399,22 +347,123 @@ class NetistrarApi
         ];
         $results = $this->updateDomain($data);
 
-        if ($results->transactionStatus == "ALL_ELEMENTS_FAILED") {
-            $this->throwError('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
+        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
+            $this->errorResult('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
         }
 
         return $results;
     }
 
-    public function updateDomain(array $data) : object|bool{
+    public function updateDomain(array $data)
+    {
         $endpoint = "domains/";
         $results = $this->apiCall($endpoint, [], $data, 'PATCH');
 
-        if ($results->transactionStatus == "ALL_ELEMENTS_FAILED") {
-            $this->throwError('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
+        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
+            $this->errorResult('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
         }
 
         return $results;
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    private function apiCall(string $endpoint, array $query = [], array $data = [], string $method = 'GET')
+    {
+        return $this->apiCallAsync($endpoint, $query, $data, $method)->wait();
+    }
+
+    /***
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    private function apiCallAsync(
+        string $endpoint,
+        array $query = [],
+        array $data = [],
+        string $method = 'GET'
+    ): PromiseInterface {
+        $requestParams = [];
+
+        $requestParams['query'] = array_merge($query, [
+            'apiKey' => $this->configuration->getApiKey(),
+            'apiSecret' => $this->configuration->getApiSecret(),
+        ]);
+
+        if (!empty($data)) {
+            $requestParams['json'] = $data;
+        }
+
+        return $this->client->requestAsync($method, $endpoint, $requestParams)
+            ->then(function (Response $response) {
+                // Check for 204 No Content
+                if ($response->getStatusCode() === 204) {
+                    return true;
+                }
+
+                $result = $response->getBody()->getContents();
+                $response->getBody()->close();
+
+                if ($result === '') {
+                    $this->errorResult('Unknown Provider API Error', ['response' => $response]);
+                }
+
+                if ($result === "[]") {
+                    $result = "{}";
+                }
+
+                $parsedResult = json_decode($result, false, 512, JSON_THROW_ON_ERROR);
+
+                if (empty($parsedResult)) {
+                    $this->errorResult('Unknown Provider API Error', ['response' => $response]);
+                }
+
+                if (isset($parsedResult->transactionStatus)
+                    && $parsedResult->transactionStatus === 'ALL_ELEMENTS_FAILED'
+                ) {
+                    // Handle transaction failure
+                    $errorMessages = [];
+                    foreach($parsedResult->transactionElements as $element) {
+                        foreach($element->elementErrors as $error) {
+                            $errorMessages[] = $error->message; // Concatenate all error messages for each element
+                        }
+                    }
+
+                    $this->errorResult(implode(" ", $errorMessages), ['response' => $parsedResult]);
+                }
+
+                return $parsedResult;
+            })->otherwise(function (Throwable $t) {
+                // Only handle GuzzleHttp TransferExceptions
+                if (!$t instanceof TransferException) {
+                    throw $t;
+                }
+
+                $errorMessage = 'Provider API Connection Error: ' . $t->getMessage();
+
+                if (Str::contains($t->getMessage(), ['timeout', 'timed out'])) {
+                    $errorMessage = 'Provider API request timeout';
+                }
+
+                $errorData = [];
+
+                // If request exception
+                if ($t instanceof RequestException && ($response = $t->getResponse())) {
+                    $errorMessage = 'Provider API Response Error: ' . $response->getReasonPhrase();
+                    $errorData['http_code'] = $response->getStatusCode();
+                    $errorData['response_body'] = $response->getBody()->__toString();
+                }
+
+                // If Connection error, set simple error message
+                if ($t instanceof ConnectException && Str::contains($t->getMessage(), ['timeout', 'timed out'])) {
+                    $errorMessage = 'Provider API request timeout';
+                }
+
+                $this->errorResult($errorMessage, $errorData, [], $t);
+            });
     }
 
     /**
@@ -422,7 +471,7 @@ class NetistrarApi
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    protected function throwError(string $message, array $data = [], array $debug = [], ?Throwable $e = null): void
+    private function errorResult(string $message, array $data = [], array $debug = [], ?Throwable $e = null): void
     {
         throw ProvisionFunctionError::create($message, $e)
             ->withData($data)

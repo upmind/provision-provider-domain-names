@@ -84,6 +84,11 @@ class NetistrarApi
         return \Str::endsWith($domainName, '.uk');
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function liveAvailability(string $domainName)
     {
         $endpoint = "domains/available/{$domainName}";
@@ -91,6 +96,11 @@ class NetistrarApi
         return $this->apiCall($endpoint, []);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function getDomainInfo(string $domainName, array $additionalFields = []): DomainResult
     {
         $endpoint = "domains/{$domainName}";
@@ -126,17 +136,22 @@ class NetistrarApi
             'updated_at' => null,
         ];
 
-        if (in_array('tags', $additionalFields)) {
+        if (in_array('tags', $additionalFields, true)) {
             $domainResultData['tags'] = $apiResult->tags; // Include tags if requested
         }
 
         return DomainResult::create($domainResultData);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function getEppCode(string $domainName): EppCodeResult
     {
         $endpoint = "domains/{$domainName}";
-        $apiResult = $this->apiCall($endpoint, []);
+        $apiResult = $this->apiCall($endpoint);
 
         if (isset($apiResult->exceptionClass)) {
             $this->errorResult('Unable to get domain info', ['response' => $apiResult->message]);
@@ -147,14 +162,18 @@ class NetistrarApi
         ]);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     private function transformContactToNetistrarContact(ContactParams $contact, bool $is_uk_domain): array
     {
         $phone = PhoneNumberUtil::getInstance()->parse($contact->phone, null);
-        $contact = [
+        $contactData = [
             'name' => $contact->name,
             'emailAddress' => $contact->email,
             'organisation' => $contact->organisation,
-            'telephoneDiallingCode' => "+". (string)$phone->getCountryCode(),
+            'telephoneDiallingCode' => "+". $phone->getCountryCode(),
             'telephone' => $phone->getNationalNumber(),
             'street1' => $contact->address1,
             'city' => $contact->city,
@@ -165,10 +184,10 @@ class NetistrarApi
 
         if ($is_uk_domain && isset($contact->type)
             && in_array($contact->type, self::getNominentRegistrantTypes(), true)) {
-            $contact['additionalData']['nominetRegistrantType'] = $contact->type;
+            $contactData['additionalData']['nominetRegistrantType'] = $contact->type;
         }
 
-        return $contact;
+        return $contactData;
     }
 
     private function transformNetisrarContactToContact(\stdClass $contact): ContactParams
@@ -186,6 +205,11 @@ class NetistrarApi
         ]);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function renewDomain(RenewParams $params)
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -195,6 +219,11 @@ class NetistrarApi
         return $this->apiCall($endpoint, $query, [], 'GET');//yes, new is a GET request
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function createDomain(RegisterDomainParams $params)
     {
 
@@ -230,13 +259,18 @@ class NetistrarApi
 
         $results = $this->apiCall($endpoint, [], $data, 'POST');
 
-        if ($results->transactionStatus == "ALL_ELEMENTS_FAILED") {
+        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
             $this->errorResult('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
         }
 
         return $results;
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     private function validateIncomingTransferDomains(array $data)
     {
         $endpoint = "/domains/transfer/validate/";
@@ -253,6 +287,11 @@ class NetistrarApi
         return true;
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function transferDomain(TransferParams $params)
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -285,13 +324,18 @@ class NetistrarApi
         $endpoint = "domains/transfer/";
         $results = $this->apiCall($endpoint, [], $data, 'POST');
 
-        if ($results->transactionStatus == "ALL_ELEMENTS_FAILED") {
+        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
             $this->errorResult('Unable to transfer domain', ['response' => $results->transactionElements->{$domainName}->elementErrors]);
         }
 
         return $results;
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateIpsTag(string $domainName, string $addTags, array $removeTags)
     {
         $data = [
@@ -302,6 +346,11 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateRegistrantContact(string $domainName, UpdateDomainContactParams $params)
     {
         $is_uk_domain = self::is_uk_domain($domainName);
@@ -321,6 +370,11 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateAutoRenew(string $domainName, bool $autoRenew)
     {
         $data = [
@@ -330,6 +384,11 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateDomainNameservers(string $domainName, UpdateNameserversParams $params)
     {
         $nameservers = [];
@@ -354,6 +413,11 @@ class NetistrarApi
         return $results;
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateDomain(array $data)
     {
         $endpoint = "domains/";

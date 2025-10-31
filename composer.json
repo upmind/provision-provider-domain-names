@@ -40,6 +40,7 @@
         "centralnic-reseller/php-sdk": "^11",
         "fakerphp/faker": "^1.0",
         "guzzlehttp/guzzle": "^6.3|^7.0",
+        "illuminate/support": "5.8.* || ^6.20 || ^10.0",
         "metaregistrar/php-epp-client": "^1.0.12",
         "propaganistas/laravel-phone": "^4.2 || ^5.0",
         "upmind/domainnameapi-sdk": "^1.1",

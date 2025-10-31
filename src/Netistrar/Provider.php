@@ -267,7 +267,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         $client = new Client([
-            'base_uri' => $this->configuration->sandbox
+            'base_uri' => $this->configuration->isSandbox()
                 ? 'https://restapi.netistrar-ote.uk/'
                 : 'https://restapi.netistrar.com/',
             'headers' => [
@@ -275,7 +275,7 @@ class Provider extends DomainNames implements ProviderInterface
             ],
             'connect_timeout' => 10,
             'timeout' => 60,
-            'verify' => !$this->configuration->sandbox,
+            'verify' => !$this->configuration->isSandbox(),
             'handler' => $this->getGuzzleHandlerStack(),
         ]);
 

@@ -98,8 +98,8 @@ class NetistrarApi
         try {
             $requestParams = [];
 
-            $default_query['apiKey'] = $this->configuration->api_key;
-            $default_query['apiSecret'] = $this->configuration->api_secret;
+            $default_query['apiKey'] = $this->configuration->getApiKey();
+            $default_query['apiSecret'] = $this->configuration->getApiSecret();
             $requestParams[RequestOptions::QUERY] = array_merge($query, $default_query);
 
             if (!empty($data)) {

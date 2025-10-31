@@ -46,9 +46,6 @@ class Provider extends DomainNames implements ProviderInterface
         $this->configuration = $configuration;
     }
 
-    /**
-     * @inheritDoc
-     */
     public static function aboutProvider(): AboutData
     {
         return AboutData::create()
@@ -58,7 +55,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @return no-return
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -68,7 +65,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
@@ -101,7 +100,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
@@ -114,7 +115,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function transfer(TransferParams $params): DomainResult
     {
@@ -127,7 +130,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function renew(RenewParams $params): DomainResult
     {
@@ -141,6 +146,8 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     private function _getInfo(string $domainName, string $message): DomainResult
     {
@@ -149,7 +156,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getInfo(DomainInfoParams $params): DomainResult
     {
@@ -163,7 +170,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
@@ -183,7 +192,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
@@ -196,7 +207,10 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function setLock(LockParams $params): DomainResult
     {
@@ -207,9 +221,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
@@ -220,9 +234,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
@@ -234,9 +248,9 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
-     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateIpsTag(IpsTagParams $params): ResultData
     {

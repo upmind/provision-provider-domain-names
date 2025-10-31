@@ -810,8 +810,7 @@ class Provider extends DomainNames implements ProviderInterface
             $domain = Utils::getDomain($params->sld, $params->tld);
             $status = $this->api()->getRegistrantVerificationStatus($domain);
 
-            return VerificationStatusResult::create($status)
-                ->setVerificationType('icann');
+            return VerificationStatusResult::create($status);
         } catch (Throwable $e) {
             $this->handleError($e, $params);
         }
@@ -827,8 +826,7 @@ class Provider extends DomainNames implements ProviderInterface
             $domain = Utils::getDomain($params->sld, $params->tld);
             $result = $this->api()->sendRegistrantVerificationEmail($domain);
 
-            return ResendVerificationResult::create($result)
-                ->setVerificationType('icann');
+            return ResendVerificationResult::create($result);
         } catch (Throwable $e) {
             $this->handleError($e, $params);
         }

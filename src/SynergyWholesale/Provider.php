@@ -314,12 +314,7 @@ class Provider extends DomainNames implements ProviderInterface
             $domain = Utils::getDomain($params->sld, $params->tld);
             $result = $this->api()->resendVerificationEmail($domain);
 
-            // Determine verification type based on TLD
-            $isAuDomain = Str::endsWith($domain, '.au');
-            $verificationType = $isAuDomain ? 'both' : 'icann';
-
-            return ResendVerificationResult::create($result)
-                ->setVerificationType($verificationType);
+            return ResendVerificationResult::create($result);
         } catch (Throwable $e) {
             $this->handleException($e);
         }

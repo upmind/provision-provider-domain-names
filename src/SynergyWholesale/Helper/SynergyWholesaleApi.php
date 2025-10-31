@@ -491,11 +491,20 @@ class SynergyWholesaleApi
 
         $isAuDomain = Str::endsWith($domainName, '.au');
 
+        // Map ICANN status - set to null if "N/A" (not applicable for AU domains)
+        $icannStatus = $response['icannStatus'] ?? 'unknown';
+        $icannVerificationStatus = ($icannStatus === 'N/A') ? null : $icannStatus;
+
+        // Map AU eligibility boolean to status string
+        $cctldVerificationStatus = null;
+        if ($isAuDomain && isset($response['au_valid_eligibility'])) {
+            $cctldVerificationStatus = $response['au_valid_eligibility'] ? 'verified' : 'unverified';
+        }
+
         return [
-            'verification_status' => $response['icannStatus'] ?? 'unknown',
-            'verification_type' => $isAuDomain ? 'both' : 'icann',
+            'icann_verification_status' => $icannVerificationStatus,
+            'cctld_verification_status' => $cctldVerificationStatus,
             'verification_deadline' => $response['icannVerificationDateEnd'] ?? null,
-            'au_eligibility_valid' => $response['au_valid_eligibility'] ?? null,
             'provider_specific_data' => [
                 'au_eligibility_last_check' => $response['au_eligibility_last_check'] ?? null,
             ],

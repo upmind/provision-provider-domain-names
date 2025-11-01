@@ -75,7 +75,7 @@ class NetistrarApi
     public function getDomainInfo(string $domainName, array $additionalFields = []): DomainResult
     {
         $endpoint = "domains/{$domainName}";
-        $apiResult = $this->apiCall($endpoint, []);
+        $apiResult = $this->apiCall($endpoint);
 
         if (isset($apiResult->exceptionClass)) {
             $this->errorResult('Unable to get domain info', ['response' => $apiResult->message]);
@@ -187,7 +187,7 @@ class NetistrarApi
         $endpoint = "domains/renew/{$domainName}/{$params->renew_years}/";
 
         $query = [];
-        return $this->apiCall($endpoint, $query, [], 'GET');//yes, new is a GET request
+        return $this->apiCall($endpoint, $query);//yes, new is a GET request
     }
 
     /**

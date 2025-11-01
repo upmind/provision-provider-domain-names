@@ -56,11 +56,9 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function liveAvailability(string $domainName)
+    public function liveAvailability(string $domainName): PromiseInterface
     {
-        $endpoint = "domains/available/{$domainName}";
-
-        return $this->apiCall($endpoint, []);
+        return $this->apiCallAsync("domains/available/{$domainName}", ['timeout' => 10]);
     }
 
     /**
@@ -427,9 +425,14 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    private function apiCall(string $endpoint, array $query = [], array $data = [], string $method = 'GET')
-    {
-        return $this->apiCallAsync($endpoint, $query, $data, $method)->wait();
+    private function apiCall(
+        string $endpoint,
+        array $query = [],
+        array $data = [],
+        string $method = 'GET',
+        array $requestOptions = []
+    ) {
+        return $this->apiCallAsync($endpoint, $query, $data, $method, $requestOptions)->wait();
     }
 
     /***
@@ -440,7 +443,8 @@ class NetistrarApi
         string $endpoint,
         array $query = [],
         array $data = [],
-        string $method = 'GET'
+        string $method = 'GET',
+        array $requestOptions = []
     ): PromiseInterface {
         $requestParams = [];
 
@@ -453,7 +457,7 @@ class NetistrarApi
             $requestParams['json'] = $data;
         }
 
-        return $this->client->requestAsync($method, $endpoint, $requestParams)
+        return $this->client->requestAsync($method, $endpoint, array_merge($requestParams, $requestOptions))
             ->then(function (Response $response) {
                 // Check for 204 No Content
                 if ($response->getStatusCode() === 204) {

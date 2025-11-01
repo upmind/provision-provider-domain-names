@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\Netistrar;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Promise\Utils as PromiseUtils;
 use Throwable;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -72,31 +74,46 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
-        $sld = $params->sld;
+        $promises = array_map(function (string $tld) use ($params) {
+            $domain = Utils::getDomain($params->sld, $tld);
 
-        $dacDomains = [];
+            return $this->api()
+                ->liveAvailability($domain)
+                ->then(function ($result) use ($domain, $tld) {
+                    $canRegister = isset($result->availability) && $result->availability === 'AVAILABLE';
 
-        foreach ($params->tlds as $tld) {
-            $result = $this->api()->liveAvailability($sld . "." . $tld);
+                    return DacDomain::create()
+                        ->setDomain($domain)
+                        ->setTld($tld)
+                        ->setCanRegister($canRegister)
+                        ->setCanTransfer(
+                            !$canRegister
+                            && isset($result->additionalData->transferType)
+                            && $result->additionalData->transferType === 'pull'
+                        )
+                        ->setIsPremium($result->premiumSupported ?? false)
+                        ->setDescription(sprintf(
+                            'Domain is %s to register',
+                            $canRegister ? 'available' : 'not available',
+                        ));
+                })
+                ->otherwise(function (Throwable $e) use ($domain, $tld): DacDomain {
+                    if ($e instanceof ProvisionFunctionError) {
+                        return DacDomain::create()
+                            ->setDomain($domain)
+                            ->setTld($tld)
+                            ->setCanRegister(false)
+                            ->setCanTransfer(false)
+                            ->setIsPremium(false)
+                            ->setDescription($e->getMessage());
+                    }
 
-            $canRegister = $result->availability === "AVAILABLE";
-            $dacDomains[] = DacDomain::create([
-                'domain' => $sld . "." . $tld,
-                'description' => sprintf(
-                    'Domain is %s to register',
-                    $canRegister ? 'available' : 'not available',
-                ),
-                'tld' => $tld,
-                'can_register' => $canRegister,
-                'can_transfer' => !$canRegister
-                    && isset($result->additionalData->transferType)
-                    && $result->additionalData->transferType === 'pull',
-                'is_premium' => $result->premiumSupported ?? false,
-            ]);
-        }
+                    throw $e;
+                });
+        }, $params->tlds);
 
-        return DacResult::create([
-            'domains' => $dacDomains,
+        return new DacResult([
+            'domains' => PromiseUtils::all($promises)->wait(),
         ]);
     }
 

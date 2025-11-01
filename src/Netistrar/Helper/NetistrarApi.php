@@ -58,7 +58,13 @@ class NetistrarApi
      */
     public function liveAvailability(string $domainName): PromiseInterface
     {
-        return $this->apiCallAsync("domains/available/{$domainName}", ['timeout' => 10]);
+        return $this->apiCallAsync(
+            "domains/available/{$domainName}",
+            [],
+            [],
+            'GET',
+            ['timeout' => 10]
+        );
     }
 
     /**

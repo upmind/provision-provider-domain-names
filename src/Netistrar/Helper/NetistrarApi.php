@@ -435,10 +435,9 @@ class NetistrarApi
         string $endpoint,
         array $query = [],
         array $data = [],
-        string $method = 'GET',
-        array $requestOptions = []
+        string $method = 'GET'
     ) {
-        return $this->apiCallAsync($endpoint, $query, $data, $method, $requestOptions)->wait();
+        return $this->apiCallAsync($endpoint, $query, $data, $method)->wait();
     }
 
     /***

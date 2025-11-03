@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberUtil;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
+use stdClass;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
@@ -78,7 +79,14 @@ class NetistrarApi
         $apiResult = $this->apiCall($endpoint);
 
         if (isset($apiResult->exceptionClass)) {
-            $this->errorResult('Unable to get domain info', ['response' => $apiResult->message]);
+            $this->errorResult(
+                'Unable to get domain info',
+                [
+                    'domainName' => $domainName,
+                    'additionalFields' => $additionalFields,
+                ],
+                ['response' => $apiResult]
+            );
         }
 
         $nameservers = [];
@@ -94,8 +102,8 @@ class NetistrarApi
             'id' => strtolower($apiResult->domainName),
             'domain' => $apiResult->domainName,
             'statuses' => [$apiResult->status],
-            'whois_privacy' => $apiResult->privacyProxy,
-            'auto_renew' => $apiResult->autoRenew,
+            'whois_privacy' => $apiResult->privacyProxy ?? null,
+            'auto_renew' => $apiResult->autoRenew ?? false,
             'registrant' => $this->transformNetisrarContactToContact($apiResult->ownerContact),
             'billing' => $this->transformNetisrarContactToContact($apiResult->billingContact),
             'tech' => $this->transformNetisrarContactToContact($apiResult->technicalContact),
@@ -137,7 +145,7 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    private function transformContactToNetistrarContact(ContactParams $contact, bool $is_uk_domain): array
+    private function transformContactToNetistrarContact(ContactParams $contact, bool $isUkDomain): array
     {
         $phone = PhoneNumberUtil::getInstance()->parse($contact->phone, null);
         $contactData = [
@@ -153,7 +161,7 @@ class NetistrarApi
             'country' => $contact->country_code,
         ];
 
-        if ($is_uk_domain && isset($contact->type)
+        if ($isUkDomain && isset($contact->type)
             && in_array($contact->type, $this->getNominentRegistrantTypes(), true)) {
             $contactData['additionalData']['nominetRegistrantType'] = $contact->type;
         }
@@ -161,7 +169,7 @@ class NetistrarApi
         return $contactData;
     }
 
-    private function transformNetisrarContactToContact(\stdClass $contact): ContactParams
+    private function transformNetisrarContactToContact(stdClass $contact): ContactParams
     {
         return ContactParams::create([
             'name' => $contact->name,
@@ -397,8 +405,8 @@ class NetistrarApi
         $endpoint = "domains/";
         $results = $this->apiCall($endpoint, [], $data, 'PATCH');
 
-        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
-            $this->errorResult('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
+        if (isset($results->transactionStatus) && $results->transactionStatus === "ALL_ELEMENTS_FAILED") {
+            $this->errorResult('Unable to update domain', $data, ['response' => $results]);
         }
 
         return $results;

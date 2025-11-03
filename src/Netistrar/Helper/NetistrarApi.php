@@ -78,7 +78,7 @@ class NetistrarApi
         $endpoint = "domains/{$domainName}";
         $apiResult = $this->apiCall($endpoint);
 
-        if (isset($apiResult->exceptionClass)) {
+        if (isset($apiResult['exceptionClass'])) {
             $this->errorResult(
                 'Unable to get domain info',
                 [
@@ -91,32 +91,36 @@ class NetistrarApi
 
         $nameservers = [];
         for ($i=0; $i<6; $i++) {
-            if (isset($apiResult->nameservers[$i])) {
-                $nameservers["ns" . ($i+1)] = $apiResult->nameservers[$i];
+            if (isset($apiResult['nameservers'][$i])) {
+                $nameservers["ns" . ($i+1)] = $apiResult['nameservers'][$i];
             } else {
                 break;
             }
         }
 
         $domainResultData = [
-            'id' => strtolower($apiResult->domainName),
-            'domain' => $apiResult->domainName,
-            'statuses' => [$apiResult->status],
-            'whois_privacy' => $apiResult->privacyProxy ?? null,
-            'auto_renew' => $apiResult->autoRenew ?? false,
-            'registrant' => $this->transformNetisrarContactToContact($apiResult->ownerContact),
-            'billing' => $this->transformNetisrarContactToContact($apiResult->billingContact),
-            'tech' => $this->transformNetisrarContactToContact($apiResult->technicalContact),
-            'admin' => $this->transformNetisrarContactToContact($apiResult->adminContact),
+            'id' => mb_strtolower($apiResult['domainName']),
+            'domain' => $apiResult['domainName'],
+            'statuses' => [$apiResult['status']],
+            'whois_privacy' => $apiResult['privacyProxy'] ?? null,
+            'auto_renew' => $apiResult['autoRenew'] ?? false,
+            'registrant' => $this->transformNetisrarContactToContact($apiResult['ownerContact'] ?? []),
+            'billing' => $this->transformNetisrarContactToContact($apiResult['billingContact'] ?? []),
+            'tech' => $this->transformNetisrarContactToContact($apiResult['technicalContact'] ?? []),
+            'admin' => $this->transformNetisrarContactToContact($apiResult['adminContact'] ?? []),
             'ns' => $nameservers,
-            'created_at' => is_null($apiResult->registeredDate) ? null : Carbon::createFromFormat('d/m/Y H:i:s', $apiResult->registeredDate)->format('Y-m-d H:i:s'),
+            'created_at' => isset($apiResult['registeredDate'])
+                ? Carbon::createFromFormat('d/m/Y H:i:s', $apiResult['registeredDate'])->format('Y-m-d H:i:s')
+                : null,
             'locked' => $apiResult->locked,
-            'expires_at' => is_null($apiResult->expiryDate) ? null : Carbon::createFromFormat('d/m/Y H:i:s', $apiResult->expiryDate)->format('Y-m-d H:i:s'),
+            'expires_at' => isset($apiResult['expiryDate'])
+                ? Carbon::createFromFormat('d/m/Y H:i:s', $apiResult['expiryDate'])->format('Y-m-d H:i:s')
+                : null,
             'updated_at' => null,
         ];
 
         if (in_array('tags', $additionalFields, true)) {
-            $domainResultData['tags'] = $apiResult->tags; // Include tags if requested
+            $domainResultData['tags'] = $apiResult['tags']; // Include tags if requested
         }
 
         return DomainResult::create($domainResultData);
@@ -169,18 +173,18 @@ class NetistrarApi
         return $contactData;
     }
 
-    private function transformNetisrarContactToContact(stdClass $contact): ContactParams
+    private function transformNetisrarContactToContact(array $contact): ContactParams
     {
         return ContactParams::create([
-            'name' => $contact->name,
-            'email' => $contact->emailAddress,
-            'organisation' => $contact->organisation,
-            'phone' => $contact->telephoneDiallingCode . $contact->telephone,
-            'address1' => $contact->street1,
-            'city' => $contact->city,
-            'state' => $contact->county,
-            'postcode' => $contact->postcode,
-            'country_code' => $contact->country,
+            'name' => $contact['name'] ?? null,
+            'email' => $contact['emailAddress'] ?? null,
+            'organisation' => $contact['organisation'] ?? null,
+            'phone' => ($contact['telephoneDiallingCode'] ?? '') . ($contact['telephone'] ?? ''),
+            'address1' => $contact['street1'] ?? null,
+            'city' => $contact['city'] ?? null,
+            'state' => $contact['county'] ?? null,
+            'postcode' => $contact['postcode'] ?? null,
+            'country_code' => $contact['country'] ?? null,
         ]);
     }
 
@@ -444,7 +448,7 @@ class NetistrarApi
         array $query = [],
         array $data = [],
         string $method = 'GET'
-    ) {
+    ): array {
         return $this->apiCallAsync($endpoint, $query, $data, $method)->wait();
     }
 
@@ -488,7 +492,7 @@ class NetistrarApi
                     $result = "{}";
                 }
 
-                $parsedResult = json_decode($result, false, 512, JSON_THROW_ON_ERROR);
+                $parsedResult = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
 
                 if (empty($parsedResult)) {
                     $this->errorResult('Unknown Provider API Error', ['response' => $response]);

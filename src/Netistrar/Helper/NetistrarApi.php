@@ -199,7 +199,7 @@ class NetistrarApi
         $endpoint = "domains/renew/{$domainName}/{$params->renew_years}/";
 
         $query = [];
-        return $this->apiCall($endpoint, $query);//yes, new is a GET request
+        return $this->apiCall($endpoint, $query);
     }
 
     /**

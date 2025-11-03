@@ -198,8 +198,7 @@ class NetistrarApi
         $domainName = Utils::getDomain($params->sld, $params->tld);
         $endpoint = "domains/renew/{$domainName}/{$params->renew_years}/";
 
-        $query = [];
-        return $this->apiCall($endpoint, $query);
+        return $this->apiCall($endpoint);
     }
 
     /**

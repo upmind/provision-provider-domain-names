@@ -80,7 +80,7 @@ class Provider extends DomainNames implements ProviderInterface
             return $this->api()
                 ->liveAvailability($domain)
                 ->then(function ($result) use ($domain, $tld) {
-                    $canRegister = isset($result->availability) && $result->availability === 'AVAILABLE';
+                    $canRegister = isset($result['availability']) && $result['availability'] === 'AVAILABLE';
 
                     return DacDomain::create()
                         ->setDomain($domain)
@@ -88,10 +88,10 @@ class Provider extends DomainNames implements ProviderInterface
                         ->setCanRegister($canRegister)
                         ->setCanTransfer(
                             !$canRegister
-                            && isset($result->additionalData->transferType)
-                            && $result->additionalData->transferType === 'pull'
+                            && isset($result['additionalData']['transferType'])
+                            && $result['additionalData']['transferType'] === 'pull'
                         )
-                        ->setIsPremium($result->premiumSupported ?? false)
+                        ->setIsPremium($result['premiumSupported'] ?? false)
                         ->setDescription(sprintf(
                             'Domain is %s to register',
                             $canRegister ? 'available' : 'not available',

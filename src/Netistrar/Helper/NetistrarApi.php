@@ -262,7 +262,7 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function updateIpsTag(string $domainName, string $addTags, array $removeTags): array
+    public function updateIpsTag(string $domainName, array $addTags, array $removeTags): array
     {
         $data = [
             'domainNames' => [ $domainName ],
@@ -395,7 +395,7 @@ class NetistrarApi
             ->then(function (Response $response) {
                 // Check for 204 No Content
                 if ($response->getStatusCode() === 204) {
-                    return true;
+                    return [];
                 }
 
                 $result = $response->getBody()->getContents();
@@ -416,7 +416,7 @@ class NetistrarApi
                 }
 
                 if (!isset($parsedResult['transactionStatus'])) {
-                    $this->errorResult('Unknown Provider API Error', ['response' => $response]);
+                    return $parsedResult;
                 }
 
                 // Return all other results apart from when everything fails.

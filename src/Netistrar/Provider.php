@@ -375,12 +375,18 @@ class Provider extends DomainNames implements ProviderInterface
 
         $domainInfo = $this->api()->getDomainInfo($domainName, ['tags']);
 
-        if (isset($domainInfo->tags) && in_array($params->ips_tag, $domainInfo->tags)) {
-            return DomainResult::create($domainInfo)->setMessage("IPS Tag already set");
+        $updatedTags = array_map('trim', explode(',', $params->ips_tag));
+        $existingTags = $domainInfo['tags'] ?? [];
+
+        sort($updatedTags);
+        sort($existingTags);
+
+        if ($updatedTags === $existingTags) {
+            return ResultData::create()->setMessage("IPS Tag already set");
         }
 
         try {
-            $this->api()->updateIpsTag($domainName, $params->ips_tag, $domainInfo->tags ?? []);
+            $this->api()->updateIpsTag($domainName, $updatedTags, $existingTags ?? []);
         } catch (ProvisionFunctionError $e) {
             $this->errorResult(
                 'Failed to update IP Tags: ' . $e->getMessage(),

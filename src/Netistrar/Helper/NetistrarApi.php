@@ -13,7 +13,6 @@ use Illuminate\Support\Str;
 use libphonenumber\PhoneNumberUtil;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
-use stdClass;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
@@ -75,17 +74,16 @@ class NetistrarApi
      */
     public function getDomainInfo(string $domainName, array $additionalFields = []): DomainResult
     {
-        $endpoint = "domains/{$domainName}";
-        $apiResult = $this->apiCall($endpoint);
+        $apiResult = $this->apiCall("domains/{$domainName}");
 
         if (isset($apiResult['exceptionClass'])) {
             $this->errorResult(
                 'Unable to get domain info',
+                ['response' => json_encode($apiResult, 512, JSON_THROW_ON_ERROR)],
                 [
                     'domainName' => $domainName,
                     'additionalFields' => $additionalFields,
                 ],
-                ['response' => $apiResult]
             );
         }
 
@@ -112,7 +110,7 @@ class NetistrarApi
             'created_at' => isset($apiResult['registeredDate'])
                 ? Carbon::createFromFormat('d/m/Y H:i:s', $apiResult['registeredDate'])->format('Y-m-d H:i:s')
                 : null,
-            'locked' => $apiResult->locked,
+            'locked' => $apiResult['locked'] ?? false,
             'expires_at' => isset($apiResult['expiryDate'])
                 ? Carbon::createFromFormat('d/m/Y H:i:s', $apiResult['expiryDate'])->format('Y-m-d H:i:s')
                 : null,
@@ -133,58 +131,14 @@ class NetistrarApi
      */
     public function getEppCode(string $domainName): EppCodeResult
     {
-        $endpoint = "domains/{$domainName}";
-        $apiResult = $this->apiCall($endpoint);
+        $apiResult = $this->apiCall("domains/{$domainName}");
 
-        if (isset($apiResult->exceptionClass)) {
-            $this->errorResult('Unable to get domain info', ['response' => $apiResult->message]);
+        if (isset($apiResult['exceptionClass']) || !isset($apiResult['authCode'])) {
+            $this->errorResult('Unable to get domain info', ['response' => $apiResult['message'] ?? null]);
         }
 
         return EppCodeResult::create([
-            'epp_code' => $apiResult->authCode,
-        ]);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
-     */
-    private function transformContactToNetistrarContact(ContactParams $contact, bool $isUkDomain): array
-    {
-        $phone = PhoneNumberUtil::getInstance()->parse($contact->phone, null);
-        $contactData = [
-            'name' => $contact->name,
-            'emailAddress' => $contact->email,
-            'organisation' => $contact->organisation,
-            'telephoneDiallingCode' => "+". $phone->getCountryCode(),
-            'telephone' => $phone->getNationalNumber(),
-            'street1' => $contact->address1,
-            'city' => $contact->city,
-            'county' => $contact->state,
-            'postcode' => $contact->postcode,
-            'country' => $contact->country_code,
-        ];
-
-        if ($isUkDomain && isset($contact->type)
-            && in_array($contact->type, $this->getNominentRegistrantTypes(), true)) {
-            $contactData['additionalData']['nominetRegistrantType'] = $contact->type;
-        }
-
-        return $contactData;
-    }
-
-    private function transformNetisrarContactToContact(array $contact): ContactParams
-    {
-        return ContactParams::create([
-            'name' => $contact['name'] ?? null,
-            'email' => $contact['emailAddress'] ?? null,
-            'organisation' => $contact['organisation'] ?? null,
-            'phone' => ($contact['telephoneDiallingCode'] ?? '') . ($contact['telephone'] ?? ''),
-            'address1' => $contact['street1'] ?? null,
-            'city' => $contact['city'] ?? null,
-            'state' => $contact['county'] ?? null,
-            'postcode' => $contact['postcode'] ?? null,
-            'country_code' => $contact['country'] ?? null,
+            'epp_code' => $apiResult['authCode'],
         ]);
     }
 
@@ -193,12 +147,11 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function renewDomain(RenewParams $params)
+    public function renewDomain(RenewParams $params): array
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
-        $endpoint = "domains/renew/{$domainName}/{$params->renew_years}/";
 
-        return $this->apiCall($endpoint);
+        return $this->apiCall("domains/renew/{$domainName}/{$params->renew_years}/");
     }
 
     /**
@@ -206,10 +159,8 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function createDomain(RegisterDomainParams $params)
+    public function createDomain(RegisterDomainParams $params): array
     {
-
-        $endpoint = "domains";
         $domainName = Utils::getDomain($params->sld, $params->tld);
         $isUkDomain = NetistrarUtils::isUkTld($params->tld);
 
@@ -222,7 +173,7 @@ class NetistrarApi
         }
 
         $data = [
-            'domainNames' => [ $domainName ],
+            'domainNames' => [$domainName],
             'registrationYears' => (int) $params->renew_years,
             'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $isUkDomain),
             'nameservers' => $nameservers,
@@ -239,13 +190,7 @@ class NetistrarApi
             $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $isUkDomain);
         }
 
-        $results = $this->apiCall($endpoint, [], $data, 'POST');
-
-        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
-            $this->errorResult('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
-        }
-
-        return $results;
+        return $this->apiCall( "domains", [], $data, 'POST');
     }
 
     /**
@@ -253,20 +198,22 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    private function validateIncomingTransferDomains(array $data)
+    private function validateIncomingTransferDomains(array $data): void
     {
         $endpoint = "/domains/transfer/validate/";
         $validationResults = $this->apiCall($endpoint, [], $data, 'POST');
 
-        if (isset($validationResults->transactionErrors)) {
-            $reasonMessages = [];
-            foreach( $validationResults->transactionErrors as $err) {
-                $reasonMessages[] = $err->message;
-            }
-            $this->errorResult('Unable to validate transfer domains', ['response' => implode(' ',$reasonMessages)]);
+        if (!isset($validationResults['transactionErrors'])) {
+            return;
         }
 
-        return true;
+        $reasonMessages = [];
+
+        foreach($validationResults['transactionErrors'] as $err) {
+            $reasonMessages[] = $err['message'] ?? null;
+        }
+
+        $this->errorResult('Unable to validate transfer domains', ['response' => implode(' ', $reasonMessages)]);
     }
 
     /**
@@ -274,7 +221,7 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function transferDomain(TransferParams $params)
+    public function transferDomain(TransferParams $params): array
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
@@ -286,7 +233,7 @@ class NetistrarApi
         }
 
         $data = [
-            'transferIdentifiers' => [ $transferIdentifier ],
+            'transferIdentifiers' => [$transferIdentifier],
             'ownerContact' => $this->transformContactToNetistrarContact($params->registrant->register, $isUkDomain),
             'privacyProxy' => $params->whois_privacy ? 0 : 1,
         ];
@@ -301,16 +248,9 @@ class NetistrarApi
             $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $isUkDomain);
         }
 
-        $validateResults = $this->validateIncomingTransferDomains($data);
+        $this->validateIncomingTransferDomains($data);
 
-        $endpoint = "domains/transfer/";
-        $results = $this->apiCall($endpoint, [], $data, 'POST');
-
-        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
-            $this->errorResult('Unable to transfer domain', ['response' => $results->transactionElements->{$domainName}->elementErrors]);
-        }
-
-        return $results;
+        return $this->apiCall('domains/transfer/', [], $data, 'POST');
     }
 
     /**
@@ -318,13 +258,14 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function updateIpsTag(string $domainName, string $addTags, array $removeTags)
+    public function updateIpsTag(string $domainName, string $addTags, array $removeTags): array
     {
         $data = [
             'domainNames' => [ $domainName ],
             'addTags' => $addTags,
             'removeTags' => $removeTags,
         ];
+
         return $this->updateDomain($data);
     }
 
@@ -333,7 +274,7 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function updateRegistrantContact(string $domainName, UpdateDomainContactParams $params)
+    public function updateRegistrantContact(string $domainName, UpdateDomainContactParams $params): array
     {
         $data = [
             'domainNames' => [$domainName],
@@ -346,12 +287,18 @@ class NetistrarApi
         return $this->updateDomain($data);
     }
 
-    public function updateDomainLock(string $domainName, bool $lock)
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateDomainLock(string $domainName, bool $lock): array
     {
         $data = [
-            'domainNames' => [ $domainName ],
+            'domainNames' => [$domainName],
             'locked' => $lock,
         ];
+
         return $this->updateDomain($data);
     }
 
@@ -360,12 +307,13 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function updateAutoRenew(string $domainName, bool $autoRenew)
+    public function updateAutoRenew(string $domainName, bool $autoRenew): array
     {
         $data = [
-            'domainNames' => [ $domainName ],
+            'domainNames' => [$domainName],
             'autoRenew' => $autoRenew,
         ];
+
         return $this->updateDomain($data);
     }
 
@@ -374,7 +322,7 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function updateDomainNameservers(string $domainName, UpdateNameserversParams $params)
+    public function updateDomainNameservers(string $domainName, UpdateNameserversParams $params): array
     {
         $nameservers = [];
         $keys = ['ns1', 'ns2', 'ns3', 'ns4', 'ns5'];  // List of nameserver keys
@@ -389,13 +337,8 @@ class NetistrarApi
             'domainNames' => [ $domainName ],
             'nameservers' => $nameservers,
         ];
-        $results = $this->updateDomain($data);
 
-        if ($results->transactionStatus === "ALL_ELEMENTS_FAILED") {
-            $this->errorResult('Unable to register domain', ['response' => $results->transactionElements->{$params->sld.".".$params->tld}->elementErrors]);
-        }
-
-        return $results;
+        return $this->updateDomain($data);
     }
 
     /**
@@ -403,38 +346,9 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function updateDomain(array $data)
+    public function updateDomain(array $data): array
     {
-        $endpoint = "domains/";
-        $results = $this->apiCall($endpoint, [], $data, 'PATCH');
-
-        if (isset($results->transactionStatus) && $results->transactionStatus === "ALL_ELEMENTS_FAILED") {
-            $this->errorResult('Unable to update domain', $data, ['response' => $results]);
-        }
-
-        return $results;
-    }
-
-    /**
-     * Returns an array of Nominet registrant types that are valid for UK domains
-     */
-    private function getNominentRegistrantTypes() : array {
-        // Nominet registrant types
-        return [
-            self::CONTACT_LTD,
-            self::CONTACT_PLC,
-            self::CONTACT_PTNR,
-            self::CONTACT_STRA,
-            self::CONTACT_LLP,
-            self::CONTACT_IP,
-            self::CONTACT_IND,
-            self::CONTACT_SCH,
-            self::CONTACT_RCHAR,
-            self::CONTACT_GOV,
-            self::CONTACT_CRC,
-            self::CONTACT_STAT,
-            self::CONTACT_OTHER
-        ];
+        return $this->apiCall('domains/', [], $data, 'PATCH');
     }
 
     /**
@@ -497,21 +411,34 @@ class NetistrarApi
                     $this->errorResult('Unknown Provider API Error', ['response' => $response]);
                 }
 
-                if (isset($parsedResult->transactionStatus)
-                    && $parsedResult->transactionStatus === 'ALL_ELEMENTS_FAILED'
-                ) {
-                    // Handle transaction failure
-                    $errorMessages = [];
-                    foreach($parsedResult->transactionElements as $element) {
-                        foreach($element->elementErrors as $error) {
-                            $errorMessages[] = $error->message; // Concatenate all error messages for each element
-                        }
-                    }
-
-                    $this->errorResult(implode(" ", $errorMessages), ['response' => $parsedResult]);
+                if (!isset($parsedResult['transactionStatus'])) {
+                    $this->errorResult('Unknown Provider API Error', ['response' => $response]);
                 }
 
-                return $parsedResult;
+                // Return all other results apart from when everything fails.
+                if ($parsedResult['transactionStatus'] !== 'ALL_ELEMENTS_FAILED') {
+                    return $parsedResult;
+                }
+
+                // Handle transaction failure
+
+                if (!isset($parsedResult['transactionElements'])) {
+                    $this->errorResult('Unknown Provider API Error', ['response' => $response]);
+                }
+
+                $errorMessages = [];
+
+                foreach($parsedResult['transactionElements'] as $element) {
+                    if (!isset($element['elementErrors'])) {
+                        continue;
+                    }
+
+                    foreach($element['elementErrors'] as $error) {
+                        $errorMessages[] = $error['message'] ?? null; // Concatenate all error messages for each element
+                    }
+                }
+
+                $this->errorResult(implode(PHP_EOL, $errorMessages), ['response' => $parsedResult]);
             })->otherwise(function (Throwable $t) {
                 // Only handle GuzzleHttp TransferExceptions
                 if (!$t instanceof TransferException) {
@@ -552,5 +479,70 @@ class NetistrarApi
         throw ProvisionFunctionError::create($message, $e)
             ->withData($data)
             ->withDebug($debug);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    private function transformContactToNetistrarContact(ContactParams $contact, bool $isUkDomain): array
+    {
+        $phone = PhoneNumberUtil::getInstance()->parse($contact->phone);
+        $contactData = [
+            'name' => $contact->name,
+            'emailAddress' => $contact->email,
+            'organisation' => $contact->organisation,
+            'telephoneDiallingCode' => "+". $phone->getCountryCode(),
+            'telephone' => $phone->getNationalNumber(),
+            'street1' => $contact->address1,
+            'city' => $contact->city,
+            'county' => $contact->state,
+            'postcode' => $contact->postcode,
+            'country' => $contact->country_code,
+        ];
+
+        if ($isUkDomain && isset($contact->type)
+            && in_array($contact->type, $this->getNominentRegistrantTypes(), true)) {
+            $contactData['additionalData']['nominetRegistrantType'] = $contact->type;
+        }
+
+        return $contactData;
+    }
+
+    private function transformNetisrarContactToContact(array $contact): ContactParams
+    {
+        return ContactParams::create([
+            'name' => $contact['name'] ?? null,
+            'email' => $contact['emailAddress'] ?? null,
+            'organisation' => $contact['organisation'] ?? null,
+            'phone' => ($contact['telephoneDiallingCode'] ?? '') . ($contact['telephone'] ?? ''),
+            'address1' => $contact['street1'] ?? null,
+            'city' => $contact['city'] ?? null,
+            'state' => $contact['county'] ?? null,
+            'postcode' => $contact['postcode'] ?? null,
+            'country_code' => $contact['country'] ?? null,
+        ]);
+    }
+
+    /**
+     * Returns an array of Nominet registrant types that are valid for UK domains
+     */
+    private function getNominentRegistrantTypes() : array {
+        // Nominet registrant types
+        return [
+            self::CONTACT_LTD,
+            self::CONTACT_PLC,
+            self::CONTACT_PTNR,
+            self::CONTACT_STRA,
+            self::CONTACT_LLP,
+            self::CONTACT_IP,
+            self::CONTACT_IND,
+            self::CONTACT_SCH,
+            self::CONTACT_RCHAR,
+            self::CONTACT_GOV,
+            self::CONTACT_CRC,
+            self::CONTACT_STAT,
+            self::CONTACT_OTHER
+        ];
     }
 }

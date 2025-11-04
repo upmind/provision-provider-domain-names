@@ -124,7 +124,16 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
-        $this->api()->createDomain($params);
+        try {
+            $this->api()->createDomain($params);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to register domain: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
 
         return $this->getInfo(DomainInfoParams::create([
             'sld' => $params->sld,
@@ -139,7 +148,16 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function transfer(TransferParams $params): DomainResult
     {
-        $this->api()->transferDomain($params);
+        try {
+            $this->api()->transferDomain($params);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to transfer domain: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
 
         $domainName = Utils::getDomain($params->sld, $params->tld);
         $domainInfo = $this->api()->getDomainInfo($domainName);
@@ -154,23 +172,21 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function renew(RenewParams $params): DomainResult
     {
-        $this->api()->renewDomain($params);
+        try {
+            $this->api()->renewDomain($params);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to renew domain: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
 
         $domainName = Utils::getDomain($params->sld, $params->tld);
         $domainInfo = $this->api()->getDomainInfo($domainName);
 
         return DomainResult::create($domainInfo)->setMessage('Domain renewed');
-    }
-
-    /**
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
-     */
-    private function _getInfo(string $domainName, string $message): DomainResult
-    {
-        $domainInfo = $this->api()->getDomainInfo($domainName);
-        return DomainResult::create($domainInfo)->setMessage($message);
     }
 
     /**
@@ -183,7 +199,7 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             return $this->_getInfo($domainName, 'Domain data obtained');
         } catch (Throwable $e) {
-            $this->errorResult($e->getMessage(), [], $params->toArray());
+            $this->errorResult('Failed to get domain information: ' . $e->getMessage(), [], $params->toArray());
         }
     }
 
@@ -195,17 +211,20 @@ class Provider extends DomainNames implements ProviderInterface
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
-        $updateResults = $this->api()->updateRegistrantContact($domainName, $params);
+
+        try {
+            $this->api()->updateRegistrantContact($domainName, $params);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to update registrant contact: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
+
         $domainInfo = $this->api()->getDomainInfo($domainName);
-        $logger = $this->getLogger();
-        $logger->debug(
-            'Registrant contact update results',
-            [
-                'domain' => $domainName,
-                'updateResults' => $updateResults,
-                'domainInfo' => $domainInfo,
-            ]
-        );
+
         return ContactResult::create($domainInfo->registrant)->setMessage('Registrant Contact updated');
     }
 
@@ -217,7 +236,17 @@ class Provider extends DomainNames implements ProviderInterface
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
-        $this->api()->updateDomainNameservers($domainName, $params);
+
+        try {
+            $this->api()->updateDomainNameservers($domainName, $params);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to update domain nameservers: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
 
         $domainInfo = $this->api()->getDomainInfo($domainName);
 
@@ -233,7 +262,17 @@ class Provider extends DomainNames implements ProviderInterface
     public function setLock(LockParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
-        $this->api()->updateDomainLock($domainName, (bool) $params->lock);
+
+        try {
+            $this->api()->updateDomainLock($domainName, (bool) $params->lock);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to lock/unlock domain: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
 
         return $this->_getInfo($domainName, 'Domain lock updated');
     }
@@ -246,9 +285,19 @@ class Provider extends DomainNames implements ProviderInterface
     public function setAutoRenew(AutoRenewParams $params): DomainResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
-        $this->api()->updateAutoRenew($domainName, (bool) $params->auto_renew);
 
-        return $this->_getInfo($domainName, 'Domain autorenew updated');
+        try {
+            $this->api()->updateAutoRenew($domainName, (bool) $params->auto_renew);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to update auto-renew: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
+
+        return $this->_getInfo($domainName, 'Domain auto-renew updated');
     }
 
     /**
@@ -264,7 +313,16 @@ class Provider extends DomainNames implements ProviderInterface
 
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
-        return $this->api()->getEppCode($domainName);
+        try {
+            return $this->api()->getEppCode($domainName);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to get EPP Code: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
     }
 
     /**
@@ -282,13 +340,21 @@ class Provider extends DomainNames implements ProviderInterface
 
         $domainInfo = $this->api()->getDomainInfo($domainName, ['tags']);
 
-        if (in_array($params->ips_tag, $domainInfo->tags)) {
+        if (isset($domainInfo->tags) && in_array($params->ips_tag, $domainInfo->tags)) {
             return DomainResult::create($domainInfo)->setMessage("IPS Tag already set");
         }
 
-        $this->api()->updateIpsTag($domainName, $params->ips_tag, $domainInfo->tags);
+        try {
+            $this->api()->updateIpsTag($domainName, $params->ips_tag, $domainInfo->tags ?? []);
+        } catch (ProvisionFunctionError $e) {
+            $this->errorResult(
+                'Failed to update IP Tags: ' . $e->getMessage(),
+                $e->getData(),
+                $params->toArray(),
+                $e
+            );
+        }
 
-        $domainInfo = $this->api()->getDomainInfo($domainName, ['tags']);
         return ResultData::create()->setMessage('Domain IPS tag updated');
     }
 
@@ -315,5 +381,16 @@ class Provider extends DomainNames implements ProviderInterface
         ]);
 
         return $this->api = new NetistrarApi($client, $this->configuration);
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    private function _getInfo(string $domainName, string $message): DomainResult
+    {
+        $domainInfo = $this->api()->getDomainInfo($domainName);
+        return DomainResult::create($domainInfo)->setMessage($message);
     }
 }

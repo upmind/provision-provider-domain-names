@@ -183,9 +183,11 @@ class NetistrarApi
         if (isset($params->admin->register)) {
             $data['adminContact'] = $this->transformContactToNetistrarContact($params->admin->register, $isUkDomain);
         }
+
         if (isset($params->tech->register)) {
             $data['technicalContact'] = $this->transformContactToNetistrarContact($params->tech->register, $isUkDomain);
         }
+
         if (isset($params->billing->register)) {
             $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $isUkDomain);
         }
@@ -241,9 +243,11 @@ class NetistrarApi
         if (isset($params->admin->register)) {
             $data['adminContact'] = $this->transformContactToNetistrarContact($params->admin->register, $isUkDomain);
         }
+
         if (isset($params->tech->register)) {
             $data['technicalContact'] = $this->transformContactToNetistrarContact($params->tech->register, $isUkDomain);
         }
+
         if (isset($params->billing->register)) {
             $data['billingContact'] = $this->transformContactToNetistrarContact($params->billing->register, $isUkDomain);
         }

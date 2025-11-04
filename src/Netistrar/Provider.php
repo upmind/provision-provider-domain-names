@@ -12,6 +12,7 @@ use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
+use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
@@ -124,6 +125,23 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
+        // Validate the different contact types for required fileds.
+        if (isset($params->registrant->register)) {
+            $this->validateContactParam($params->registrant->register, 'registrant');
+        }
+
+        if (isset($params->admin->register)) {
+            $this->validateContactParam($params->admin->register, 'admin');
+        }
+
+        if (isset($params->tech->register)) {
+            $this->validateContactParam($params->tech->register, 'technical');
+        }
+
+        if (isset($params->billing->register)) {
+            $this->validateContactParam($params->tech->register, 'billing');
+        }
+
         try {
             $this->api()->createDomain($params);
         } catch (ProvisionFunctionError $e) {
@@ -148,6 +166,23 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function transfer(TransferParams $params): DomainResult
     {
+        // Validate the different contact types for required fileds.
+        if (isset($params->registrant->register)) {
+            $this->validateContactParam($params->registrant->register, 'registrant');
+        }
+
+        if (isset($params->admin->register)) {
+            $this->validateContactParam($params->admin->register, 'admin');
+        }
+
+        if (isset($params->tech->register)) {
+            $this->validateContactParam($params->tech->register, 'technical');
+        }
+
+        if (isset($params->billing->register)) {
+            $this->validateContactParam($params->tech->register, 'billing');
+        }
+
         try {
             $this->api()->transferDomain($params);
         } catch (ProvisionFunctionError $e) {
@@ -392,5 +427,15 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainInfo = $this->api()->getDomainInfo($domainName);
         return DomainResult::create($domainInfo)->setMessage($message);
+    }
+
+    /**
+     * @return no-return
+     */
+    private function validateContactParam(ContactParams $params, string $contactType): void
+    {
+        if (!isset($params->state)) {
+            $this->errorResult('State/County is required for ' . $contactType . ' contact details');
+        }
     }
 }

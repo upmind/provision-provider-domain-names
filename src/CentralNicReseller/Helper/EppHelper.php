@@ -316,6 +316,13 @@ class EppHelper
             throw $e;
         }
 
+        $countryCode = $response->getContactCountrycode();
+
+        // Normalize 'XX' country code (returned by CNR for unknown/invalid) to null
+        if ($countryCode === 'XX') {
+            $countryCode = null;
+        }
+
         return ContactData::create([
             'id' => $contactId,
             'name' => $response->getContactName() ?: null,
@@ -326,7 +333,7 @@ class EppHelper
             'city' => $response->getContactCity(),
             'state' => $response->getContactProvince(),
             'postcode' => $response->getContactZipcode(),
-            'country_code' => $response->getContactCountrycode(),
+            'country_code' => $countryCode,
             'type' => $response->getContact()->getType(),
         ]);
     }

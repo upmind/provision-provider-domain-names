@@ -247,6 +247,8 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
+        $this->validateContactParam($params->contact, 'registrant');
+
         try {
             $this->api()->updateRegistrantContact($domainName, $params);
         } catch (ProvisionFunctionError $e) {
@@ -386,7 +388,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         try {
-            $this->api()->updateIpsTag($domainName, $updatedTags, $existingTags ?? []);
+            $this->api()->updateIpsTag($domainName, $updatedTags, $existingTags);
         } catch (ProvisionFunctionError $e) {
             $this->errorResult(
                 'Failed to update IP Tags: ' . $e->getMessage(),
@@ -435,9 +437,6 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
-    /**
-     * @return no-return
-     */
     private function validateContactParam(ContactParams $params, string $contactType): void
     {
         if (!isset($params->state)) {

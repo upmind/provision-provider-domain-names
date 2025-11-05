@@ -198,8 +198,7 @@ class Provider extends DomainNames implements ProviderInterface
             );
         }
 
-        $domainName = Utils::getDomain($params->sld, $params->tld);
-        $domainInfo = $this->api()->getDomainInfo($domainName);
+        $domainInfo = $this->api()->getDomainInfo(Utils::getDomain($params->sld, $params->tld));
 
         return DomainResult::create($domainInfo)->setMessage('Domain transferred');
     }

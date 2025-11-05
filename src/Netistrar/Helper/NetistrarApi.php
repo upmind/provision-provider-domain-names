@@ -201,29 +201,6 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    private function validateIncomingTransferDomains(array $data): void
-    {
-        $endpoint = "/domains/transfer/validate/";
-        $validationResults = $this->apiCall($endpoint, [], $data, 'POST');
-
-        if (!isset($validationResults['transactionErrors'])) {
-            return;
-        }
-
-        $reasonMessages = [];
-
-        foreach($validationResults['transactionErrors'] as $err) {
-            $reasonMessages[] = $err['message'] ?? null;
-        }
-
-        $this->errorResult('Unable to validate transfer domains', ['response' => implode(' ', $reasonMessages)]);
-    }
-
-    /**
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
-     */
     public function transferDomain(TransferParams $params): array
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -361,6 +338,116 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
+    private function validateIncomingTransferDomains(array $data): void
+    {
+        $endpoint = "/domains/transfer/validate/";
+        $validationResults = $this->apiCall($endpoint, [], $data, 'POST');
+
+        if (!isset($validationResults['transactionErrors'])) {
+            return;
+        }
+
+        $reasonMessages = [];
+
+        foreach($validationResults['transactionErrors'] as $err) {
+            $reasonMessages[] = $err['message'] ?? null;
+        }
+
+        $this->errorResult('Unable to validate transfer domains', ['response' => implode(' ', $reasonMessages)]);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    private function transformContactToNetistrarContact(ContactParams $contact, bool $isUkDomain): array
+    {
+        $phone = PhoneNumberUtil::getInstance()->parse($contact->phone);
+        $contactData = [
+            'name' => $contact->name,
+            'emailAddress' => $contact->email,
+            'organisation' => $contact->organisation,
+            'telephoneDiallingCode' => "+". $phone->getCountryCode(),
+            'telephone' => $phone->getNationalNumber(),
+            'street1' => $contact->address1,
+            'city' => $contact->city,
+            'county' => $contact->state,
+            'postcode' => $contact->postcode,
+            'country' => $contact->country_code,
+        ];
+
+        if ($isUkDomain && isset($contact->type)
+            && in_array($contact->type, $this->getNominentRegistrantTypes(), true)) {
+            $contactData['additionalData']['nominetRegistrantType'] = $contact->type;
+        }
+
+        return $contactData;
+    }
+
+    private function transformNetistrarContactToContact(array $contact, bool $usePending = false): ContactParams
+    {
+        $pendingStatus = isset($contact['status']) && $contact['status'] === self::CONTACT_STATUS_PENDING;
+
+        /*
+         * Load pending contact if required.
+         * Netistrar allows and can have multiple pending contact changes, nested in the original pendingContact attribute.
+         * However, the first level holds the latest update request.
+         */
+        $contactData = $usePending && $pendingStatus && isset($contact['pendingContact'])
+            ?  [
+                'name' => $contact['pendingContact']['name'] ?? null,
+                'email' => $contact['pendingContact']['emailAddress'] ?? null,
+                'organisation' => $contact['pendingContact']['organisation'] ?? null,
+                'phone' => ($contact['pendingContact']['telephoneDiallingCode'] ?? '') . ($contact['pendingContact']['telephone'] ?? ''),
+                'address1' => $contact['pendingContact']['street1'] ?? null,
+                'city' => $contact['pendingContact']['city'] ?? null,
+                'state' => $contact['pendingContact']['county'] ?? null,
+                'postcode' => $contact['pendingContact']['postcode'] ?? null,
+                'country_code' => $contact['pendingContact']['country'] ?? null,
+                'status' => self::CONTACT_STATUS_PENDING,
+            ]
+            : [
+                'name' => $contact['name'] ?? null,
+                'email' => $contact['emailAddress'] ?? null,
+                'organisation' => $contact['organisation'] ?? null,
+                'phone' => ($contact['telephoneDiallingCode'] ?? '') . ($contact['telephone'] ?? ''),
+                'address1' => $contact['street1'] ?? null,
+                'city' => $contact['city'] ?? null,
+                'state' => $contact['county'] ?? null,
+                'postcode' => $contact['postcode'] ?? null,
+                'country_code' => $contact['country'] ?? null,
+            ];
+
+        return  ContactParams::create($contactData);
+    }
+
+    /**
+     * Returns an array of Nominet registrant types that are valid for UK domains
+     */
+    private function getNominentRegistrantTypes() : array {
+        // Nominet registrant types
+        return [
+            self::CONTACT_LTD,
+            self::CONTACT_PLC,
+            self::CONTACT_PTNR,
+            self::CONTACT_STRA,
+            self::CONTACT_LLP,
+            self::CONTACT_IP,
+            self::CONTACT_IND,
+            self::CONTACT_SCH,
+            self::CONTACT_RCHAR,
+            self::CONTACT_GOV,
+            self::CONTACT_CRC,
+            self::CONTACT_STAT,
+            self::CONTACT_OTHER
+        ];
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     private function apiCall(
         string $endpoint,
         array $query = [],
@@ -484,92 +571,5 @@ class NetistrarApi
         throw ProvisionFunctionError::create($message, $e)
             ->withData($data)
             ->withDebug($debug);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Throwable
-     */
-    private function transformContactToNetistrarContact(ContactParams $contact, bool $isUkDomain): array
-    {
-        $phone = PhoneNumberUtil::getInstance()->parse($contact->phone);
-        $contactData = [
-            'name' => $contact->name,
-            'emailAddress' => $contact->email,
-            'organisation' => $contact->organisation,
-            'telephoneDiallingCode' => "+". $phone->getCountryCode(),
-            'telephone' => $phone->getNationalNumber(),
-            'street1' => $contact->address1,
-            'city' => $contact->city,
-            'county' => $contact->state,
-            'postcode' => $contact->postcode,
-            'country' => $contact->country_code,
-        ];
-
-        if ($isUkDomain && isset($contact->type)
-            && in_array($contact->type, $this->getNominentRegistrantTypes(), true)) {
-            $contactData['additionalData']['nominetRegistrantType'] = $contact->type;
-        }
-
-        return $contactData;
-    }
-
-    private function transformNetistrarContactToContact(array $contact, bool $usePending = false): ContactParams
-    {
-        $pendingStatus = isset($contact['status']) && $contact['status'] === self::CONTACT_STATUS_PENDING;
-
-        /*
-         * Load pending contact if required.
-         * Netistrar allows and can have multiple pending contact changes, nested in the original pendingContact attribute.
-         * However, the first level holds the latest update request.
-         */
-        $contactData = $usePending && $pendingStatus && isset($contact['pendingContact'])
-            ?  [
-                'name' => $contact['pendingContact']['name'] ?? null,
-                'email' => $contact['pendingContact']['emailAddress'] ?? null,
-                'organisation' => $contact['pendingContact']['organisation'] ?? null,
-                'phone' => ($contact['pendingContact']['telephoneDiallingCode'] ?? '') . ($contact['pendingContact']['telephone'] ?? ''),
-                'address1' => $contact['pendingContact']['street1'] ?? null,
-                'city' => $contact['pendingContact']['city'] ?? null,
-                'state' => $contact['pendingContact']['county'] ?? null,
-                'postcode' => $contact['pendingContact']['postcode'] ?? null,
-                'country_code' => $contact['pendingContact']['country'] ?? null,
-                'status' => self::CONTACT_STATUS_PENDING,
-            ]
-            : [
-                'name' => $contact['name'] ?? null,
-                'email' => $contact['emailAddress'] ?? null,
-                'organisation' => $contact['organisation'] ?? null,
-                'phone' => ($contact['telephoneDiallingCode'] ?? '') . ($contact['telephone'] ?? ''),
-                'address1' => $contact['street1'] ?? null,
-                'city' => $contact['city'] ?? null,
-                'state' => $contact['county'] ?? null,
-                'postcode' => $contact['postcode'] ?? null,
-                'country_code' => $contact['country'] ?? null,
-            ];
-
-        return  ContactParams::create($contactData);
-    }
-
-    /**
-     * Returns an array of Nominet registrant types that are valid for UK domains
-     */
-    private function getNominentRegistrantTypes() : array {
-        // Nominet registrant types
-        return [
-            self::CONTACT_LTD,
-            self::CONTACT_PLC,
-            self::CONTACT_PTNR,
-            self::CONTACT_STRA,
-            self::CONTACT_LLP,
-            self::CONTACT_IP,
-            self::CONTACT_IND,
-            self::CONTACT_SCH,
-            self::CONTACT_RCHAR,
-            self::CONTACT_GOV,
-            self::CONTACT_CRC,
-            self::CONTACT_STAT,
-            self::CONTACT_OTHER
-        ];
     }
 }

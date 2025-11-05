@@ -103,10 +103,10 @@ class NetistrarApi
             'statuses' => [$apiResult['status']],
             'whois_privacy' => $apiResult['privacyProxy'] ?? null,
             'auto_renew' => $apiResult['autoRenew'] ?? false,
-            'registrant' => $this->transformNetistrarContactToContact($apiResult['ownerContact'] ?? []),
-            'billing' => $this->transformNetistrarContactToContact($apiResult['billingContact'] ?? []),
-            'tech' => $this->transformNetistrarContactToContact($apiResult['technicalContact'] ?? []),
-            'admin' => $this->transformNetistrarContactToContact($apiResult['adminContact'] ?? []),
+            'registrant' => $this->transformNetistrarContactToContact($apiResult['ownerContact'] ?? [], $usePending),
+            'billing' => $this->transformNetistrarContactToContact($apiResult['billingContact'] ?? [], $usePending),
+            'tech' => $this->transformNetistrarContactToContact($apiResult['technicalContact'] ?? [], $usePending),
+            'admin' => $this->transformNetistrarContactToContact($apiResult['adminContact'] ?? [], $usePending),
             'ns' => $nameservers,
             'created_at' => isset($apiResult['registeredDate'])
                 ? Carbon::createFromFormat('d/m/Y H:i:s', $apiResult['registeredDate'])->format('Y-m-d H:i:s')
@@ -514,19 +514,41 @@ class NetistrarApi
         return $contactData;
     }
 
-    private function transformNetistrarContactToContact(array $contact): ContactParams
+    private function transformNetistrarContactToContact(array $contact, bool $usePending = false): ContactParams
     {
-        return ContactParams::create([
-            'name' => $contact['name'] ?? null,
-            'email' => $contact['emailAddress'] ?? null,
-            'organisation' => $contact['organisation'] ?? null,
-            'phone' => ($contact['telephoneDiallingCode'] ?? '') . ($contact['telephone'] ?? ''),
-            'address1' => $contact['street1'] ?? null,
-            'city' => $contact['city'] ?? null,
-            'state' => $contact['county'] ?? null,
-            'postcode' => $contact['postcode'] ?? null,
-            'country_code' => $contact['country'] ?? null,
-        ]);
+        $pendingStatus = isset($contact['status']) && $contact['status'] === self::CONTACT_STATUS_PENDING;
+
+        /*
+         * Load pending contact if required.
+         * Netistrar allows and can have multiple pending contact changes, nested in the original pendingContact attribute.
+         * However, the first level holds the latest update request.
+         */
+        $contactData = $usePending && $pendingStatus && isset($contact['pendingContact'])
+            ?  [
+                'name' => $contact['pendingContact']['name'] ?? null,
+                'email' => $contact['pendingContact']['emailAddress'] ?? null,
+                'organisation' => $contact['pendingContact']['organisation'] ?? null,
+                'phone' => ($contact['pendingContact']['telephoneDiallingCode'] ?? '') . ($contact['pendingContact']['telephone'] ?? ''),
+                'address1' => $contact['pendingContact']['street1'] ?? null,
+                'city' => $contact['pendingContact']['city'] ?? null,
+                'state' => $contact['pendingContact']['county'] ?? null,
+                'postcode' => $contact['pendingContact']['postcode'] ?? null,
+                'country_code' => $contact['pendingContact']['country'] ?? null,
+                'status' => self::CONTACT_STATUS_PENDING,
+            ]
+            : [
+                'name' => $contact['name'] ?? null,
+                'email' => $contact['emailAddress'] ?? null,
+                'organisation' => $contact['organisation'] ?? null,
+                'phone' => ($contact['telephoneDiallingCode'] ?? '') . ($contact['telephone'] ?? ''),
+                'address1' => $contact['street1'] ?? null,
+                'city' => $contact['city'] ?? null,
+                'state' => $contact['county'] ?? null,
+                'postcode' => $contact['postcode'] ?? null,
+                'country_code' => $contact['country'] ?? null,
+            ];
+
+        return  ContactParams::create($contactData);
     }
 
     /**

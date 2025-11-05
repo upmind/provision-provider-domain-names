@@ -125,10 +125,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
-        // Validate the different contact types for required fileds.
-        if (isset($params->registrant->register)) {
-            $this->validateContactParam($params->registrant->register, 'registrant');
+        if (!isset($params->registrant->register)) {
+            $this->errorResult('Registrant details are required.');
         }
+
+        // Validate the different contact types for required fields.
+        $this->validateContactParam($params->registrant->register, 'registrant');
 
         if (isset($params->admin->register)) {
             $this->validateContactParam($params->admin->register, 'admin');
@@ -166,10 +168,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function transfer(TransferParams $params): DomainResult
     {
-        // Validate the different contact types for required fileds.
-        if (isset($params->registrant->register)) {
-            $this->validateContactParam($params->registrant->register, 'registrant');
+        if (!isset($params->registrant->register)) {
+            $this->errorResult('Registrant details are required.');
         }
+
+        // Validate the different contact types for required fields.
+        $this->validateContactParam($params->registrant->register, 'registrant');
 
         if (isset($params->admin->register)) {
             $this->validateContactParam($params->admin->register, 'admin');

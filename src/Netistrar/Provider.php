@@ -260,7 +260,12 @@ class Provider extends DomainNames implements ProviderInterface
             );
         }
 
-        $domainInfo = $this->api()->getDomainInfo($domainName);
+        $domainInfo = $this->api()->getDomainInfo($domainName, [], true);
+
+        // If the contact update is pending
+        if ($domainInfo->registrant->get('status') === NetistrarApi::CONTACT_STATUS_PENDING) {
+            return ContactResult::create($domainInfo->registrant)->setMessage('Registrant Contact update is pending');
+        }
 
         return ContactResult::create($domainInfo->registrant)->setMessage('Registrant Contact updated');
     }

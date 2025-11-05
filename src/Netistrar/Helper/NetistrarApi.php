@@ -102,10 +102,10 @@ class NetistrarApi
             'statuses' => [$apiResult['status']],
             'whois_privacy' => $apiResult['privacyProxy'] ?? null,
             'auto_renew' => $apiResult['autoRenew'] ?? false,
-            'registrant' => $this->transformNetisrarContactToContact($apiResult['ownerContact'] ?? []),
-            'billing' => $this->transformNetisrarContactToContact($apiResult['billingContact'] ?? []),
-            'tech' => $this->transformNetisrarContactToContact($apiResult['technicalContact'] ?? []),
-            'admin' => $this->transformNetisrarContactToContact($apiResult['adminContact'] ?? []),
+            'registrant' => $this->transformNetistrarContactToContact($apiResult['ownerContact'] ?? []),
+            'billing' => $this->transformNetistrarContactToContact($apiResult['billingContact'] ?? []),
+            'tech' => $this->transformNetistrarContactToContact($apiResult['technicalContact'] ?? []),
+            'admin' => $this->transformNetistrarContactToContact($apiResult['adminContact'] ?? []),
             'ns' => $nameservers,
             'created_at' => isset($apiResult['registeredDate'])
                 ? Carbon::createFromFormat('d/m/Y H:i:s', $apiResult['registeredDate'])->format('Y-m-d H:i:s')
@@ -513,7 +513,7 @@ class NetistrarApi
         return $contactData;
     }
 
-    private function transformNetisrarContactToContact(array $contact): ContactParams
+    private function transformNetistrarContactToContact(array $contact): ContactParams
     {
         return ContactParams::create([
             'name' => $contact['name'] ?? null,

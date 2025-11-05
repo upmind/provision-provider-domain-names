@@ -44,6 +44,7 @@ class NetistrarApi
     public const CONTACT_CRC = "CRC"; // UK Corporation by Royal Charter
     public const CONTACT_STAT = "STAT"; // UK Statutory Body
     public const CONTACT_OTHER = "OTHER"; // UK Entity that does not fit into any of the above (clubs, associations, etc)
+    public const CONTACT_STATUS_PENDING = 'PENDING_CHANGES';
 
     public function __construct(Client $client, Configuration $configuration)
     {
@@ -72,7 +73,7 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function getDomainInfo(string $domainName, array $additionalFields = []): DomainResult
+    public function getDomainInfo(string $domainName, array $additionalFields = [], bool $usePending = false): DomainResult
     {
         $apiResult = $this->apiCall("domains/{$domainName}");
 

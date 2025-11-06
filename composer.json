@@ -46,6 +46,7 @@
         "upmind/hexonet-php-sdk": "^5.8"
     },
     "require-dev": {
+        "orchestra/testbench": "^4.0",
         "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^9.5 || ^10.5 || ^11.0 || ^12.0"
     },

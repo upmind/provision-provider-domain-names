@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.53](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.53) - 2025-11-06
+
+- Improve handling of `XX` country code as returned from Centralnic Reseller, when country is unknown.
+
 ## [v2.12.52](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.52) - 2025-10-27
 
 - Remove `authcode` parameter when transfering a `.lu` domain via Realtime Register, as not required.

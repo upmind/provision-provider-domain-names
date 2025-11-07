@@ -2,6 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
+## UNRELEASED
+
+- Add getVerificationStatus() and resendVerificationEmail() functions
+  - Add OpenSRS implementations
+  - Add SynergyWholesale implementations
+
 ## [v2.12.53](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.53) - 2025-11-06
 
 - Improve handling of `XX` country code as returned from Centralnic Reseller, when country is unknown.

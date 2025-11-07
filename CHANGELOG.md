@@ -2,7 +2,7 @@
 
 All notable changes to the package will be documented in this file.
 
-## UNRELEASED
+## [v2.20.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.20.0) - 2025-11-07
 
 - Add getVerificationStatus() and resendVerificationEmail() functions
   - Add OpenSRS implementations

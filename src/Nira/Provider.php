@@ -11,11 +11,6 @@ use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
 use Upmind\ProvisionProviders\DomainNames\Nira\Data\Configuration;
 
-use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
-use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
-use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
-use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
-
 class Provider extends CoccaEppProvider
 {
     /**
@@ -52,21 +47,4 @@ class Provider extends CoccaEppProvider
             ->setDescription('Register, transfer, renew and manage NIRA domains')
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/nira-logo.webp');
     }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
 }

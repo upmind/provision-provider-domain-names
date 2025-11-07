@@ -11,11 +11,6 @@ use Upmind\ProvisionProviders\DomainNames\HRS\Helper\HrsApi;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Helper\OpenSrsApi;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Provider as OpenSRSProvider;
 
-use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
-use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
-use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
-use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
-
 class Provider extends OpenSRSProvider
 {
     /**
@@ -59,21 +54,4 @@ class Provider extends OpenSRSProvider
 
         return $this->apiClient = new HrsApi($client, $this->configuration);
     }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
 }

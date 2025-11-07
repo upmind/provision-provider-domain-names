@@ -7,11 +7,6 @@ namespace Upmind\ProvisionProviders\DomainNames\ResellBiz;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\DomainNames\LogicBoxes\Provider as LogicBoxesProvider;
 
-use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
-use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
-use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
-use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
-
 class Provider extends LogicBoxesProvider
 {
     public static function aboutProvider(): AboutData
@@ -24,21 +19,4 @@ class Provider extends LogicBoxesProvider
             )
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/resell-biz-logo.jpeg');
     }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
 }

@@ -34,6 +34,10 @@ use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Helper\AdditionalFieldNormaliser;
@@ -282,6 +286,38 @@ class Provider extends DomainNames implements ProviderInterface
     public function updateIpsTag(IpsTagParams $params): ResultData
     {
         $this->errorResult('Operation not supported');
+    }
+
+    /**
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        try {
+            $domain = Utils::getDomain($params->sld, $params->tld);
+            $status = $this->api()->getDomainVerificationInfo($domain);
+
+            return VerificationStatusResult::create($status);
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
+    }
+
+    /**
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        try {
+            $domain = Utils::getDomain($params->sld, $params->tld);
+            $result = $this->api()->resendVerificationEmail($domain);
+
+            return ResendVerificationResult::create($result);
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
     }
 
     /**

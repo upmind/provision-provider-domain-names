@@ -40,6 +40,10 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Data\OpenSrsConfiguration;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Helper\OpenSrsApi;
@@ -795,12 +799,49 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+
+    /**
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        try {
+            $domain = Utils::getDomain($params->sld, $params->tld);
+            $status = $this->api()->getRegistrantVerificationStatus($domain);
+
+            return VerificationStatusResult::create($status);
+        } catch (Throwable $e) {
+            $this->handleError($e, $params);
+        }
+    }
+
+    /**
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        try {
+            $domain = Utils::getDomain($params->sld, $params->tld);
+            $result = $this->api()->sendRegistrantVerificationEmail($domain);
+
+            return ResendVerificationResult::create($result);
+        } catch (Throwable $e) {
+            $this->handleError($e, $params);
+        }
+    }
+
     /**
      * @param string $sld
      * @param string $tld
      * @param ContactParams $params
      * @param string $type
      * @return ContactResult
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private function updateContact(string $sld, string $tld, ContactParams $params, string $type): ContactResult
     {

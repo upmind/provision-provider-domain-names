@@ -83,6 +83,8 @@ The following providers are currently implemented:
 | setAutoRenew() | [_AutoRenewParams_](src/Data/AutoRenewParams.php) | [_DomainResult_](src/Data/DomainResult.php) | Toggle registry auto-renewal for a domain name |
 | getEppCode() | [_EppParams_](src/Data/EppParams.php) | [_EppCodeResult_](src/Data/EppCodeResult.php) | Get the EPP/Auth code of a domain name |
 | updateIpsTag() | [_IpsTagParams_](src/Data/IpsTagParams.php) | [_ResultData_](src/Data/ResultData.php) | Release a domain name to a new IPS tag (UK-only) |
+| getVerificationStatus() | [_VerificationStatusParams_](src/Data/VerificationStatusParams.php) | [_VerificationStatusResult_](src/Data/VerificationStatusResult.php) | Get the verification status of a domain name |
+| resendVerificationEmail() | [_ResendVerificationParams_](src/Data/ResendVerificationParams.php) | [_ResendVerificationResult_](src/Data/ResendVerificationResult.php) | Resend the verification email for a domain name |
 
 ## Changelog
 

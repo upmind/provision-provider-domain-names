@@ -538,7 +538,7 @@ class OpenSrsApi
         $attributes = $response['attributes'] ?? [];
 
         return [
-            'icann_verification_status' => $attributes['status'] ?? 'unknown',
+            'icann_verification_status' => $attributes['registrant_verification_status'] ?? $attributes['status'] ?? 'unknown',
             'verification_deadline' => $attributes['deadline'] ?? null,
             'days_to_suspend' => $attributes['days_to_suspend'] ?? null,
             'email_bounced' => isset($attributes['email_bounced']) ? (bool)$attributes['email_bounced'] : null,

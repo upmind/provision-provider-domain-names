@@ -475,4 +475,58 @@ class SynergyWholesaleApi
 
         $this->makeRequest($command, $params);
     }
+
+    /**
+     * Get domain verification info (ICANN and AU eligibility).
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @return array Verification status data
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getDomainVerificationInfo(string $domainName): array
+    {
+        $response = $this->makeRequest('domainInfo', [
+            'domainName' => $domainName,
+        ]);
+
+        $isAuDomain = Str::endsWith($domainName, '.au');
+
+        // Map ICANN status - set to null if "N/A" (not applicable for AU domains)
+        $icannStatus = $response['icannStatus'] ?? 'unknown';
+        $icannVerificationStatus = ($icannStatus === 'N/A') ? null : $icannStatus;
+
+        // Map AU eligibility boolean to status string
+        $cctldVerificationStatus = null;
+        if ($isAuDomain && isset($response['au_valid_eligibility'])) {
+            $cctldVerificationStatus = $response['au_valid_eligibility'] ? 'verified' : 'unverified';
+        }
+
+        return [
+            'icann_verification_status' => $icannVerificationStatus,
+            'cctld_verification_status' => $cctldVerificationStatus,
+            'verification_deadline' => $response['icannVerificationDateEnd'] ?? null,
+            'provider_specific_data' => [
+                'au_eligibility_last_check' => $response['au_eligibility_last_check'] ?? null,
+            ],
+        ];
+    }
+
+    /**
+     * Resend verification email for a domain.
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @return array Success result
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(string $domainName): array
+    {
+        $response = $this->makeRequest('resendVerificationEmail', [
+            'domainName' => $domainName,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => $response['message'] ?? 'Verification email sent successfully',
+        ];
+    }
 }

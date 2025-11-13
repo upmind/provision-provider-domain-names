@@ -38,6 +38,9 @@ use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Helper\AdditionalFieldNormaliser;
@@ -390,5 +393,21 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         return $this->additionalFields = new AdditionalFieldNormaliser();
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
     }
 }

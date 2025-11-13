@@ -6,6 +6,9 @@ namespace Upmind\ProvisionProviders\DomainNames\NetEarthOne;
 
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionProviders\DomainNames\LogicBoxes\Provider as LogicBoxesProvider;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 
 class Provider extends LogicBoxesProvider
 {
@@ -19,5 +22,21 @@ class Provider extends LogicBoxesProvider
                 . 'manage various gTLD and ccTLD Domain Names.'
             )
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/netearthone-logo_2x.png');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
     }
 }

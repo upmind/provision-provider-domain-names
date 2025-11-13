@@ -29,6 +29,9 @@ use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 
 abstract class Category extends BaseCategory
 {
@@ -113,4 +116,18 @@ abstract class Category extends BaseCategory
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     abstract public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult;
+
+    /**
+     * Set a glue record for a domain.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    abstract public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult;
+
+    /**
+     * Remove a glue record from a domain.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    abstract public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult;
 }

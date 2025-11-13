@@ -8,6 +8,8 @@ use DateTimeInterface;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
+
 /**
  * Domain response data.
  *
@@ -22,6 +24,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read ContactData|null $tech Tech contact
  * @property-read ContactData|null $admin Admin contact
  * @property-read NameserversParams $ns Nameservers
+ * @property-read GlueRecordsResult[]|null $glue_records Glue records
  * @property-read string $created_at Date of creation in format - Y-m-d H:i:s
  * @property-read string $updated_at Date of last update in format - Y-m-d H:i:s
  * @property-read string $expires_at Date of domain renewing in format - Y-m-d H:i:s
@@ -45,6 +48,8 @@ class DomainResult extends ResultData
             'tech' => ['nullable', ContactData::class],
             'admin' => ['nullable', ContactData::class],
             'ns' => ['present', NameserversParams::class],
+            'glue_records' => ['nullable', 'array'],
+            'glue_records.*' => [GlueRecordsResult::class],
             'created_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'updated_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'expires_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
@@ -168,6 +173,17 @@ class DomainResult extends ResultData
     public function setExpiresAt(?DateTimeInterface $expiresAt)
     {
         $this->setValue('expires_at', $expiresAt ? $expiresAt->format('Y-m-d H:i:s') : null);
+        return $this;
+    }
+
+    /**
+     * @param GlueRecordsResult[]|array[]|null $glueRecords
+     *
+     * @return static $this
+     */
+    public function setGlueRecords($glueRecords)
+    {
+        $this->setValue('glue_records', $glueRecords);
         return $this;
     }
 }

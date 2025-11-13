@@ -44,6 +44,9 @@ use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Data\OpenSrsConfiguration;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Helper\OpenSrsApi;
@@ -830,6 +833,22 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (Throwable $e) {
             $this->handleError($e, $params);
         }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
     }
 
     /**

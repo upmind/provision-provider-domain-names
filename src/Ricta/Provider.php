@@ -10,6 +10,9 @@ use Upmind\ProvisionProviders\DomainNames\CoccaEpp\Provider as CoccaEppProvider;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
 use Upmind\ProvisionProviders\DomainNames\Ricta\Data\Configuration;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 
 class Provider extends CoccaEppProvider
 {
@@ -46,5 +49,21 @@ class Provider extends CoccaEppProvider
             ->setName('RICTA')
             ->setDescription('Register, transfer, renew and manage RICTA .rw domains')
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/ricta-logo.png');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
     }
 }

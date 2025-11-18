@@ -134,7 +134,15 @@ class Provider extends DomainNames implements ProviderInterface
                     ->setCountryCode('US')
             )
             ->setCreatedAt(Carbon::now()->subDays(365))
-            ->setExpiresAt(Carbon::now()->addDays(100));
+            ->setExpiresAt(Carbon::now()->addDays(100))
+            ->setGlueRecords([
+                GlueRecordsResult::create()
+                    ->setHostname('ns1.' . $domain)
+                    ->setIps(['192.0.2.1', '2001:db8::1']),
+                GlueRecordsResult::create()
+                    ->setHostname('ns2.' . $domain)
+                    ->setIps(['192.0.2.2']),
+            ]);
     }
 
     /**

@@ -23,4 +23,22 @@ class GlueRecordsResult extends ResultData
             'ips.*' => ['ip'],
         ]);
     }
+
+    /**
+     * @return $this
+     */
+    public function setHostname(string $hostname): self
+    {
+        $this->setValue('hostname', $hostname);
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setIps(array $ips): self
+    {
+        $this->setValue('ips', $ips);
+        return $this;
+    }
 }

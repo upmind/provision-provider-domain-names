@@ -138,6 +138,22 @@ class SynergyWholesaleApi
         /** @var \Illuminate\Support\Collection $statusesCollection */
         $statusesCollection = collect([$response['status'], $response['domain_status']]);
 
+        // Fetch glue records
+        $glueRecords = [];
+        try {
+            $hostsResponse = $this->makeRequest('listAllHosts', [
+                'domainName' => $domainName,
+            ]);
+            foreach ($hostsResponse['hosts'] ?? [] as $host) {
+                $glueRecords[] = [
+                    'hostname' => $host['hostName'],
+                    'ips' => $host['ip'] ?? [],
+                ];
+            }
+        } catch (Throwable $e) {
+            // Domain may not have hosts - ignore
+        }
+
         return [
             'id' => $response['domainRoid'],
             'domain' => (string)$response['domainName'],
@@ -163,6 +179,7 @@ class SynergyWholesaleApi
             'created_at' => Utils::formatDate((string)$response['createdDate']),
             'updated_at' => null,
             'expires_at' => isset($response['domain_expiry']) ? Utils::formatDate($response['domain_expiry']) : null,
+            'glue_records' => $glueRecords,
         ];
     }
 
@@ -528,5 +545,69 @@ class SynergyWholesaleApi
             'success' => true,
             'message' => $response['message'] ?? 'Verification email sent successfully',
         ];
+    }
+
+    /**
+     * Add a glue record (host) for a domain.
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @param string $host Host prefix (e.g., "ns1")
+     * @param array $ips Array of IP addresses
+     * @return array API response
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function addRegistryHost(string $domainName, string $host, array $ips): array
+    {
+        return $this->makeRequest('addHost', [
+            'domainName' => $domainName,
+            'host' => $host,
+            'ipAddress' => $ips,
+        ]);
+    }
+
+    /**
+     * Delete a glue record (host) for a domain.
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @param string $host Host prefix (e.g., "ns1")
+     * @return array API response
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function deleteRegistryHost(string $domainName, string $host): array
+    {
+        return $this->makeRequest('deleteHost', [
+            'domainName' => $domainName,
+            'host' => $host,
+        ]);
+    }
+
+    /**
+     * Get info for a specific glue record (host).
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @param string $host Host prefix (e.g., "ns1")
+     * @return array API response with host info
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function listRegistryHost(string $domainName, string $host): array
+    {
+        return $this->makeRequest('listHost', [
+            'domainName' => $domainName,
+            'host' => $host,
+        ]);
+    }
+
+    /**
+     * List all glue records (hosts) for a domain.
+     *
+     * @param string $domainName Full domain name (e.g., example.com)
+     * @return array API response with all hosts
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function listAllRegistryHosts(string $domainName): array
+    {
+        return $this->makeRequest('listAllHosts', [
+            'domainName' => $domainName,
+        ]);
     }
 }

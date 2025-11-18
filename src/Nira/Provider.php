@@ -10,9 +10,6 @@ use Upmind\ProvisionProviders\DomainNames\CoccaEpp\Provider as CoccaEppProvider;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
 use Upmind\ProvisionProviders\DomainNames\Nira\Data\Configuration;
-use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
-use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
-use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 
 class Provider extends CoccaEppProvider
 {
@@ -49,21 +46,5 @@ class Provider extends CoccaEppProvider
             ->setName('NIRA')
             ->setDescription('Register, transfer, renew and manage NIRA domains')
             ->setLogoUrl('https://api.upmind.io/images/logos/provision/nira-logo.webp');
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
-    {
-        $this->errorResult('Operation not supported', $params);
     }
 }

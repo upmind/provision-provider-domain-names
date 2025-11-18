@@ -10,9 +10,6 @@ use Upmind\ProvisionProviders\DomainNames\HRS\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\HRS\Helper\HrsApi;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Helper\OpenSrsApi;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Provider as OpenSRSProvider;
-use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
-use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
-use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 
 class Provider extends OpenSRSProvider
 {
@@ -56,21 +53,5 @@ class Provider extends OpenSRSProvider
         ]);
 
         return $this->apiClient = new HrsApi($client, $this->configuration);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
-    {
-        $this->errorResult('Operation not supported', $params);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
-    {
-        $this->errorResult('Operation not supported', $params);
     }
 }

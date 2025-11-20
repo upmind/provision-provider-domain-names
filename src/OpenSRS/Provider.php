@@ -531,6 +531,30 @@ class Provider extends DomainNames implements ProviderInterface
             $privacy = false;
         }
 
+        // Fetch glue records
+        $glueRecords = [];
+        try {
+            $nameservers = $this->api()->getNameservers(Utils::getDomain($sld, $tld));
+            foreach ($nameservers as $ns) {
+                $ips = [];
+                if (isset($ns['ipaddress'])) {
+                    $ips[] = $ns['ipaddress'];
+                }
+                if (isset($ns['ipv6'])) {
+                    $ips[] = $ns['ipv6'];
+                }
+
+                if (!empty($ips)) {
+                    $glueRecords[] = [
+                        'hostname' => $ns['name'],
+                        'ips' => $ips,
+                    ];
+                }
+            }
+        } catch (Throwable $e) {
+            // Domain may not have hosts - ignore
+        }
+
         $domainInfo = [
             'id' => (string) Utils::getDomain($sld, $tld),
             'domain' => (string) Utils::getDomain($sld, $tld),
@@ -544,6 +568,7 @@ class Provider extends DomainNames implements ProviderInterface
             'expires_at' => $domainRaw['attributes']['expiredate'],
             'locked' => boolval($statusRaw['attributes']['lock_state']),
             'whois_privacy' => $privacy ?? null,
+            'glue_records' => $glueRecords,
         ];
 
         return DomainResult::create($domainInfo)->setMessage($message);
@@ -840,7 +865,46 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        // Collect non-null IPs
+        $ips = array_values(array_filter([
+            $params->ip_1,
+            $params->ip_2,
+            $params->ip_3,
+            $params->ip_4,
+        ]));
+
+        // Separate IPv4 and IPv6 addresses
+        $ipv4 = null;
+        $ipv6 = null;
+
+        foreach ($ips as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                $ipv4 = $ip;
+            } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                $ipv6 = $ip;
+            }
+        }
+
+        try {
+            // Delete existing host (ignore if not exists)
+            try {
+                $this->api()->deleteNameserver($params->hostname, $domainName, $ipv4, $ipv6);
+            } catch (Throwable $e) {
+                // Ignore - host may not exist
+            }
+
+            // Create new host with IPs
+            $this->api()->createNameserver($params->hostname, $domainName, $ipv4, $ipv6);
+
+            return GlueRecordsResult::create()
+                ->setHostname($params->hostname)
+                ->setIps($ips)
+                ->setMessage('Glue record created successfully');
+        } catch (Throwable $e) {
+            $this->handleError($e, $params);
+        }
     }
 
     /**
@@ -848,7 +912,20 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            // OpenSRS requires at least one IP for delete, so we pass null for both
+            // The API will handle this appropriately
+            $this->api()->deleteNameserver($params->hostname, $domainName);
+
+            return GlueRecordsResult::create()
+                ->setHostname($params->hostname)
+                ->setIps([])
+                ->setMessage('Glue record deleted successfully');
+        } catch (Throwable $e) {
+            $this->handleError($e, $params);
+        }
     }
 
     /**

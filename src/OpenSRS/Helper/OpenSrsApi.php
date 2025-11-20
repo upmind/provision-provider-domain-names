@@ -573,4 +573,92 @@ class OpenSrsApi
             'message' => $response['response_text'] ?? 'Verification email sent successfully',
         ];
     }
+
+    /**
+     * Create a nameserver (glue record) with IP addresses.
+     *
+     * @param string $hostname Fully qualified nameserver name (e.g., ns1.example.com)
+     * @param string $domain Domain name (e.g., example.com)
+     * @param string|null $ipv4 IPv4 address
+     * @param string|null $ipv6 IPv6 address
+     * @return array API response
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function createNameserver(string $hostname, string $domain, ?string $ipv4 = null, ?string $ipv6 = null): array
+    {
+        $attributes = [
+            'name' => $hostname,
+            'domain' => $domain,
+        ];
+
+        if ($ipv4) {
+            $attributes['ipaddress'] = $ipv4;
+        }
+
+        if ($ipv6) {
+            $attributes['ipv6'] = $ipv6;
+        }
+
+        return $this->makeRequest([
+            'protocol' => 'XCP',
+            'action' => 'create',
+            'object' => 'nameserver',
+            'attributes' => $attributes,
+        ]);
+    }
+
+    /**
+     * Delete a nameserver (glue record).
+     *
+     * @param string $hostname Fully qualified nameserver name (e.g., ns1.example.com)
+     * @param string $domain Domain name (e.g., example.com)
+     * @param string|null $ipv4 IPv4 address
+     * @param string|null $ipv6 IPv6 address
+     * @return array API response
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function deleteNameserver(string $hostname, string $domain, ?string $ipv4 = null, ?string $ipv6 = null): array
+    {
+        $attributes = [
+            'name' => $hostname,
+            'domain' => $domain,
+        ];
+
+        if ($ipv4) {
+            $attributes['ipaddress'] = $ipv4;
+        }
+
+        if ($ipv6) {
+            $attributes['ipv6'] = $ipv6;
+        }
+
+        return $this->makeRequest([
+            'protocol' => 'XCP',
+            'action' => 'delete',
+            'object' => 'nameserver',
+            'attributes' => $attributes,
+        ]);
+    }
+
+    /**
+     * Get all nameservers (glue records) for a domain.
+     *
+     * @param string $domain Domain name (e.g., example.com)
+     * @return array List of nameservers with IP addresses
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getNameservers(string $domain): array
+    {
+        $response = $this->makeRequest([
+            'protocol' => 'XCP',
+            'action' => 'get',
+            'object' => 'nameserver',
+            'attributes' => [
+                'name' => 'all',
+            ],
+            'domain' => $domain,
+        ]);
+
+        return $response['attributes']['nameserver_list'] ?? [];
+    }
 }

@@ -26,6 +26,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
@@ -136,10 +137,10 @@ class Provider extends DomainNames implements ProviderInterface
             ->setCreatedAt(Carbon::now()->subDays(365))
             ->setExpiresAt(Carbon::now()->addDays(100))
             ->setGlueRecords([
-                GlueRecordsResult::create()
+            GlueRecord::create()
                     ->setHostname('ns1.' . $domain)
                     ->setIps(['192.0.2.1', '2001:db8::1']),
-                GlueRecordsResult::create()
+            GlueRecord::create()
                     ->setHostname('ns2.' . $domain)
                     ->setIps(['192.0.2.2']),
             ]);

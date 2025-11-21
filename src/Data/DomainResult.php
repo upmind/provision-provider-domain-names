@@ -8,8 +8,6 @@ use DateTimeInterface;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
-use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
-
 /**
  * Domain response data.
  *
@@ -24,7 +22,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
  * @property-read ContactData|null $tech Tech contact
  * @property-read ContactData|null $admin Admin contact
  * @property-read NameserversParams $ns Nameservers
- * @property-read GlueRecordsResult[]|null $glue_records Glue records
+ * @property-read GlueRecord[]|null $glue_records Glue records
  * @property-read string $created_at Date of creation in format - Y-m-d H:i:s
  * @property-read string $updated_at Date of last update in format - Y-m-d H:i:s
  * @property-read string $expires_at Date of domain renewing in format - Y-m-d H:i:s
@@ -49,7 +47,7 @@ class DomainResult extends ResultData
             'admin' => ['nullable', ContactData::class],
             'ns' => ['present', NameserversParams::class],
             'glue_records' => ['nullable', 'array'],
-            'glue_records.*' => [GlueRecordsResult::class],
+            'glue_records.*' => [GlueRecord::class],
             'created_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'updated_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'expires_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
@@ -177,7 +175,7 @@ class DomainResult extends ResultData
     }
 
     /**
-     * @param GlueRecordsResult[]|array[]|null $glueRecords
+     * @param GlueRecord[]|array[]|null $glueRecords
      *
      * @return static $this
      */

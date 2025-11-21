@@ -8,37 +8,26 @@ use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
 /**
- * Glue record result data.
+ * Set of all glue records result.
  *
- * @property-read string $hostname Glue record hostname
- * @property-read string[] $ips IP addresses
+ * @property-read GlueRecord[]|null $glue_records Set of glue records
  */
 class GlueRecordsResult extends ResultData
 {
     public static function rules(): Rules
     {
         return new Rules([
-            'hostname' => ['required', 'string'],
-            'ips' => ['required', 'array'],
-            'ips.*' => ['ip'],
+            'glue_records' => ['nullable', 'array'],
+            'glue_records.*' => [GlueRecord::class],
         ]);
     }
 
     /**
      * @return $this
      */
-    public function setHostname(string $hostname): self
+    public function setGlueRecords(?array $glueRecords): self
     {
-        $this->setValue('hostname', $hostname);
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function setIps(array $ips): self
-    {
-        $this->setValue('ips', $ips);
+        $this->setValue('glue_records', $glueRecords);
         return $this;
     }
 }

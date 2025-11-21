@@ -8,7 +8,7 @@ use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
 /**
- * Set of all glue records result.
+ * Complete set of glue records.
  *
  * @property-read GlueRecord[]|null $glue_records Set of glue records
  */

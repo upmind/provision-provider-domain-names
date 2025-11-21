@@ -274,7 +274,9 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        return $this->getFaker($params->sld, $params->tld)
+            ->getGlueRecordsResult()
+            ->setMessage('Demo glue record set');
     }
 
     /**
@@ -282,7 +284,9 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        return $this->getFaker($params->sld, $params->tld)
+            ->getGlueRecordsResult()
+            ->setMessage('Demo glue record removed');
     }
 
     protected function getFaker(string $sld, string $tld): DomainFaker

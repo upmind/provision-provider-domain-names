@@ -33,7 +33,6 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Example\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
-
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
@@ -137,10 +136,10 @@ class Provider extends DomainNames implements ProviderInterface
             ->setCreatedAt(Carbon::now()->subDays(365))
             ->setExpiresAt(Carbon::now()->addDays(100))
             ->setGlueRecords([
-            GlueRecord::create()
+                GlueRecord::create()
                     ->setHostname('ns1.' . $domain)
                     ->setIps(['192.0.2.1', '2001:db8::1']),
-            GlueRecord::create()
+                GlueRecord::create()
                     ->setHostname('ns2.' . $domain)
                     ->setIps(['192.0.2.2']),
             ]);

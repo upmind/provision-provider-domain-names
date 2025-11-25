@@ -545,10 +545,10 @@ class Provider extends DomainNames implements ProviderInterface
                 }
 
                 if (!empty($ips)) {
-                    $glueRecords[] = [
+                    $glueRecords[] = GlueRecord::create([
                         'hostname' => $ns['name'],
                         'ips' => $ips,
-                    ];
+                    ]);
                 }
             }
         } catch (Throwable $e) {
@@ -898,10 +898,14 @@ class Provider extends DomainNames implements ProviderInterface
             // Create new host with IPs
             $this->api()->createNameserver($params->hostname, $domainName, $ipv4, $ipv6);
 
-            return GlueRecordsResult::create()
-                ->setHostname($params->hostname)
-                ->setIps($ips)
-                ->setMessage('Glue record created successfully');
+            $glueRecord = GlueRecord::create([
+                'hostname' => $params->hostname,
+                'ips' => $ips,
+            ]);
+
+            return GlueRecordsResult::create([
+                'glue_records' => [$glueRecord]
+            ])->setMessage('Glue record created successfully');
         } catch (Throwable $e) {
             $this->handleError($e, $params);
         }
@@ -919,10 +923,9 @@ class Provider extends DomainNames implements ProviderInterface
             // The API will handle this appropriately
             $this->api()->deleteNameserver($params->hostname, $domainName);
 
-            return GlueRecordsResult::create()
-                ->setHostname($params->hostname)
-                ->setIps([])
-                ->setMessage('Glue record deleted successfully');
+            return GlueRecordsResult::create([
+                'glue_records' => []
+            ])->setMessage('Glue record deleted successfully');
         } catch (Throwable $e) {
             $this->handleError($e, $params);
         }

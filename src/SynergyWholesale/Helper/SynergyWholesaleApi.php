@@ -15,6 +15,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
@@ -145,10 +146,10 @@ class SynergyWholesaleApi
                 'domainName' => $domainName,
             ]);
             foreach ($hostsResponse['hosts'] ?? [] as $host) {
-                $glueRecords[] = [
+                $glueRecords[] = GlueRecord::create([
                     'hostname' => $host['hostName'],
                     'ips' => $host['ip'] ?? [],
-                ];
+                ]);
             }
         } catch (Throwable $e) {
             // Domain may not have hosts - ignore

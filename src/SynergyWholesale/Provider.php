@@ -427,10 +427,14 @@ class Provider extends DomainNames implements ProviderInterface
             // Get created host info
             $hostInfo = $this->api()->listRegistryHost($domainName, $host);
 
-            return GlueRecordsResult::create()
-                ->setHostname($params->hostname)
-                ->setIps($hostInfo['ipAddress'] ?? $ips)
-                ->setMessage('Glue record created successfully');
+            $glueRecord = GlueRecord::create([
+                'hostname' => $params->hostname,
+                'ips' => $hostInfo['ipAddress'] ?? $ips,
+            ]);
+
+            return GlueRecordsResult::create([
+                'glue_records' => [$glueRecord]
+            ])->setMessage('Glue record created successfully');
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -447,10 +451,9 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $this->api()->deleteRegistryHost($domainName, $host);
 
-            return GlueRecordsResult::create()
-                ->setHostname($params->hostname)
-                ->setIps([])
-                ->setMessage('Glue record deleted successfully');
+            return GlueRecordsResult::create([
+                'glue_records' => []
+            ])->setMessage('Glue record deleted successfully');
         } catch (Throwable $e) {
             $this->handleException($e);
         }

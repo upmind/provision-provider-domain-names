@@ -910,9 +910,9 @@ class Provider extends DomainNames implements ProviderInterface
 
         foreach ($ips as $ip) {
             if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-                $ipv4 = $ip;
+                $ipv4 = $ipv4 ?? $ip;
             } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-                $ipv6 = $ip;
+                $ipv6 = $ipv6 ?? $ip;
             }
         }
 

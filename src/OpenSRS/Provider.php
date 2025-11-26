@@ -478,13 +478,15 @@ class Provider extends DomainNames implements ProviderInterface
      */
     private function _getInfo(string $sld, string $tld, string $message): DomainResult
     {
+        $domainName = Utils::getDomain($sld, $tld);
+
         try {
             $domainRaw = $this->api()->makeRequest([
                 'action' => 'GET',
                 'object' => 'DOMAIN',
                 'protocol' => 'XCP',
                 'attributes' => [
-                    'domain' => Utils::getDomain($sld, $tld),
+                    'domain' => $domainName,
                     'type' => 'all_info',
                     'clean_ca_subset' => 1,
                     // 'active_contacts_only' => 1
@@ -496,7 +498,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'object' => 'DOMAIN',
                 'protocol' => 'XCP',
                 'attributes' => [
-                    'domain' => Utils::getDomain($sld, $tld),
+                    'domain' => $domainName,
                     'type' => 'status',
                     // 'clean_ca_subset' => 1,
                     // 'active_contacts_only' => 1
@@ -508,7 +510,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'object' => 'DOMAIN',
                 'protocol' => 'XCP',
                 'attributes' => [
-                    'domain' => Utils::getDomain($sld, $tld),
+                    'domain' => $domainName,
                     'type' => 'whois_privacy_state',
                 ]
             ]);
@@ -532,10 +534,32 @@ class Provider extends DomainNames implements ProviderInterface
             $privacy = false;
         }
 
-        // Fetch glue records
+        $glueRecords = $this->listGlueRecords($domainName);
+
+        $domainInfo = [
+            'id' => (string) $domainName,
+            'domain' => (string) $domainName,
+            'statuses' => array_map(function ($status) {
+                return $status === '' ? 'n/a' : (string)$status;
+            }, $statusRaw['attributes']),
+            'registrant' => OpenSrsApi::parseContact($domainRaw['attributes']['contact_set'], OpenSrsApi::CONTACT_TYPE_REGISTRANT),
+            'ns' => OpenSrsApi::parseNameServers($domainRaw['attributes']['nameserver_list'] ?? []),
+            'created_at' => $domainRaw['attributes']['registry_createdate'],
+            'updated_at' => $domainRaw['attributes']['registry_updatedate'] ?? $domainRaw['attributes']['registry_createdate'],
+            'expires_at' => $domainRaw['attributes']['expiredate'],
+            'locked' => boolval($statusRaw['attributes']['lock_state']),
+            'whois_privacy' => $privacy ?? null,
+            'glue_records' => $glueRecords,
+        ];
+
+        return DomainResult::create($domainInfo)->setMessage($message);
+    }
+
+    private function listGlueRecords(string $domainName): array
+    {
         $glueRecords = [];
         try {
-            $nameservers = $this->api()->getNameservers(Utils::getDomain($sld, $tld));
+            $nameservers = $this->api()->getNameservers($domainName);
             foreach ($nameservers as $ns) {
                 $ips = [];
                 if (isset($ns['ipaddress'])) {
@@ -556,23 +580,7 @@ class Provider extends DomainNames implements ProviderInterface
             // Domain may not have hosts - ignore
         }
 
-        $domainInfo = [
-            'id' => (string) Utils::getDomain($sld, $tld),
-            'domain' => (string) Utils::getDomain($sld, $tld),
-            'statuses' => array_map(function ($status) {
-                return $status === '' ? 'n/a' : (string)$status;
-            }, $statusRaw['attributes']),
-            'registrant' => OpenSrsApi::parseContact($domainRaw['attributes']['contact_set'], OpenSrsApi::CONTACT_TYPE_REGISTRANT),
-            'ns' => OpenSrsApi::parseNameServers($domainRaw['attributes']['nameserver_list'] ?? []),
-            'created_at' => $domainRaw['attributes']['registry_createdate'],
-            'updated_at' => $domainRaw['attributes']['registry_updatedate'] ?? $domainRaw['attributes']['registry_createdate'],
-            'expires_at' => $domainRaw['attributes']['expiredate'],
-            'locked' => boolval($statusRaw['attributes']['lock_state']),
-            'whois_privacy' => $privacy ?? null,
-            'glue_records' => $glueRecords,
-        ];
-
-        return DomainResult::create($domainInfo)->setMessage($message);
+        return $glueRecords;
     }
 
     /**
@@ -899,13 +907,8 @@ class Provider extends DomainNames implements ProviderInterface
             // Create new host with IPs
             $this->api()->createNameserver($params->hostname, $domainName, $ipv4, $ipv6);
 
-            $glueRecord = GlueRecord::create([
-                'hostname' => $params->hostname,
-                'ips' => $ips,
-            ]);
-
             return GlueRecordsResult::create([
-                'glue_records' => [$glueRecord]
+                'glue_records' => $this->listGlueRecords($domainName),
             ])->setMessage('Glue record created successfully');
         } catch (Throwable $e) {
             $this->handleError($e, $params);
@@ -925,7 +928,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->deleteNameserver($params->hostname, $domainName);
 
             return GlueRecordsResult::create([
-                'glue_records' => []
+                'glue_records' => $this->listGlueRecords($domainName),
             ])->setMessage('Glue record deleted successfully');
         } catch (Throwable $e) {
             $this->handleError($e, $params);

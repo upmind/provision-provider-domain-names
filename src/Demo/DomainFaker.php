@@ -10,6 +10,8 @@ use Faker\Generator;
 use Illuminate\Support\Str;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Demo\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
@@ -167,6 +169,21 @@ class DomainFaker
         return $this->expiresAt ??= $this->getCreatedAt()->addYear($this->getRegPeriod());
     }
 
+    public function getGlueRecordsResult(): GlueRecordsResult
+    {
+        $domain = $this->getDomain();
+
+        return GlueRecordsResult::create()
+            ->setGlueRecords([
+                GlueRecord::create()
+                    ->setHostname('ns1.' . $domain)
+                    ->setIps([$this->faker->ipv4(), $this->faker->ipv6()]),
+                GlueRecord::create()
+                    ->setHostname('ns2.' . $domain)
+                    ->setIps([$this->faker->ipv4()]),
+            ]);
+    }
+
     public function getDomainResult(): DomainResult
     {
         return DomainResult::create()
@@ -181,6 +198,7 @@ class DomainFaker
             ->setBilling($this->getAdmin())
             ->setTech($this->getAdmin())
             ->setCreatedAt($this->getCreatedAt())
-            ->setUpdatedAt($this->getUpdatedAt());
+            ->setUpdatedAt($this->getUpdatedAt())
+            ->setGlueRecords($this->getGlueRecordsResult()->glue_records);
     }
 }

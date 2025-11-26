@@ -34,6 +34,9 @@ use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 use Upmind\ProvisionProviders\DomainNames\Demo\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 
@@ -270,6 +273,26 @@ class Provider extends DomainNames implements ProviderInterface
     public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
     {
         $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        return $this->getFaker($params->sld, $params->tld)
+            ->getGlueRecordsResult()
+            ->setMessage('Demo glue record set');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        return $this->getFaker($params->sld, $params->tld)
+            ->getGlueRecordsResult()
+            ->setMessage('Demo glue record removed');
     }
 
     protected function getFaker(string $sld, string $tld): DomainFaker

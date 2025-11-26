@@ -26,17 +26,20 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Example\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
-
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 
 /**
  * Example provider.
@@ -131,7 +134,15 @@ class Provider extends DomainNames implements ProviderInterface
                     ->setCountryCode('US')
             )
             ->setCreatedAt(Carbon::now()->subDays(365))
-            ->setExpiresAt(Carbon::now()->addDays(100));
+            ->setExpiresAt(Carbon::now()->addDays(100))
+            ->setGlueRecords([
+                GlueRecord::create()
+                    ->setHostname('ns1.' . $domain)
+                    ->setIps(['192.0.2.1', '2001:db8::1']),
+                GlueRecord::create()
+                    ->setHostname('ns2.' . $domain)
+                    ->setIps(['192.0.2.2']),
+            ]);
     }
 
     /**
@@ -208,6 +219,22 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
     {
         $this->errorResult('Operation not supported', $params);
     }

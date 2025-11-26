@@ -139,21 +139,7 @@ class SynergyWholesaleApi
         /** @var \Illuminate\Support\Collection $statusesCollection */
         $statusesCollection = collect([$response['status'], $response['domain_status']]);
 
-        // Fetch glue records
-        $glueRecords = [];
-        try {
-            $hostsResponse = $this->makeRequest('listAllHosts', [
-                'domainName' => $domainName,
-            ]);
-            foreach ($hostsResponse['hosts'] ?? [] as $host) {
-                $glueRecords[] = GlueRecord::create([
-                    'hostname' => $host['hostName'],
-                    'ips' => $host['ip'] ?? [],
-                ]);
-            }
-        } catch (Throwable $e) {
-            // Domain may not have hosts - ignore
-        }
+        $glueRecords = $this->listGlueRecords($domainName);
 
         return [
             'id' => $response['domainRoid'],
@@ -184,6 +170,30 @@ class SynergyWholesaleApi
         ];
     }
 
+    /**
+     * @return array<GlueRecord>
+     */
+    public function listGlueRecords(string $domainName): array
+    {
+        // Fetch glue records
+        $glueRecords = [];
+
+        try {
+            $hostsResponse = $this->makeRequest('listAllHosts', [
+                'domainName' => $domainName,
+            ]);
+            foreach ($hostsResponse['hosts'] ?? [] as $host) {
+                $glueRecords[] = GlueRecord::create([
+                    'hostname' => $host['hostName'],
+                    'ips' => $host['ip'] ?? [],
+                ]);
+            }
+        } catch (Throwable $e) {
+            // Domain may not have hosts - ignore
+        }
+
+        return $glueRecords;
+    }
 
     private function parseNameservers(array $nameservers): array
     {

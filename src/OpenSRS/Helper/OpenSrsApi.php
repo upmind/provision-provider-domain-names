@@ -310,6 +310,7 @@ class OpenSrsApi
      */
     private static function quoteXmlChars($string): string
     {
+        /** @phpstan-ignore-next-line */
         if (!is_array($string)) {
             $string = (string)$string;
         }

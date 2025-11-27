@@ -896,6 +896,11 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
+        $nsHost = strtolower($params->hostname);
+        if (!Str::endsWith($nsHost, '.' . strtolower($domainName))) {
+            $nsHost .= '.' . $domainName;
+        }
+
         // Collect non-null IPs
         $ips = array_values(array_filter([
             $params->ip_1,
@@ -919,13 +924,13 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             // Delete existing host (ignore if not exists)
             try {
-                $this->api()->deleteNameserver($params->hostname, $domainName, $ipv4, $ipv6);
+                $this->api()->deleteNameserver($nsHost, $domainName, $ipv4, $ipv6);
             } catch (Throwable $e) {
                 // Ignore - host may not exist
             }
 
             // Create new host with IPs
-            $this->api()->createNameserver($params->hostname, $domainName, $ipv4, $ipv6);
+            $this->api()->createNameserver($nsHost, $domainName, $ipv4, $ipv6);
 
             return GlueRecordsResult::create([
                 'glue_records' => $this->listGlueRecords($domainName),

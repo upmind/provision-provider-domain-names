@@ -897,7 +897,7 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         $nsHost = strtolower($params->hostname);
-        if (!Str::endsWith($nsHost, '.' . strtolower($domainName))) {
+        if (!Str::endsWith($nsHost, '.' . $domainName)) {
             $nsHost .= '.' . $domainName;
         }
 
@@ -924,7 +924,7 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             // Delete existing host (ignore if not exists)
             try {
-                $this->api()->deleteNameserver($nsHost, $domainName, $ipv4, $ipv6);
+                $this->api()->deleteNameserver($nsHost, $domainName);
             } catch (Throwable $e) {
                 // Ignore - host may not exist
             }
@@ -947,10 +947,13 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
+        $nsHost = strtolower($params->hostname);
+        if (!Str::endsWith($nsHost, '.' . $domainName)) {
+            $nsHost .= '.' . $domainName;
+        }
+
         try {
-            // OpenSRS requires at least one IP for delete, so we pass null for both
-            // The API will handle this appropriately
-            $this->api()->deleteNameserver($params->hostname, $domainName);
+            $this->api()->deleteNameserver($nsHost, $domainName);
 
             return GlueRecordsResult::create([
                 'glue_records' => $this->listGlueRecords($domainName),

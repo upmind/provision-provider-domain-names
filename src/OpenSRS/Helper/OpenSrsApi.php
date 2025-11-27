@@ -310,6 +310,10 @@ class OpenSrsApi
      */
     private static function quoteXmlChars($string): string
     {
+        if (!is_array($string)) {
+            $string = (string)$string;
+        }
+
         $search = ['&', '<', '>', "'", '"'];
         $replace = ['&amp;', '&lt;', '&gt;', '&apos;', '&quot;'];
         $string = Str::replace($search, $replace, $string);

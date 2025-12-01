@@ -29,9 +29,16 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Helper\NetistrarApi;
@@ -409,7 +416,27 @@ class Provider extends DomainNames implements ProviderInterface
         return ResultData::create()->setMessage('Domain IPS tag updated');
     }
 
-     /**
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        $this->errorResult('Operation not available');
+    }
+
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        $this->errorResult('Operation not available');
+    }
+
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not available');
+    }
+
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not available');
+    }
+
+    /**
      * Get a Guzzle HTTP client instance.
      */
     protected function api(): NetistrarApi

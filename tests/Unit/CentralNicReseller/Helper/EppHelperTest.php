@@ -143,6 +143,7 @@ class EppHelperTest extends TestCase
         // Call the method
         $result = $eppHelper->getContactInfo($contactId);
 
+        // Test comment
         // Assert null is returned for non-existent contact
         $this->assertNull($result);
     }

@@ -40,6 +40,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
@@ -400,7 +401,36 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        // Extract host prefix: "ns1.example.com" -> "ns1"
+        $host = str_replace('.' . $domainName, '', $params->hostname);
+
+        // Collect non-null IPs
+        $ips = array_values(array_filter([
+            $params->ip_1,
+            $params->ip_2,
+            $params->ip_3,
+            $params->ip_4,
+        ]));
+
+        try {
+            // Delete existing (ignore if not exists)
+            try {
+                $this->api()->deleteRegistryHost($domainName, $host);
+            } catch (Throwable $e) {
+                // Ignore - host may not exist
+            }
+
+            // Create host
+            $this->api()->addRegistryHost($domainName, $host, $ips);
+
+            return GlueRecordsResult::create([
+                'glue_records' => $this->api()->listGlueRecords($domainName),
+            ])->setMessage('Glue record created successfully');
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
     }
 
     /**
@@ -408,6 +438,17 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+        $host = str_replace('.' . $domainName, '', $params->hostname);
+
+        try {
+            $this->api()->deleteRegistryHost($domainName, $host);
+
+            return GlueRecordsResult::create([
+                'glue_records' => $this->api()->listGlueRecords($domainName),
+            ])->setMessage('Glue record deleted successfully');
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
     }
 }

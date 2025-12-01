@@ -46,6 +46,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Data\OpenSrsConfiguration;
@@ -487,13 +488,15 @@ class Provider extends DomainNames implements ProviderInterface
      */
     private function _getInfo(string $sld, string $tld, string $message): DomainResult
     {
+        $domainName = Utils::getDomain($sld, $tld);
+
         try {
             $domainRaw = $this->api()->makeRequest([
                 'action' => 'GET',
                 'object' => 'DOMAIN',
                 'protocol' => 'XCP',
                 'attributes' => [
-                    'domain' => Utils::getDomain($sld, $tld),
+                    'domain' => $domainName,
                     'type' => 'all_info',
                     'clean_ca_subset' => 1,
                     // 'active_contacts_only' => 1
@@ -505,7 +508,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'object' => 'DOMAIN',
                 'protocol' => 'XCP',
                 'attributes' => [
-                    'domain' => Utils::getDomain($sld, $tld),
+                    'domain' => $domainName,
                     'type' => 'status',
                     // 'clean_ca_subset' => 1,
                     // 'active_contacts_only' => 1
@@ -517,7 +520,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'object' => 'DOMAIN',
                 'protocol' => 'XCP',
                 'attributes' => [
-                    'domain' => Utils::getDomain($sld, $tld),
+                    'domain' => $domainName,
                     'type' => 'whois_privacy_state',
                 ]
             ]);
@@ -541,9 +544,11 @@ class Provider extends DomainNames implements ProviderInterface
             $privacy = false;
         }
 
+        $glueRecords = $this->listGlueRecords($domainName);
+
         $domainInfo = [
-            'id' => (string) Utils::getDomain($sld, $tld),
-            'domain' => (string) Utils::getDomain($sld, $tld),
+            'id' => (string) $domainName,
+            'domain' => (string) $domainName,
             'statuses' => array_map(function ($status) {
                 return $status === '' ? 'n/a' : (string)$status;
             }, $statusRaw['attributes']),
@@ -554,9 +559,38 @@ class Provider extends DomainNames implements ProviderInterface
             'expires_at' => $domainRaw['attributes']['expiredate'],
             'locked' => boolval($statusRaw['attributes']['lock_state']),
             'whois_privacy' => $privacy ?? null,
+            'glue_records' => $glueRecords,
         ];
 
         return DomainResult::create($domainInfo)->setMessage($message);
+    }
+
+    private function listGlueRecords(string $domainName): array
+    {
+        $glueRecords = [];
+        try {
+            $nameservers = $this->api()->getNameservers($domainName);
+            foreach ($nameservers as $ns) {
+                $ips = [];
+                if (isset($ns['ipaddress'])) {
+                    $ips[] = $ns['ipaddress'];
+                }
+                if (isset($ns['ipv6'])) {
+                    $ips[] = $ns['ipv6'];
+                }
+
+                if (!empty($ips)) {
+                    $glueRecords[] = GlueRecord::create([
+                        'hostname' => $ns['name'],
+                        'ips' => $ips,
+                    ]);
+                }
+            }
+        } catch (Throwable $e) {
+            // Domain may not have hosts - ignore
+        }
+
+        return $glueRecords;
     }
 
     /**
@@ -860,7 +894,50 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        $nsHost = strtolower($params->hostname);
+        if (!Str::endsWith($nsHost, '.' . $domainName)) {
+            $nsHost .= '.' . $domainName;
+        }
+
+        // Collect non-null IPs
+        $ips = array_values(array_filter([
+            $params->ip_1,
+            $params->ip_2,
+            $params->ip_3,
+            $params->ip_4,
+        ]));
+
+        // Separate IPv4 and IPv6 addresses
+        $ipv4 = null;
+        $ipv6 = null;
+
+        foreach ($ips as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                $ipv4 = $ipv4 ?? $ip;
+            } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                $ipv6 = $ipv6 ?? $ip;
+            }
+        }
+
+        try {
+            // Delete existing host (ignore if not exists)
+            try {
+                $this->api()->deleteNameserver($nsHost, $domainName);
+            } catch (Throwable $e) {
+                // Ignore - host may not exist
+            }
+
+            // Create new host with IPs
+            $this->api()->createNameserver($nsHost, $domainName, $ipv4, $ipv6);
+
+            return GlueRecordsResult::create([
+                'glue_records' => $this->listGlueRecords($domainName),
+            ])->setMessage('Glue record created successfully');
+        } catch (Throwable $e) {
+            $this->handleError($e, $params);
+        }
     }
 
     /**
@@ -868,7 +945,22 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not supported', $params);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        $nsHost = strtolower($params->hostname);
+        if (!Str::endsWith($nsHost, '.' . $domainName)) {
+            $nsHost .= '.' . $domainName;
+        }
+
+        try {
+            $this->api()->deleteNameserver($nsHost, $domainName);
+
+            return GlueRecordsResult::create([
+                'glue_records' => $this->listGlueRecords($domainName),
+            ])->setMessage('Glue record deleted successfully');
+        } catch (Throwable $e) {
+            $this->handleError($e, $params);
+        }
     }
 
     /**

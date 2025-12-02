@@ -2,6 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.55](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.55) - 2025-12-02
+
+- Add setGlueRecord() and removeGlueRecord() functions
+  - Add OpenSRS implementations
+  - Add SynergyWholesale implementations
+
 ## [v2.12.54](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.54) - 2025-11-07
 
 - Add getVerificationStatus() and resendVerificationEmail() functions

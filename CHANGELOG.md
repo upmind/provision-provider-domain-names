@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.22.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.22.0) - 2025-12-03
+
+- Implement Netistrar provider
+
+
 ## [v2.21.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.21.0) - 2025-12-02
 
 - Add setGlueRecord() and removeGlueRecord() functions

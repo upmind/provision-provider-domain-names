@@ -30,6 +30,7 @@
     "require": {
         "ext-curl": "*",
         "ext-dom": "*",
+        "ext-json": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*",
         "ext-soap": "*",
@@ -38,6 +39,7 @@
         "metaregistrar/php-epp-client": "^1.0.12",
         "propaganistas/laravel-phone": "^4.2",
         "guzzlehttp/guzzle": "^6.3|^7.0",
+        "illuminate/support": "5.8.* || ^6.20 || ^10.0 || ^11.0 || 12.0",
         "pragmarx/countries": "^0.8.2",
         "africc/php-epp2": "^2.0",
         "upmind/domainnameapi-sdk": "^1.0",

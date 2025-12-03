@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\Tests;
 
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use Upmind\ProvisionBase\Laravel\ValidationServiceProvider;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -17,7 +18,7 @@ abstract class TestCase extends BaseTestCase
     protected function getPackageProviders($app): array
     {
         return [
-            \Upmind\ProvisionBase\Laravel\ValidationServiceProvider::class,
+            ValidationServiceProvider::class,
         ];
     }
 }

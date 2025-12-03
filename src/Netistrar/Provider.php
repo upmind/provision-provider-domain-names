@@ -428,12 +428,54 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not available');
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        // Extract host prefix: "ns1.example.com" -> "ns1"
+        $host = str_replace('.' . $domainName, '', $params->hostname);
+
+        // Collect non-null IPs
+        $ips = array_values(array_filter([
+            $params->ip_1,
+            $params->ip_2,
+            $params->ip_3,
+            $params->ip_4,
+        ]));
+
+        try {
+            $this->api()->glueRecordsSet($domainName, $host, $ips);
+        } catch (Throwable $e) {
+            $this->errorResult('Failed to add Glue Record', [], [], $e);
+        }
+
+        try {
+            return GlueRecordsResult::create([
+                'glue_records' => $this->api()->glueRecordsList($domainName),
+            ])->setMessage('Glue record created successfully');
+        } catch (Throwable $e) {
+            return GlueRecordsResult::create()->setMessage('Glue Record added, but could not retrieve updated list');
+        }
     }
 
     public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
     {
-        $this->errorResult('Operation not available');
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        $host = str_replace('.' . $domainName, '', $params->hostname);
+
+        try {
+            $this->api()->glueRecordsRemove($domainName, is_array($host) ? $host : [$host]);
+        } catch (Throwable $e) {
+            $this->errorResult('Failed to remove Glue Record', [], [], $e);
+        }
+
+        try {
+            return GlueRecordsResult::create([
+                'glue_records' => $this->api()->glueRecordsList($domainName),
+            ])->setMessage('Glue record deleted successfully');
+        } catch (Throwable $e) {
+            return GlueRecordsResult::create()
+                ->setMessage('Glue Record deleted, but could not retrieve updated list');
+        }
     }
 
     /**

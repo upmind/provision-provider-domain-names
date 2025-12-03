@@ -16,6 +16,8 @@ use GuzzleHttp\Client;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
+use Upmind\ProvisionProviders\DomainNames\Helper\Network;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
@@ -331,6 +333,115 @@ class NetistrarApi
     public function updateDomain(array $data): array
     {
         return $this->apiCall('domains/', [], $data, 'PATCH');
+    }
+
+    /**
+     * @return array<GlueRecord>
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     *
+     * @see https://netistrar.com/help/developers/api/api-docs/method/?api=domains&method=glueRecordsList
+     */
+    public function glueRecordsList(string $domainName): array
+    {
+        $result = $this->apiCall('domains/gluerecords/' . $domainName);
+
+        if (isset($result['exceptionClass'])) {
+            $this->errorResult(
+                'Unable to get glue records info',
+                ['response' => json_encode($result, 512, JSON_THROW_ON_ERROR)],
+                [
+                    'domainName' => $domainName,
+                ],
+            );
+        }
+
+        if (empty($result)) {
+            return [];
+        }
+
+        $glueRecords = [];
+
+        foreach ($result as $domainNameGlueRecord) {
+            $ip = $domainNameGlueRecord['ipv4Address'] ?? null;
+
+            if ($ip === null) {
+                $ip = $domainNameGlueRecord['ipv6Address'] ?? null;
+            }
+
+            $glueRecords[] = GlueRecord::create([
+                'hostname' => $domainNameGlueRecord['subDomainPrefix'] . '.' . $domainName,
+                'ips' => $ip !== null ? ['ip' => $ip] : [] // Empty array if IP is not available.
+            ]);
+        }
+
+        return $glueRecords;
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     *
+     * @see https://netistrar.com/help/developers/api/api-docs/method/?api=domains&method=glueRecordsSet
+     */
+    public function glueRecordsSet(string $domainName, string $subDomainPrefix, array $ips): array
+    {
+        /**
+         * Generate Glue Records param.
+         *
+         * @see https://netistrar.com/help/developers/api/api-docs/object/?object=Netistrar/WebServices/Common/Objects/Domain/DomainNameGlueRecord
+         */
+        $glueRecords = [];
+
+        foreach ($ips as $ip) {
+            if (Network::isValidIpv4Address($ip)) {
+                $glueRecords[] = [
+                    'subDomainPrefix' => $subDomainPrefix,
+                    'ipv4Address' => $ip,
+                ];
+
+                continue;
+            }
+
+            if (Network::isValidIpv6Address($ip)) {
+                $glueRecords[] = [
+                    'subDomainPrefix' => $subDomainPrefix,
+                    'ipv6Address' => $ip,
+                ];
+
+                continue;
+            }
+
+            // Throw error if any IPs is not IPv4 or IPv6
+            $this->errorResult('Invalid IP address: ' . $ip);
+        }
+
+        if (empty($glueRecords)) {
+            $this->errorResult('No Glue Records provided');
+        }
+
+        $data = [
+            'glueRecords' => $glueRecords,
+        ];
+
+        return $this->apiCall('domains/gluerecords/' . $domainName, [], $data, 'PATCH');
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function glueRecordsRemove(string $domainName, array $glueRecordSubdomains): array
+    {
+        $query = [
+            'glueRecordSubdomains' => $glueRecordSubdomains,
+        ];
+
+        return $this->apiCall('domains/gluerecords/' . $domainName, $query, [], 'DELETE');
     }
 
     /**

@@ -394,37 +394,26 @@ class NetistrarApi
          *
          * @see https://netistrar.com/help/developers/api/api-docs/object/?object=Netistrar/WebServices/Common/Objects/Domain/DomainNameGlueRecord
          */
-        $glueRecords = [];
+        $glueRecord = [
+            'subDomainPrefix' => $subDomainPrefix,
+        ];
 
         foreach ($ips as $ip) {
-            if (Network::isValidIpv4Address($ip)) {
-                $glueRecords[] = [
-                    'subDomainPrefix' => $subDomainPrefix,
-                    'ipv4Address' => $ip,
-                ];
+            // Only set IPv4 with first valid result.
+            if (!isset($glueRecord['ipv4Address']) && Network::isValidIpv4Address($ip)) {
+                $glueRecord['ipv4Address'] = $ip;
 
                 continue;
             }
 
-            if (Network::isValidIpv6Address($ip)) {
-                $glueRecords[] = [
-                    'subDomainPrefix' => $subDomainPrefix,
-                    'ipv6Address' => $ip,
-                ];
-
-                continue;
+            // Only set IPv6 with first valid result.
+            if (!isset($glueRecord['ipv6Address']) && Network::isValidIpv6Address($ip)) {
+                $glueRecord['ipv6Address'] = $ip;
             }
-
-            // Throw error if any IPs is not IPv4 or IPv6
-            $this->errorResult('Invalid IP address: ' . $ip);
-        }
-
-        if (empty($glueRecords)) {
-            $this->errorResult('No Glue Records provided');
         }
 
         $data = [
-            'glueRecords' => $glueRecords,
+            'glueRecords' => [$glueRecord],
         ];
 
         return $this->apiCall('domains/gluerecords/' . $domainName, [], $data, 'PATCH');

@@ -463,7 +463,7 @@ class Provider extends DomainNames implements ProviderInterface
         $host = str_replace('.' . $domainName, '', $params->hostname);
 
         try {
-            $this->api()->glueRecordsRemove($domainName, is_array($host) ? $host : [$host]);
+            $this->api()->glueRecordsRemove($domainName, [$host]);
         } catch (Throwable $e) {
             $this->errorResult('Failed to remove Glue Record', [], [], $e);
         }

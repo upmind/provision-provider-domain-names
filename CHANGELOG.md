@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.22.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.22.2) - 2025-12-04
+
+- Fix GoDaddyApi::getDomainInfo() type error due to null nameservers in response
+
 ## [v2.22.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.22.1) - 2025-12-03
 
 - Fix Netistrar setGlueRecord() function where host already exists

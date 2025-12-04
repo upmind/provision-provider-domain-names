@@ -191,7 +191,7 @@ class GoDaddyApi
             'admin' => isset($response['contactAdmin'])
                 ? $this->parseContact($response['contactAdmin'])
                 : null,
-            'ns' => NameserversResult::create($this->parseNameservers($response['nameServers'])),
+            'ns' => NameserversResult::create($this->parseNameservers($response['nameServers'] ?? [])),
             'created_at' => Utils::formatDate((string)$response['createdAt']),
             'updated_at' => null,
             'expires_at' => isset($response['expires']) ? Utils::formatDate($response['expires']) : null,

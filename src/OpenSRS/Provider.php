@@ -110,53 +110,57 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
-        $promises = array_map(function (string $tld) use ($params): PromiseInterface {
-            return $this->api()
-                ->makeRequestAsync([
-                    'action' => 'lookup',
-                    'object' => 'domain',
-                    'attributes' => [
-                        'domain' => Utils::getDomain($params->sld, $tld),
-                        'no_cache' => 0,
-                    ],
-                ], [
-                    'timeout' => 10, // Set a reduced timeout for the request
-                ])
-                ->then(function (array $result) use ($params, $tld): DacDomain {
-                    $register = $result['attributes']['status'] === 'available';
-                    $transfer = $result['attributes']['status'] === 'taken';
-                    $premium = isset($result['attributes']['reason']) && $result['attributes']['reason'] === 'Premium Name';
-
-                    $description = $result['attributes']['status'];
-                    if ($premium) {
-                        $description .= ' (Premium)';
-                    }
-
-                    return DacDomain::create()
-                        ->setDomain(Utils::getDomain($params->sld, $tld))
-                        ->setTld($tld)
-                        ->setCanRegister($register)
-                        ->setCanTransfer($transfer)
-                        ->setIsPremium($premium)
-                        ->setDescription($description);
-                })
-                ->otherwise(function (Throwable $e) use ($params, $tld): DacDomain {
-                    if ($e instanceof ProvisionFunctionError) {
-                        return DacDomain::create()
-                            ->setDomain(Utils::getDomain($params->sld, $tld))
-                            ->setTld($tld)
-                            ->setCanRegister(false)
-                            ->setCanTransfer(false)
-                            ->setIsPremium(false)
-                            ->setDescription($e->getMessage());
-                    }
-
-                    throw $e;
-                });
+        $tlds = array_map(function (string $tld) {
+            return Utils::normalizeTld($tld);
         }, $params->tlds);
 
+        $result = $this->api()
+            ->makeRequest([
+                'protocol' => 'XCP',
+                'action' => 'name_suggest',
+                'object' => 'domain',
+                'attributes' => [
+                    'services' => ['lookup', 'premium'],
+                    'searchstring' => Utils::normalizeSld($params->sld),
+                    'tlds' => $tlds,
+                ]
+            ], [
+                'timeout' => 10, // Set a reduced timeout for the request
+            ]);
+
+        $dacDomains = [];
+        foreach ($result['attributes']['premium']['items'] as $item) {
+            [$itemSld, $itemTld] = explode('.', $item['domain'], 2);
+            if (Utils::normalizeSld($itemSld) !== Utils::normalizeSld($params->sld)) {
+                continue;
+            }
+            if (!in_array(Utils::normalizeTld($itemTld), $tlds)) {
+                continue;
+            }
+
+            $dacDomains[] = DacDomain::create()
+                ->setDomain($item['domain'])
+                ->setTld($itemTld)
+                ->setCanRegister($item['status'] === 'available')
+                ->setCanTransfer($item['status'] === 'taken')
+                ->setIsPremium(true)
+                ->setDescription($item['status']);
+        }
+
+        foreach ($result['attributes']['lookup']['items'] as $item) {
+            [$itemSld, $itemTld] = explode('.', $item['domain'], 2);
+
+            $dacDomains[] = DacDomain::create()
+                ->setDomain($item['domain'])
+                ->setTld($itemTld)
+                ->setCanRegister($item['status'] === 'available')
+                ->setCanTransfer($item['status'] === 'taken')
+                ->setIsPremium(false)
+                ->setDescription($item['status']);
+        }
+
         return new DacResult([
-            'domains' => PromiseUtils::all($promises)->wait(),
+            'domains' => $dacDomains,
         ]);
     }
 

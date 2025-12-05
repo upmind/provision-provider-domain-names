@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.22.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.22.3) - 2025-12-05
+
+- Reduce number of API requests required for OpenSRS and HRS domainAvailabilityCheck()
+
 ## [v2.22.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.22.2) - 2025-12-04
 
 - Fix GoDaddyApi::getDomainInfo() type error due to null nameservers in response

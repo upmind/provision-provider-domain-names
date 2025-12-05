@@ -172,9 +172,9 @@ class OpenSrsApi
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function makeRequest(array $params): array
+    public function makeRequest(array $params, array $requestOptions = []): array
     {
-        return $this->makeRequestAsync($params)->wait();
+        return $this->makeRequestAsync($params, $requestOptions)->wait();
     }
 
     /**

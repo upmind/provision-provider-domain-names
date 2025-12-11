@@ -55,6 +55,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
@@ -343,6 +344,14 @@ class Provider extends DomainNames implements ProviderInterface
         $this->assertResultSuccess($result);
 
         return $this->getContactResults($domain)['registrant']->setMessage('Registrant contact updated');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        $this->errorResult('Not implemented');
     }
 
     /**

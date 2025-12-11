@@ -35,6 +35,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -461,6 +462,14 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        $this->errorResult('Not implemented');
+    }
+
+    /**
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -499,7 +508,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function updateContact(UpdateDomainContactParams $params): ResultData
+    public function updateDomainContact(UpdateDomainContactParams $params): ResultData
     {
         $contactInfo = $this->_contactInfo(Arr::get($params, 'contact_id'));
 

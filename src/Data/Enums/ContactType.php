@@ -13,6 +13,11 @@ enum ContactType: string
     case BILLING = 'billing';
     case TECH = 'tech';
 
+    public function isEqualValue(string $value): bool
+    {
+        return $this->value === $value;
+    }
+
     public function providerEnomValue(): string
     {
         return match ($this) {

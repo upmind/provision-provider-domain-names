@@ -21,6 +21,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -138,7 +139,7 @@ class Provider extends DomainNames implements ProviderInterface
             );
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -170,7 +171,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult(sprintf('Transfer for %s domain successfully created!', $domainName), [
                 'transaction_id' => null
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -183,7 +184,7 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $this->api()->renew($domainName, $period);
             return $this->_getInfo($domainName, sprintf('Renewal for %s domain was successful!', $domainName));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -194,7 +195,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             return $this->_getInfo($domainName, 'Domain data obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -206,25 +207,47 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        $domainName = Utils::getDomain($params->sld, $params->tld);
-
-        try {
-            $contact = $this->api()->updateRegistrantContact($domainName, $params->contact);
-
-            return ContactResult::create($contact);
-        } catch (\Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT->value
+        ]));
     }
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $this->errorResult('Not implemented');
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            $contact = match ($params->contact_type->providerSynergyWholesaleValue()) {
+                SynergyWholesaleApi::CONTACT_TYPE_REGISTRANT => $this->api()->updateRegistrantContact(
+                    $domainName,
+                    $params->contact
+                ),
+                SynergyWholesaleApi::CONTACT_TYPE_ADMIN,
+                SynergyWholesaleApi::CONTACT_TYPE_TECH,
+                SynergyWholesaleApi::CONTACT_TYPE_BILLING => $this->api()->updateContact(
+                    $domainName,
+                    $params->contact,
+                    $params->contact_type
+                )
+            };
+
+            return ContactResult::create($contact);
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
     }
 
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
@@ -239,7 +262,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return NameserversResult::create($result)
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domainName));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -262,7 +285,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->setRegistrarLock($domainName, $lock);
 
             return $this->_getInfo($domainName, sprintf("Lock %s!", $lock ? 'enabled' : 'disabled'));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -277,7 +300,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->setRenewalMode($domainName, $autoRenew);
 
             return $this->_getInfo($domainName, 'Auto-renew mode updated');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -292,7 +315,7 @@ class Provider extends DomainNames implements ProviderInterface
             return EppCodeResult::create([
                 'epp_code' => $eppCode,
             ])->setMessage('EPP/Auth code obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -303,7 +326,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
@@ -319,7 +342,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult

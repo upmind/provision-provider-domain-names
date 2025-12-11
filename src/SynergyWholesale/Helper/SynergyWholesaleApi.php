@@ -15,6 +15,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
@@ -150,16 +151,16 @@ class SynergyWholesaleApi
                 ->values()
                 ->toArray(),
             'locked' => $response['domain_status'] == 'clientTransferProhibited',
-            'registrant' => isset($response['contacts']['registrant'])
+            ContactType::REGISTRANT->value => isset($response['contacts']['registrant'])
                 ? $this->parseContact($response['contacts']['registrant'])
                 : null,
-            'billing' => isset($response['contacts']['billing'])
+            ContactType::BILLING->value => isset($response['contacts']['billing'])
                 ? $this->parseContact($response['contacts']['billing'])
                 : null,
-            'tech' => isset($response['contacts']['tech'])
+            ContactType::TECH->value => isset($response['contacts']['tech'])
                 ? $this->parseContact($response['contacts']['tech'])
                 : null,
-            'admin' => isset($response['contacts']['admin'])
+            ContactType::ADMIN->value => isset($response['contacts']['admin'])
                 ? $this->parseContact($response['contacts']['admin'])
                 : null,
             'ns' => NameserversResult::create($this->parseNameservers($response['nameServers'])),
@@ -458,6 +459,53 @@ class SynergyWholesaleApi
         $this->makeRequest($command, $params);
 
         return $this->getDomainInfo($domainName)['registrant'];
+    }
+
+    public function updateContact(
+        string $domainName,
+        ContactParams $contactParams,
+        ContactType $contactType
+    ): ContactData {
+        $command = 'updateContact';
+
+        $params = [
+            'domainName' => $domainName,
+            "appPurpose" => "",
+            "nexusCategory" => "",
+        ];
+
+        $info = $this->getDomainInfo($domainName);
+
+        $contacts = [
+            self::CONTACT_TYPE_REGISTRANT => $info[ContactType::REGISTRANT->value],
+            self::CONTACT_TYPE_ADMIN => $info[ContactType::ADMIN->value],
+            self::CONTACT_TYPE_TECH => $info[ContactType::TECH->value],
+            self::CONTACT_TYPE_BILLING => $info[ContactType::BILLING->value],
+        ];
+
+        // Unset the contact we will update.
+        unset($contacts[$contactType->providerSynergyWholesaleValue()]);
+
+        foreach ($contacts as $type => $contact) {
+            if (empty($contact)) {
+                continue;
+            }
+
+            $contactData = $this->setContactData($contact, $type);
+
+            $contacts[$type] = $contactData;
+        }
+
+        // Set the different contact types in the params, filtering out empty contacts.
+        $params = array_merge($params, array_values(array_filter($contacts)));
+        $params = array_merge($params, $this->setContactParams(
+            $contactParams,
+            $contactType->providerSynergyWholesaleValue())
+        );
+
+        $this->makeRequest($command, $params);
+
+        return $this->getDomainInfo($domainName)[$contactType->value];
     }
 
 

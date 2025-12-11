@@ -19,6 +19,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -194,13 +195,28 @@ class Provider extends DomainNames implements ProviderInterface
             );
 
             // TODO: eNom allows registering a domain only with the registrant contact data. In our case - we're passing all of the contact data, so we'll update it in the proper places after we have the domain registered.
-            $this->updateDomainContact($sld, $tld, $params->admin->register, EnomApi::CONTACT_TYPE_ADMIN);
-            $this->updateDomainContact($sld, $tld, $params->tech->register, EnomApi::CONTACT_TYPE_TECH);
-            $this->updateDomainContact($sld, $tld, $params->billing->register, EnomApi::CONTACT_TYPE_BILLING);
+            $this->updateContact(UpdateContactParams::create([
+                'sld' => $sld,
+                'tld' => $tld,
+                'contact' => $params->admin->register,
+                'contact_type' => ContactType::ADMIN->value
+            ]));
+            $this->updateContact(UpdateContactParams::create([
+                'sld' => $sld,
+                'tld' => $tld,
+                'contact' => $params->tech->register,
+                'contact_type' => ContactType::TECH->value
+            ]));
+            $this->updateContact(UpdateContactParams::create([
+                'sld' => $sld,
+                'tld' => $tld,
+                'contact' => $params->billing->register,
+                'contact_type' => ContactType::BILLING->value
+            ]));
 
             // Return newly fetched data for the domain
             return $this->_getInfo($sld, $tld, sprintf('Domain %s was registered successfully!', $domain));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -217,7 +233,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             return $this->_getInfo($sld, $tld, 'Domain is active in registrar account');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Domain not active in account: proceed to initiate or check transfer order below
         }
 
@@ -289,7 +305,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->renew($sld, $tld, $period, false);
 
             return $info->setExpiresAt(Carbon::parse($info->expires_at)->addYears($period));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -302,7 +318,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         try {
             return $this->_getInfo($params->sld, $params->tld, 'Domain data obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -352,7 +368,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setNs4($params->ns4 ?? null)
                 ->setNs5($params->ns5 ?? null)
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domain));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -389,7 +405,7 @@ class Provider extends DomainNames implements ProviderInterface
             return EppCodeResult::create([
                 'epp_code' => 'Sent to registrant\'s email!'
             ])->setMessage('EPP/Auth code obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -409,7 +425,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        return $this->updateDomainContact($params->sld, $params->tld, $params->contact, EnomApi::CONTACT_TYPE_REGISTRANT);
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT->value
+        ]));
     }
 
     /**
@@ -417,7 +438,28 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $this->errorResult('Not implemented');
+        try {
+            $this->api()->createUpdateDomainContact(
+                Utils::normalizeSld($params->sld),
+                Utils::normalizeTld($params->tld),
+                $params->contact,
+                $params->contact_type->providerEnomValue()
+            );
+
+            return ContactResult::create([
+                'contact_id' => strtolower($params->contact_type->providerEnomValue()),
+                'name' => $params->contact->name,
+                'email' => $params->contact->email,
+                'phone' => $params->contact->phone,
+                'organisation' => $params->contact->organisation,
+                'address1' => $params->contact->address1,
+                'city' => $params->contact->city,
+                'postcode' => $params->contact->postcode,
+                'country_code' => Utils::normalizeCountryCode($params->contact->country_code),
+            ]);
+        } catch (Throwable $e) {
+            $this->handleException($e, $params);
+        }
     }
 
     /**
@@ -441,7 +483,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->setRegLock($sld, $tld, $lock);
 
             return $this->_getInfo($sld, $tld, sprintf("Lock %s!", $lock ? 'enabled' : 'disabled'));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }

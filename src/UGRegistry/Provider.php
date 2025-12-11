@@ -252,6 +252,21 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => 'registrant',
+        ]));
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
         $domainName = Utils::getDomain($params->sld, $params->tld);
         $domainData = $this->_callApi(
             [
@@ -271,10 +286,18 @@ class Provider extends DomainNames implements ProviderInterface
 
         $contacts = [
             'contacts' => [
-                'registrant' => $this->_prepareContact($params->contact, 'registrant'),
-                'admin' => $domainData['data']['domain']['contacts']['admin'],
-                'billing' => $domainData['data']['domain']['contacts']['billing'],
-                'tech' => $domainData['data']['domain']['contacts']['tech']
+                'registrant' => $params->contact_type->isEqualValue('registrant')
+                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                    : ['data']['domain']['contacts']['registrant'],
+                'admin' => $params->contact_type->isEqualValue('admin')
+                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                    : $domainData['data']['domain']['contacts']['admin'],
+                'billing' => $params->contact_type->isEqualValue('billing')
+                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                    : $domainData['data']['domain']['contacts']['billing'],
+                'tech' => $params->contact_type->isEqualValue('tech')
+                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                    : $domainData['data']['domain']['contacts']['tech']
             ]
         ];
 
@@ -287,15 +310,7 @@ class Provider extends DomainNames implements ProviderInterface
             '/domains/whois'
         );
 
-        return $this->_parseContactInfo($domainData['data']['domain']['contacts']['registrant']);
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function updateContact(UpdateContactParams $params): ContactResult
-    {
-        $this->errorResult('Not implemented');
+        return $this->_parseContactInfo($domainData['data']['domain']['contacts'][$params->contact_type->value]);
     }
 
     /**

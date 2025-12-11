@@ -30,6 +30,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -193,9 +194,9 @@ class Provider extends DomainNames implements ProviderInterface
             );
 
             // TODO: eNom allows registering a domain only with the registrant contact data. In our case - we're passing all of the contact data, so we'll update it in the proper places after we have the domain registered.
-            $this->updateContact($sld, $tld, $params->admin->register, EnomApi::CONTACT_TYPE_ADMIN);
-            $this->updateContact($sld, $tld, $params->tech->register, EnomApi::CONTACT_TYPE_TECH);
-            $this->updateContact($sld, $tld, $params->billing->register, EnomApi::CONTACT_TYPE_BILLING);
+            $this->updateDomainContact($sld, $tld, $params->admin->register, EnomApi::CONTACT_TYPE_ADMIN);
+            $this->updateDomainContact($sld, $tld, $params->tech->register, EnomApi::CONTACT_TYPE_TECH);
+            $this->updateDomainContact($sld, $tld, $params->billing->register, EnomApi::CONTACT_TYPE_BILLING);
 
             // Return newly fetched data for the domain
             return $this->_getInfo($sld, $tld, sprintf('Domain %s was registered successfully!', $domain));
@@ -408,7 +409,15 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        return $this->updateContact($params->sld, $params->tld, $params->contact, EnomApi::CONTACT_TYPE_REGISTRANT);
+        return $this->updateDomainContact($params->sld, $params->tld, $params->contact, EnomApi::CONTACT_TYPE_REGISTRANT);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        $this->errorResult('Not implemented');
     }
 
     /**
@@ -466,7 +475,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @param string $type
      * @return ContactResult
      */
-    private function updateContact(string $sld, string $tld, ContactParams $params, string $type): ContactResult
+    private function updateDomainContact(string $sld, string $tld, ContactParams $params, string $type): ContactResult
     {
         try {
             $this->api()->createUpdateDomainContact($sld, $tld, $params, $type);

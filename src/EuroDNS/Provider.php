@@ -30,6 +30,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
@@ -294,6 +295,14 @@ class Provider extends DomainNames implements ProviderInterface
             // Throw an exception with the error message if the update fails
             throw $this->errorResult(sprintf($updateContact['msg']), ['response' => $updateContact]);
         }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        $this->errorResult('Not implemented');
     }
 
     /**

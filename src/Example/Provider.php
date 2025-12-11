@@ -29,6 +29,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Example\Data\Configuration;
@@ -152,6 +153,14 @@ class Provider extends DomainNames implements ProviderInterface
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
         throw $this->errorResult('Not implemented');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        $this->errorResult('Not implemented');
     }
 
     /**

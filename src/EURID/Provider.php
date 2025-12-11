@@ -15,6 +15,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\FinishTransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\InitiateTransferResult;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\EURID\Helper\EppHelper;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
@@ -324,6 +325,17 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        $this->errorResult('Not implemented');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
         $sld = Utils::normalizeSld($params->sld);

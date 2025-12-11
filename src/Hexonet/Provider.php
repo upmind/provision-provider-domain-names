@@ -13,6 +13,7 @@ use Metaregistrar\EPP\eppException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Data\Configuration as CentralNicResellerConfiguration;
 use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Provider as CentralNicResellerProvider;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Hexonet\Helper\EppHelper;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -729,6 +730,15 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        $this->errorResult('Not implemented');
+    }
+
+    /**z
      * A generic function to handle all contact create/update actions
      *
      * @deprecated Always create a new contact instead of updating existing handle
@@ -756,7 +766,7 @@ class Provider extends DomainNames implements ProviderInterface
                 return $this->createContact($domain, $contactType, $params->contact);
             }
 
-            return $this->updateContact($contactId, $params->contact);
+            return $this->updateDomainContact($contactId, $params->contact);
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e, $params);
         }
@@ -894,7 +904,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @param ContactParams $params
      * @return ContactResult
      */
-    protected function updateContact(string $contactId, ContactParams $params): ContactResult
+    protected function updateDomainContact(string $contactId, ContactParams $params): ContactResult
     {
         try {
             // Establish the connection

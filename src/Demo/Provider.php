@@ -30,6 +30,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -184,6 +185,12 @@ class Provider extends DomainNames implements ProviderInterface
     {
         return ContactResult::create($params->contact)
             ->setMessage('Demo domain registrant updated');
+    }
+
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        return ContactResult::create($params->contact)
+            ->setMessage('Demo domain ' . $params->contact_type->value . ' updated');
     }
 
     /**

@@ -19,6 +19,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -387,6 +388,20 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT->value
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         if (Str::endsWith($domainName, '.nz')) {
@@ -394,7 +409,22 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         try {
-            $this->api()->updateRegistrantContact($domainName, $params->contact);
+            switch ($params->contact_type->value) {
+                case ContactType::REGISTRANT->value:
+                    $this->api()->updateRegistrantContact($domainName, $params->contact);
+                    break;
+                case ContactType::ADMIN->value:
+                    $this->api()->updateAdministrationContact($domainName, $params->contact);
+                    break;
+                case ContactType::TECH->value:
+                    $this->api()->updateTechnicalContact($domainName, $params->contact);
+                    break;
+                case ContactType::BILLING->value:
+                    $this->api()->updateBillingContact($domainName, $params->contact);
+                    break;
+                default:
+                    $this->errorResult('Invalid contact type');
+            }
 
             return ContactResult::create()
                 ->setMessage(sprintf('Registrant contact for %s domain was updated!', $domainName))
@@ -410,14 +440,6 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (Throwable $e) {
             $this->handleException($e);
         }
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function updateContact(UpdateContactParams $params): ContactResult
-    {
-        $this->errorResult('Not implemented');
     }
 
     /**

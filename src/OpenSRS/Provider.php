@@ -48,6 +48,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
+use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Data\OpenSrsConfiguration;
 use Upmind\ProvisionProviders\DomainNames\OpenSRS\Helper\OpenSrsApi;
@@ -1059,5 +1060,16 @@ class Provider extends DomainNames implements ProviderInterface
         ]);
 
         return $this->apiClient = new OpenSrsApi($client, $this->configuration);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(DomainInfoParams $params): StatusResult
+    {
+        return StatusResult::create()
+            ->setStatus(StatusResult::STATUS_UNKNOWN)
+            ->setExpiresAt(null)
+            ->setRawStatuses(null);
     }
 }

@@ -40,6 +40,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
+use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\CentralNic\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\CentralNic\EppExtension\EppConnection;
 use Upmind\ProvisionProviders\DomainNames\CentralNic\Helper\CentralNicApi;
@@ -591,5 +592,16 @@ class Provider extends DomainNames implements ProviderInterface
     public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
     {
         $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(DomainInfoParams $params): StatusResult
+    {
+        return StatusResult::create()
+            ->setStatus(StatusResult::STATUS_UNKNOWN)
+            ->setExpiresAt(null)
+            ->setRawStatuses(null);
     }
 }

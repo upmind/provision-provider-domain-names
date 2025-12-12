@@ -32,6 +32,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
+use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 
 abstract class Category extends BaseCategory
 {
@@ -130,4 +131,12 @@ abstract class Category extends BaseCategory
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     abstract public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult;
+
+    /**
+     * Get the current status of a domain name.
+     *
+     * Returns a normalized status (active, expired, transferred_away, cancelled, unknown)
+     * along with the expiry date and raw provider statuses.
+     */
+    abstract public function getStatus(DomainInfoParams $params): StatusResult;
 }

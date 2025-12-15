@@ -126,7 +126,7 @@ class Provider extends DomainNames implements ProviderInterface
             ]);
 
         $dacDomains = [];
-        foreach ($result['attributes']['premium']['items'] as $item) {
+        foreach ($result['attributes']['premium']['items'] ?? [] as $item) {
             [$itemSld, $itemTld] = explode('.', $item['domain'], 2);
             if (Utils::normalizeSld($itemSld) !== Utils::normalizeSld($params->sld)) {
                 continue;
@@ -144,7 +144,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setDescription($item['status']);
         }
 
-        foreach ($result['attributes']['lookup']['items'] as $item) {
+        foreach ($result['attributes']['lookup']['items'] ?? [] as $item) {
             [$itemSld, $itemTld] = explode('.', $item['domain'], 2);
 
             $dacDomains[] = DacDomain::create()

@@ -135,25 +135,40 @@ class Provider extends DomainNames implements ProviderInterface
                 continue;
             }
 
+            $description = $item['status'];
+            if (isset($item['reason'])) {
+                $description .= ' (' . $item['reason'] . ')';
+            }
+
             $dacDomains[] = DacDomain::create()
                 ->setDomain($item['domain'])
                 ->setTld($itemTld)
                 ->setCanRegister($item['status'] === 'available')
                 ->setCanTransfer($item['status'] === 'taken')
                 ->setIsPremium(true)
-                ->setDescription($item['status']);
+                ->setDescription($description);
         }
 
         foreach ($result['attributes']['lookup']['items'] ?? [] as $item) {
             [$itemSld, $itemTld] = explode('.', $item['domain'], 2);
+
+            $premium = false;
+            $description = $item['status'];
+            if (isset($item['reason'])) {
+                if (Str::contains(strtolower($item['reason']), 'premium')) {
+                    $premium = true;
+                }
+
+                $description .= ' (' . $item['reason'] . ')';
+            }
 
             $dacDomains[] = DacDomain::create()
                 ->setDomain($item['domain'])
                 ->setTld($itemTld)
                 ->setCanRegister($item['status'] === 'available')
                 ->setCanTransfer($item['status'] === 'taken')
-                ->setIsPremium(false)
-                ->setDescription($item['status']);
+                ->setIsPremium($premium)
+                ->setDescription($description);
         }
 
         return new DacResult([

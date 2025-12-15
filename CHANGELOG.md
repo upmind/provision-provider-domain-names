@@ -2,6 +2,13 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.22.4](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.22.4) - 2025-12-15
+
+- OpenSRS domainAvailabilityCheck() bug fixes
+  - Handle empty lookup/premium items array
+  - Fix handling of lookup result premium domains
+  - Append `reason` to description where available
+
 ## [v2.22.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.22.3) - 2025-12-05
 
 - Reduce number of API requests required for OpenSRS and HRS domainAvailabilityCheck()

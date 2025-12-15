@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Data\Enums;
 
+use Upmind\ProvisionProviders\DomainNames\CoccaEpp\Helper\EppHelper;
 use Upmind\ProvisionProviders\DomainNames\Enom\Helper\EnomApi;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Helper\SynergyWholesaleApi;
 
@@ -22,6 +23,16 @@ enum ContactType: string
     public function isNotEqualValue(string $value): bool
     {
         return $this->isEqualValue($value) === false;
+    }
+
+    public function providerCoccaEppValue(): string
+    {
+        return match ($this) {
+            self::REGISTRANT => mb_strtolower(EppHelper::CONTACT_TYPE_REGISTRANT),
+            self::ADMIN => mb_strtolower(EppHelper::CONTACT_TYPE_ADMIN),
+            self::BILLING => mb_strtolower(EppHelper::CONTACT_TYPE_BILL),
+            self::TECH => mb_strtolower(EppHelper::CONTACT_TYPE_TECH),
+        };
     }
 
     public function providerEnomValue(): string

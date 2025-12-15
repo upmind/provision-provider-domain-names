@@ -22,6 +22,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -420,11 +421,124 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Exception
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $this->errorResult('Not implemented');
+        if ($params->contact_type->isEqualValue(ContactType::REGISTRANT->value)) {
+            return $this->updateDomainContact(
+                $params->sld,
+                $params->tld,
+                $params->contact,
+                $params->contact_type->providerCoccaEppValue()
+            );
+        }
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+        $domain = $this->_getDomain($domainName)->toArray();
+
+        $client = $this->getClient();
+
+        // If contact does not exist for domain, create it.
+        if (!isset($domain[$params->contact_type->value])) {
+            $infoFrame = new \AfriCC\EPP\Frame\Command\Update\Domain();
+            $infoFrame->setDomain($domainName);
+
+            $contactId = $this->createContact($params->contact);
+
+            switch ($params->contact_type->value) {
+                case ContactType::ADMIN->value:
+                    $infoFrame->addAdminContact($contactId);
+                    break;
+                case ContactType::TECH->value:
+                    $infoFrame->addTechContact($contactId);
+                    break;
+                case ContactType::BILLING->value:
+                    $infoFrame->addBillingContact($contactId);
+                    break;
+                default:
+                    $this->errorResult('Invalid contact type', ['contact_type' => $params->contact_type]);
+            }
+
+            $xmlResponse = $client->request($infoFrame);
+            $this->checkResponse($xmlResponse);
+
+            return ContactResult::create([
+                'contact_id' => $contactId,
+                'name' => $params->contact->name,
+                'email' => $params->contact->email,
+                'phone' => $params->contact->phone,
+                'organisation' => $params->contact->organisation,
+                'address1' => $params->contact->address1,
+                'city' => $params->contact->city,
+                'postcode' => $params->contact->postcode,
+                'country_code' => $params->contact->country_code,
+                'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
+            ])->setMessage(ucfirst($params->contact_type->value) . ' contact details added');
+        }
+
+        // Otherwise, update it.
+        $contactId = $domain[$params->contact_type->value]['id'];
+        $infoFrame = new \AfriCC\EPP\Frame\Command\Update\Contact();
+        $infoFrame->setId($contactId);
+
+        $mode = 'chg';
+        $infoFrame->appendCity(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:city',
+            $params->contact->city
+        );
+        $infoFrame->appendEmail('contact:chg/contact:email', $params->contact->email);
+        $infoFrame->appendCountryCode(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:cc',
+            Utils::normalizeCountryCode($params->contact->country_code)
+        );
+        $infoFrame->appendName(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:name',
+                $params->contact->name ?? ''
+        );
+        if (!$params->contact->name) {
+            $infoFrame->appendOrganization(
+                'contact:chg/contact:postalInfo[@type=\'%s\']/contact:org',
+                $params->contact->organisation
+            );
+        } else {
+            $infoFrame->appendOrganization(
+                'contact:chg/contact:postalInfo[@type=\'%s\']/contact:org',
+                    $params->contact->organisation ?? ''
+            );
+        }
+        $infoFrame->appendPostalCode(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:pc',
+            $params->contact->postcode
+        );
+        $infoFrame->appendProvince(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:sp',
+            Utils::stateNameToCode($params->contact->country_code, $params->contact->state)
+        );
+        $infoFrame->appendVoice('contact:chg/contact:voice', Utils::internationalPhoneToEpp($params->contact->phone));
+        $infoFrame->appendStreet(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:street[]',
+            $params->contact->address1
+        );
+
+        $xmlResponse = $client->request($infoFrame);
+        $this->checkResponse($xmlResponse);
+
+        return ContactResult::create([
+            'contact_id' => $contactId,
+            'name' => $params->contact->name,
+            'email' => $params->contact->email,
+            'phone' => $params->contact->phone,
+            'organisation' => $params->contact->organisation,
+            'address1' => $params->contact->address1,
+            'city' => $params->contact->city,
+            'postcode' => $params->contact->postcode,
+            'country_code' => $params->contact->country_code,
+            'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
+        ])->setMessage(ucfirst($params->contact_type->value) . ' contact details updated');
     }
 
     /**
@@ -598,10 +712,10 @@ class Provider extends DomainNames implements ProviderInterface
             'statuses' => $currentStatuses,
             'locked' => $lockStatus,
             // 'renew' => $renewStatus,
-            'registrant' => $contacts['registrant'],
-            'billing' => $contacts['billing'] ?? null,
-            'admin' => $contacts['administrative'] ?? null,
-            'tech' => $contacts['technical'] ?? null,
+            ContactType::REGISTRANT->value => $contacts['registrant'],
+            ContactType::BILLING->value => $contacts['billing'] ?? null,
+            ContactType::ADMIN->value => $contacts['administrative'] ?? null,
+            ContactType::TECH->value => $contacts['technical'] ?? null,
             'ns' => $ns,
             'created_at' => Utils::formatDate($domainData['infData']['crDate']),
             'updated_at' => Utils::formatDate($domainData['infData']['upDate'] ?? $domainData['infData']['crDate']),
@@ -653,10 +767,10 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @return \Upmind\ProvisionProviders\DomainNames\Data\ContactResult
      *
-     * @throws \Exception
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Exception
      */
-    private function updateDomainContact(string $sld, string $tld, \Upmind\ProvisionProviders\DomainNames\Data\ContactParams $contact, string $type)
+    private function updateDomainContact(string $sld, string $tld, ContactParams $contact, string $type)
     {
         $domainName = Utils::getDomain($sld, $tld);
         $domain = $this->_getDomain($domainName)->toArray();
@@ -702,7 +816,7 @@ class Provider extends DomainNames implements ProviderInterface
             'postcode' => $contact->postcode,
             'country_code' => $contact->country_code,
             'state' => Utils::stateNameToCode($contact->country_code, $contact->state),
-        ])->setMessage('Contact details updated');
+        ])->setMessage('Registrant contact details updated');
     }
 
     /**
@@ -738,6 +852,8 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @return string Contact id
+     *
+     * @throws \libphonenumber\NumberParseException
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      */
     private function createContact(ContactParams $contact): string

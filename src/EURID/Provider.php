@@ -13,6 +13,7 @@ use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 //use Upmind\ProvisionProviders\DomainNames\Data\FinishTransferParams;
 //use Upmind\ProvisionProviders\DomainNames\Data\InitiateTransferResult;
+use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
 use Upmind\ProvisionProviders\DomainNames\EURID\Helper\EppHelper;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
@@ -565,4 +566,15 @@ class Provider extends DomainNames implements ProviderInterface
         $this->errorResult('Operation not supported', $params);
     }
 
+
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(DomainInfoParams $params): StatusResult
+    {
+        return StatusResult::create()
+            ->setStatus(StatusResult::STATUS_UNKNOWN)
+            ->setExpiresAt(null)
+            ->setRawStatuses(null);
+    }
 }

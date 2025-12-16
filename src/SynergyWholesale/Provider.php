@@ -42,6 +42,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
+use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Helper\AdditionalFieldNormaliser;
@@ -450,5 +451,16 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (Throwable $e) {
             $this->handleException($e);
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(DomainInfoParams $params): StatusResult
+    {
+        return StatusResult::create()
+            ->setStatus(StatusResult::STATUS_UNKNOWN)
+            ->setExpiresAt(null)
+            ->setRawStatuses(null);
     }
 }

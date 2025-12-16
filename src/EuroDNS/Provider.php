@@ -32,6 +32,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Helper\EuroDNSApi;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
@@ -450,4 +451,15 @@ class Provider extends DomainNames implements ProviderInterface
         $this->errorResult('Operation not supported', $params);
     }
 
+
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(DomainInfoParams $params): StatusResult
+    {
+        return StatusResult::create()
+            ->setStatus(StatusResult::STATUS_UNKNOWN)
+            ->setExpiresAt(null)
+            ->setRawStatuses(null);
+    }
 }

@@ -85,6 +85,8 @@ The following providers are currently implemented:
 | updateIpsTag() | [_IpsTagParams_](src/Data/IpsTagParams.php) | [_ResultData_](src/Data/ResultData.php) | Release a domain name to a new IPS tag (UK-only) |
 | getVerificationStatus() | [_VerificationStatusParams_](src/Data/VerificationStatusParams.php) | [_VerificationStatusResult_](src/Data/VerificationStatusResult.php) | Get the verification status of a domain name |
 | resendVerificationEmail() | [_ResendVerificationParams_](src/Data/ResendVerificationParams.php) | [_ResendVerificationResult_](src/Data/ResendVerificationResult.php) | Resend the verification email for a domain name |
+| setGlueRecord() | [_SetGlueRecordParams_](src/Data/SetGlueRecordParams.php) | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Set a glue record for a domain name |
+| removeGlueRecord() | [_RemoveGlueRecordParams_](src/Data/RemoveGlueRecordParams.php) | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Remove a glue record from a domain name |
 | getStatus() | [_DomainInfoParams_](src/Data/DomainInfoParams.php) | [_StatusResult_](src/Data/StatusResult.php) | Get the current normalized status of a domain name along with the expiry date and raw provider statuses |
 
 ## Changelog

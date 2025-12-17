@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Throwable;
 use SoapClient;
 use SoapFault;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -217,7 +218,7 @@ class Provider extends DomainNames implements ProviderInterface
             'sld' => $params->sld,
             'tld' => $params->tld,
             'contact' => $params->contact,
-            'contact_type' => ContactType::REGISTRANT->value
+            'contact_type' => ContactType::REGISTRANT
         ]));
     }
 
@@ -230,21 +231,26 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            $contact = match ($params->contact_type->providerSynergyWholesaleValue()) {
-                SynergyWholesaleApi::CONTACT_TYPE_REGISTRANT => $this->api()->updateRegistrantContact(
-                    $domainName,
-                    $params->contact
-                ),
-                SynergyWholesaleApi::CONTACT_TYPE_ADMIN,
-                SynergyWholesaleApi::CONTACT_TYPE_TECH,
-                SynergyWholesaleApi::CONTACT_TYPE_BILLING => $this->api()->updateContact(
-                    $domainName,
-                    $params->contact,
-                    $params->contact_type
-                )
-            };
+            $contactType = ContactType::from($params->contact_type);
+
+            switch ($contactType) {
+                case $contactType->isEqualValue(ContactType::REGISTRANT):
+                    $contact = $this->api()->updateRegistrantContact($domainName, $params->contact);
+                    break;
+                case $contactType->isEqualValue(ContactType::ADMIN):
+                case $contactType->isEqualValue(ContactType::TECH):
+                case $contactType->isEqualValue(ContactType::BILLING):
+                    $contact = $this->api()->updateContact($domainName, $params->contact, $contactType);
+                    break;
+                default:
+                    // Should not happen as we use Enum::from above
+                    $this->errorResult('Invalid contact type: ' . $params->contact_type);
+            }
 
             return ContactResult::create($contact);
+        } catch (UnexpectedValueException $ex) {
+            // Where ContactType::from fails
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
         } catch (Throwable $e) {
             $this->handleException($e);
         }

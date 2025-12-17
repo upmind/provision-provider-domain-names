@@ -12,6 +12,7 @@ use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -459,12 +460,19 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        if ($params->contact_type->isEqualValue(ContactType::REGISTRANT->value)) {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            // Should not happen as contact_type is already validated
+            $this->errorResult('Invalid contact type', ['contact_type' => $params->contact_type]);
+        }
+
+        if ($contactType->isEqualValue(ContactType::REGISTRANT)) {
             return $this->updateDomainContact(
                 $params->sld,
                 $params->tld,
                 $params->contact,
-                $params->contact_type->providerCoccaEppValue()
+                $this->getProviderContactTypeValue($contactType->getValue())
             );
         }
 
@@ -474,23 +482,24 @@ class Provider extends DomainNames implements ProviderInterface
         $client = $this->getClient();
 
         // If contact does not exist for domain, create it.
-        if (!isset($domain[$params->contact_type->value])) {
+        if (!isset($domain[$contactType->getValue()])) {
+            $contactId = $this->createContact($params->contact);
+
             $infoFrame = new \AfriCC\EPP\Frame\Command\Update\Domain();
             $infoFrame->setDomain($domainName);
 
-            $contactId = $this->createContact($params->contact);
-
-            switch ($params->contact_type->value) {
-                case ContactType::ADMIN->value:
+            switch ($contactType) {
+                case $contactType->isEqualValue(ContactType::ADMIN):
                     $infoFrame->addAdminContact($contactId);
                     break;
-                case ContactType::TECH->value:
+                case $contactType->isEqualValue(ContactType::TECH):
                     $infoFrame->addTechContact($contactId);
                     break;
-                case ContactType::BILLING->value:
+                case $contactType->isEqualValue(ContactType::BILLING):
                     $infoFrame->addBillingContact($contactId);
                     break;
                 default:
+                    // Should not happen as contact_type is already validated
                     $this->errorResult('Invalid contact type', ['contact_type' => $params->contact_type]);
             }
 
@@ -508,11 +517,11 @@ class Provider extends DomainNames implements ProviderInterface
                 'postcode' => $params->contact->postcode,
                 'country_code' => $params->contact->country_code,
                 'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
-            ])->setMessage(ucfirst($params->contact_type->value) . ' contact details added');
+            ])->setMessage(ucfirst($contactType->getValue()) . ' contact details added');
         }
 
         // Otherwise, update it.
-        $contactId = $domain[$params->contact_type->value]['id'];
+        $contactId = $domain[$contactType->getValue()]['id'];
         $infoFrame = new \AfriCC\EPP\Frame\Command\Update\Contact();
         $infoFrame->setId($contactId);
 
@@ -569,7 +578,7 @@ class Provider extends DomainNames implements ProviderInterface
             'postcode' => $params->contact->postcode,
             'country_code' => $params->contact->country_code,
             'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
-        ])->setMessage(ucfirst($params->contact_type->value) . ' contact details updated');
+        ])->setMessage(ucfirst($contactType->getValue()) . ' contact details updated');
     }
 
     /**
@@ -752,10 +761,10 @@ class Provider extends DomainNames implements ProviderInterface
             'statuses' => $currentStatuses,
             'locked' => $lockStatus,
             // 'renew' => $renewStatus,
-            ContactType::REGISTRANT->value => $contacts['registrant'],
-            ContactType::BILLING->value => $contacts['billing'] ?? null,
-            ContactType::ADMIN->value => $contacts['administrative'] ?? null,
-            ContactType::TECH->value => $contacts['technical'] ?? null,
+            ContactType::REGISTRANT => $contacts['registrant'],
+            ContactType::BILLING => $contacts['billing'] ?? null,
+            ContactType::ADMIN => $contacts['administrative'] ?? null,
+            ContactType::TECH => $contacts['technical'] ?? null,
             'ns' => $ns,
             'created_at' => Utils::formatDate($domainData['infData']['crDate']),
             'updated_at' => Utils::formatDate($domainData['infData']['upDate'] ?? $domainData['infData']['crDate']),
@@ -1023,5 +1032,23 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_UNKNOWN)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(string $contactType): string
+    {
+        switch ($contactType) {
+            case ContactType::REGISTRANT:
+                return mb_strtolower(EppHelper::CONTACT_TYPE_REGISTRANT);
+            case ContactType::ADMIN:
+                return mb_strtolower(EppHelper::CONTACT_TYPE_ADMIN);
+            case ContactType::BILLING:
+                return mb_strtolower(EppHelper::CONTACT_TYPE_BILL);
+            case ContactType::TECH:
+                return mb_strtolower(EppHelper::CONTACT_TYPE_TECH);
+            default:
+                $this->errorResult('Invalid contact type', ['contact_type' => $contactType]);
+        }
     }
 }

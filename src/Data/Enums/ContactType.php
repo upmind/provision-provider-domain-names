@@ -4,54 +4,37 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Data\Enums;
 
-use Upmind\ProvisionProviders\DomainNames\CoccaEpp\Helper\EppHelper;
-use Upmind\ProvisionProviders\DomainNames\Enom\Helper\EnomApi;
-use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Helper\SynergyWholesaleApi;
+use MyCLabs\Enum\Enum;
 
-enum ContactType: string
+/**
+ * Enum representing different types of domain contacts.
+ *
+ * @extends Enum<ContactType::*>
+ *
+ * @method static ContactType REGISTRANT()
+ * @method static ContactType ADMIN()
+ * @method static ContactType BILLING()
+ * @method static ContactType TECH()
+ */
+final class ContactType extends Enum
 {
-    case REGISTRANT = 'registrant';
-    case ADMIN = 'admin';
-    case BILLING = 'billing';
-    case TECH = 'tech';
+    public const REGISTRANT = 'registrant';
+    public const ADMIN = 'admin';
+    public const BILLING = 'billing';
+    public const TECH = 'tech';
+
+    public static function toValues(): array
+    {
+        return array_values(self::toArray());
+    }
+
+    public static function stringifyValues(string $separator = ','): string
+    {
+        return implode($separator, self::toValues());
+    }
 
     public function isEqualValue(string $value): bool
     {
-        return $this->value === $value;
-    }
-
-    public function isNotEqualValue(string $value): bool
-    {
-        return $this->isEqualValue($value) === false;
-    }
-
-    public function providerCoccaEppValue(): string
-    {
-        return match ($this) {
-            self::REGISTRANT => mb_strtolower(EppHelper::CONTACT_TYPE_REGISTRANT),
-            self::ADMIN => mb_strtolower(EppHelper::CONTACT_TYPE_ADMIN),
-            self::BILLING => mb_strtolower(EppHelper::CONTACT_TYPE_BILL),
-            self::TECH => mb_strtolower(EppHelper::CONTACT_TYPE_TECH),
-        };
-    }
-
-    public function providerEnomValue(): string
-    {
-        return match ($this) {
-            self::REGISTRANT => mb_strtolower(EnomApi::CONTACT_TYPE_REGISTRANT),
-            self::ADMIN => mb_strtolower(EnomApi::CONTACT_TYPE_ADMIN),
-            self::BILLING => mb_strtolower(EnomApi::CONTACT_TYPE_BILLING),
-            self::TECH => mb_strtolower(EnomApi::CONTACT_TYPE_TECH),
-        };
-    }
-
-    public function providerSynergyWholesaleValue(): string
-    {
-        return match ($this) {
-            self::REGISTRANT => mb_strtolower(SynergyWholesaleApi::CONTACT_TYPE_REGISTRANT),
-            self::ADMIN => mb_strtolower(SynergyWholesaleApi::CONTACT_TYPE_ADMIN),
-            self::BILLING => mb_strtolower(SynergyWholesaleApi::CONTACT_TYPE_BILLING),
-            self::TECH => mb_strtolower(SynergyWholesaleApi::CONTACT_TYPE_TECH),
-        };
+        return $this->getValue() === $value;
     }
 }

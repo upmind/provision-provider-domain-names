@@ -151,16 +151,16 @@ class SynergyWholesaleApi
                 ->values()
                 ->toArray(),
             'locked' => $response['domain_status'] == 'clientTransferProhibited',
-            ContactType::REGISTRANT->value => isset($response['contacts']['registrant'])
+            ContactType::REGISTRANT => isset($response['contacts']['registrant'])
                 ? $this->parseContact($response['contacts']['registrant'])
                 : null,
-            ContactType::BILLING->value => isset($response['contacts']['billing'])
+            ContactType::BILLING => isset($response['contacts']['billing'])
                 ? $this->parseContact($response['contacts']['billing'])
                 : null,
-            ContactType::TECH->value => isset($response['contacts']['tech'])
+            ContactType::TECH => isset($response['contacts']['tech'])
                 ? $this->parseContact($response['contacts']['tech'])
                 : null,
-            ContactType::ADMIN->value => isset($response['contacts']['admin'])
+            ContactType::ADMIN => isset($response['contacts']['admin'])
                 ? $this->parseContact($response['contacts']['admin'])
                 : null,
             'ns' => NameserversResult::create($this->parseNameservers($response['nameServers'])),
@@ -477,14 +477,14 @@ class SynergyWholesaleApi
         $info = $this->getDomainInfo($domainName);
 
         $contacts = [
-            self::CONTACT_TYPE_REGISTRANT => $info[ContactType::REGISTRANT->value],
-            self::CONTACT_TYPE_ADMIN => $info[ContactType::ADMIN->value],
-            self::CONTACT_TYPE_TECH => $info[ContactType::TECH->value],
-            self::CONTACT_TYPE_BILLING => $info[ContactType::BILLING->value],
+            self::CONTACT_TYPE_REGISTRANT => $info[ContactType::REGISTRANT],
+            self::CONTACT_TYPE_ADMIN => $info[ContactType::ADMIN],
+            self::CONTACT_TYPE_TECH => $info[ContactType::TECH],
+            self::CONTACT_TYPE_BILLING => $info[ContactType::BILLING],
         ];
 
         // Unset the contact we will update.
-        unset($contacts[$contactType->providerSynergyWholesaleValue()]);
+        unset($contacts[$this->getProviderContactTypeValue($contactType->getValue())]);
 
         foreach ($contacts as $type => $contact) {
             if (empty($contact)) {
@@ -500,12 +500,12 @@ class SynergyWholesaleApi
         $params = array_merge($params, array_values(array_filter($contacts)));
         $params = array_merge($params, $this->setContactParams(
             $contactParams,
-            $contactType->providerSynergyWholesaleValue())
-        );
+            $this->getProviderContactTypeValue($contactType->getValue())
+        ));
 
         $this->makeRequest($command, $params);
 
-        return $this->getDomainInfo($domainName)[$contactType->value];
+        return $this->getDomainInfo($domainName)[$contactType->getValue()];
     }
 
 
@@ -668,5 +668,27 @@ class SynergyWholesaleApi
         return $this->makeRequest('listAllHosts', [
             'domainName' => $domainName,
         ]);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(string $contactType): string
+    {
+        switch ($contactType) {
+            case ContactType::REGISTRANT:
+                return mb_strtolower(self::CONTACT_TYPE_REGISTRANT);
+            case ContactType::ADMIN:
+                return mb_strtolower(self::CONTACT_TYPE_ADMIN);
+            case ContactType::BILLING:
+                return mb_strtolower(self::CONTACT_TYPE_BILLING);
+            case ContactType::TECH:
+                return mb_strtolower(self::CONTACT_TYPE_TECH);
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type')
+                    ->withData([
+                        'contact_type' => $contactType,
+                    ]);
+        }
     }
 }

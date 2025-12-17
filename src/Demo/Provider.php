@@ -190,7 +190,7 @@ class Provider extends DomainNames implements ProviderInterface
     public function updateContact(UpdateContactParams $params): ContactResult
     {
         return ContactResult::create($params->contact)
-            ->setMessage('Demo domain ' . $params->contact_type->value . ' updated');
+            ->setMessage('Demo domain ' . $params->contact_type . ' updated');
     }
 
     /**

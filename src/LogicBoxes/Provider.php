@@ -483,7 +483,7 @@ class Provider extends DomainNames implements ProviderInterface
                 : ($domainData['admincontact']['contactid'] ?? -1),
             'tech-contact-id' => $contactType->isEqualValue(ContactType::TECH)
                 ? $contactId
-                : $domainData['techcontact']['contactid'] ?? -1,
+                : ($domainData['techcontact']['contactid'] ?? -1),
             'billing-contact-id' => $contactType->isEqualValue(ContactType::BILLING)
                 ? $contactId
                 : ($domainData['billingcontact']['contactid'] ?? -1),

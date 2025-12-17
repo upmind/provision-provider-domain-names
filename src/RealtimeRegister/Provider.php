@@ -10,6 +10,7 @@ use GuzzleHttp\Exception\RequestException;
 use Throwable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -299,30 +300,44 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        try {
-            $contact = $this->api()
-                ->updateRegistrantContact(
-                    Utils::getDomain(
-                        Utils::normalizeSld($params->sld),
-                        Utils::normalizeTld($params->tld)
-                    ),
-                    $params->contact
-                );
-
-            return ContactResult::create($contact);
-        } catch (\Throwable $e) {
-            $this->handleException($e, $params);
-        }
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => 'registrant',
+        ]));
     }
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $this->errorResult('Not implemented');
+        try {
+            $contact = $this->api()
+                ->updateDomainContact(
+                    Utils::getDomain(
+                        Utils::normalizeSld($params->sld),
+                        Utils::normalizeTld($params->tld)
+                    ),
+                    $params->contact,
+                    $params->getContactTypeEnum()
+                );
+
+            return ContactResult::create($contact);
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type provided: ' . $params->contact_type);
+        } catch (Throwable $e) {
+            $this->handleException($e, $params);
+        }
     }
 
     /**

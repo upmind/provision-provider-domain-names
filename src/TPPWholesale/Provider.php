@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Throwable;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\TransferException;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -392,7 +393,7 @@ class Provider extends DomainNames implements ProviderInterface
             'sld' => $params->sld,
             'tld' => $params->tld,
             'contact' => $params->contact,
-            'contact_type' => ContactType::REGISTRANT->value
+            'contact_type' => ContactType::REGISTRANT
         ]));
     }
 
@@ -409,17 +410,23 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         try {
-            switch ($params->contact_type->value) {
-                case ContactType::REGISTRANT->value:
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $e) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        try {
+            switch ($contactType) {
+                case $contactType->isEqualValue(ContactType::REGISTRANT):
                     $this->api()->updateRegistrantContact($domainName, $params->contact);
                     break;
-                case ContactType::ADMIN->value:
+                case $contactType->isEqualValue(ContactType::ADMIN):
                     $this->api()->updateAdministrationContact($domainName, $params->contact);
                     break;
-                case ContactType::TECH->value:
+                case $contactType->isEqualValue(ContactType::TECH):
                     $this->api()->updateTechnicalContact($domainName, $params->contact);
                     break;
-                case ContactType::BILLING->value:
+                case $contactType->isEqualValue(ContactType::BILLING):
                     $this->api()->updateBillingContact($domainName, $params->contact);
                     break;
                 default:

@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -172,19 +173,19 @@ class Provider extends DomainNames implements ProviderInterface
                 'sld' => $sld,
                 'tld' => $tld,
                 'contact' => $params->admin->register,
-                'contact_type' => ContactType::ADMIN->value
+                'contact_type' => ContactType::ADMIN
             ]));
             $this->updateContact(UpdateContactParams::create([
                 'sld' => $sld,
                 'tld' => $tld,
                 'contact' => $params->tech->register,
-                'contact_type' => ContactType::TECH->value
+                'contact_type' => ContactType::TECH
             ]));
             $this->updateContact(UpdateContactParams::create([
                 'sld' => $sld,
                 'tld' => $tld,
                 'contact' => $params->billing->register,
-                'contact_type' => ContactType::BILLING->value
+                'contact_type' => ContactType::BILLING
             ]));
 
             // Return newly fetched data for the domain
@@ -397,7 +398,7 @@ class Provider extends DomainNames implements ProviderInterface
             'sld' => $params->sld,
             'tld' => $params->tld,
             'contact' => $params->contact,
-            'contact_type' => ContactType::REGISTRANT->value
+            'contact_type' => ContactType::REGISTRANT
         ]));
     }
 
@@ -407,15 +408,17 @@ class Provider extends DomainNames implements ProviderInterface
     public function updateContact(UpdateContactParams $params): ContactResult
     {
         try {
+            $contactType = $params->getContactTypeEnum();
+
             $this->api()->createUpdateDomainContact(
                 Utils::normalizeSld($params->sld),
                 Utils::normalizeTld($params->tld),
                 $params->contact,
-                $params->contact_type->providerEnomValue()
+                $this->getProviderContactTypeValue($contactType->getValue())
             );
 
             return ContactResult::create([
-                'contact_id' => strtolower($params->contact_type->providerEnomValue()),
+                'contact_id' => mb_strtolower($this->getProviderContactTypeValue($contactType->getValue())),
                 'name' => $params->contact->name,
                 'email' => $params->contact->email,
                 'phone' => $params->contact->phone,
@@ -425,6 +428,9 @@ class Provider extends DomainNames implements ProviderInterface
                 'postcode' => $params->contact->postcode,
                 'country_code' => Utils::normalizeCountryCode($params->contact->country_code),
             ]);
+        } catch (UnexpectedValueException $e) {
+            // Invalid contact type from enum.
+            $this->errorResult('Invalid contact type provided: ' . $params->contact_type);
         } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
@@ -593,5 +599,26 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_UNKNOWN)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(string $contactType): string
+    {
+        switch ($contactType) {
+            case ContactType::REGISTRANT:
+                return mb_strtolower(EnomApi::CONTACT_TYPE_REGISTRANT);
+            case ContactType::ADMIN:
+                return mb_strtolower(EnomApi::CONTACT_TYPE_ADMIN);
+            case ContactType::BILLING:
+                return mb_strtolower(EnomApi::CONTACT_TYPE_BILLING);
+            case ContactType::TECH:
+                return mb_strtolower(EnomApi::CONTACT_TYPE_TECH);
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type')
+                    ->withData([
+                        'contact_type' => $contactType,
+                    ]);
+        }
     }
 }

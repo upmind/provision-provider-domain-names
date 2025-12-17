@@ -9,6 +9,7 @@ use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -21,6 +22,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -325,19 +327,25 @@ class Provider extends DomainNames implements ProviderInterface
             }
         }
 
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $e) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
         $contacts = [
             'contacts' => [
-                'registrant' => $params->contact_type->isEqualValue('registrant')
-                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                'registrant' => $contactType->isEqualValue(ContactType::REGISTRANT)
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
                     : ['data']['domain']['contacts']['registrant'],
-                'admin' => $params->contact_type->isEqualValue('admin')
-                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                'admin' => $contactType->isEqualValue(ContactType::ADMIN)
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
                     : $domainData['data']['domain']['contacts']['admin'],
-                'billing' => $params->contact_type->isEqualValue('billing')
-                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                'billing' => $contactType->isEqualValue(ContactType::BILLING)
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
                     : $domainData['data']['domain']['contacts']['billing'],
-                'tech' => $params->contact_type->isEqualValue('tech')
-                    ? $this->_prepareContact($params->contact, $params->contact_type->value)
+                'tech' => $contactType->isEqualValue(ContactType::TECH)
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
                     : $domainData['data']['domain']['contacts']['tech']
             ]
         ];
@@ -351,7 +359,7 @@ class Provider extends DomainNames implements ProviderInterface
             '/domains/whois'
         );
 
-        return $this->_parseContactInfo($domainData['data']['domain']['contacts'][$params->contact_type->value]);
+        return $this->_parseContactInfo($domainData['data']['domain']['contacts'][$contactType->getValue()]);
     }
 
     /**

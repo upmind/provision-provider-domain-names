@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Data;
 
-use Illuminate\Validation\Rules\Enum;
 use Upmind\ProvisionBase\Provider\DataSet\DataSet;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
@@ -14,8 +13,8 @@ use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
  *
  * @property-read string $sld Domain SLD
  * @property-read string $tld Domain TLD
- * @property-read ContactType $contact_type Contact type
  * @property-read ContactParams $contact Contact data
+ * @property-read string $contact_type Contact type, one of ContactType enum constant values
  */
 class UpdateContactParams extends DataSet
 {
@@ -25,7 +24,15 @@ class UpdateContactParams extends DataSet
             'sld' => ['required', 'alpha-dash'],
             'tld' => ['required', 'alpha-dash-dot'],
             'contact' => ['required', ContactParams::class],
-            'contact_type' => ['required', new Enum(ContactType::class)],
+            'contact_type' => ['required', 'string', 'in: ' . ContactType::stringifyValues()],
         ]);
+    }
+
+    /**
+     * @throws \UnexpectedValueException
+     */
+    public function getContactTypeEnum(): ContactType
+    {
+        return ContactType::from($this->contact_type);
     }
 }

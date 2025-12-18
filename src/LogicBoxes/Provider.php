@@ -475,16 +475,16 @@ class Provider extends DomainNames implements ProviderInterface
 
         $this->_callApi([
             'order-id' => $domainData['entityid'],
-            'reg-contact-id' => $contactType->isEqualValue(ContactType::REGISTRANT)
+            'reg-contact-id' => $contactType->equals(ContactType::REGISTRANT())
                 ? $contactId
                 : ($domainData['registrantcontact']['contactid'] ?? -1),
-            'admin-contact-id' => $contactType->isEqualValue(ContactType::ADMIN)
+            'admin-contact-id' => $contactType->equals(ContactType::ADMIN())
                 ? $contactId
                 : ($domainData['admincontact']['contactid'] ?? -1),
-            'tech-contact-id' => $contactType->isEqualValue(ContactType::TECH)
+            'tech-contact-id' => $contactType->equals(ContactType::TECH())
                 ? $contactId
                 : ($domainData['techcontact']['contactid'] ?? -1),
-            'billing-contact-id' => $contactType->isEqualValue(ContactType::BILLING)
+            'billing-contact-id' => $contactType->equals(ContactType::BILLING())
                 ? $contactId
                 : ($domainData['billingcontact']['contactid'] ?? -1),
         ], 'domains/modify-contact.json', 'POST');

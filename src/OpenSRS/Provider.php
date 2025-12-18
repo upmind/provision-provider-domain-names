@@ -26,6 +26,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -774,15 +775,64 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        return $this->updateDomainContact($params->sld, $params->tld, $params->contact, OpenSrsApi::CONTACT_TYPE_REGISTRANT);
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT,
+        ]));
     }
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $this->errorResult('Not implemented');
+        $type = $this->getProviderContactTypeValue($params->contact_type);
+
+        try {
+            $nameParts = OpenSrsApi::getNameParts($params->contact->name ?? $params->contact->organisation);
+
+            $this->api()->makeRequest([
+                'action' => 'UPDATE_CONTACTS',
+                'object' => 'DOMAIN',
+                'protocol' => 'XCP',
+                'attributes' => [
+                    'domain' => Utils::getDomain($params->sld, $params->tld),
+                    'types' => [$type],
+                    'contact_set' => [
+                        $type => [
+                            'country' => Utils::normalizeCountryCode($params->contact->country_code),
+                            'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
+                            'org_name' => $params->contact->organisation,
+                            'phone' => Utils::internationalPhoneToEpp($params->contact->phone),
+                            'postal_code' => $params->contact->postcode,
+                            'city' => $params->contact->city,
+                            'email' => $params->contact->email,
+                            'address1' => $params->contact->address1,
+                            'first_name' => $nameParts['firstName'],
+                            'last_name' => $nameParts['lastName'],
+                        ]
+                    ]
+                ]
+            ]);
+
+            return ContactResult::create([
+                'contact_id' => strtolower($type),
+                'name' => $params->contact->name,
+                'email' => $params->contact->email,
+                'phone' => $params->contact->phone,
+                'organisation' => $params->contact->organisation,
+                'address1' => $params->contact->address1,
+                'city' => $params->contact->city,
+                'postcode' => $params->contact->postcode,
+                'country_code' => $params->contact->country_code,
+                'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
+            ])->setMessage('Contact details updated');
+        } catch (Throwable $e) {
+            $this->handleError($e, $params);
+        }
     }
 
     /**
@@ -993,57 +1043,6 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Throwable
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    private function updateDomainContact(string $sld, string $tld, ContactParams $params, string $type): ContactResult
-    {
-        try {
-            $nameParts = OpenSrsApi::getNameParts($params->name ?? $params->organisation);
-
-            $updateContactRaw = $this->api()->makeRequest([
-                'action' => 'UPDATE_CONTACTS',
-                'object' => 'DOMAIN',
-                'protocol' => 'XCP',
-                'attributes' => [
-                    'domain' => Utils::getDomain($sld, $tld),
-                    'types' => [$type],
-                    'contact_set' => [
-                        $type => [
-                            'country' => Utils::normalizeCountryCode($params->country_code),
-                            'state' => Utils::stateNameToCode($params->country_code, $params->state),
-                            'org_name' => $params->organisation,
-                            'phone' => Utils::internationalPhoneToEpp($params->phone),
-                            'postal_code' => $params->postcode,
-                            'city' => $params->city,
-                            'email' => $params->email,
-                            'address1' => $params->address1,
-                            'first_name' => $nameParts['firstName'],
-                            'last_name' => $nameParts['lastName'],
-                        ]
-                    ]
-                ]
-            ]);
-
-            return ContactResult::create([
-                'contact_id' => strtolower($type),
-                'name' => $params->name,
-                'email' => $params->email,
-                'phone' => $params->phone,
-                'organisation' => $params->organisation,
-                'address1' => $params->address1,
-                'city' => $params->city,
-                'postcode' => $params->postcode,
-                'country_code' => $params->country_code,
-                'state' => Utils::stateNameToCode($params->country_code, $params->state),
-            ])->setMessage('Contact details updated');
-        } catch (Throwable $e) {
-            $this->handleError($e, $params);
-        }
-    }
-
-    /**
      * @param \Throwable $e Encountered error
      * @param DataSet|mixed[] $params
      *
@@ -1095,5 +1094,27 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_UNKNOWN)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(string $contactType): string
+    {
+        switch ($contactType) {
+            case ContactType::REGISTRANT:
+                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_REGISTRANT);
+            case ContactType::ADMIN:
+                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_ADMIN);
+            case ContactType::BILLING:
+                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_BILLING);
+            case ContactType::TECH:
+                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_TECH);
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type')
+                    ->withData([
+                        'contact_type' => $contactType,
+                    ]);
+        }
     }
 }

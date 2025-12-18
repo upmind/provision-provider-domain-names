@@ -234,12 +234,12 @@ class Provider extends DomainNames implements ProviderInterface
             $contactType = ContactType::from($params->contact_type);
 
             switch ($contactType) {
-                case $contactType->isEqualValue(ContactType::REGISTRANT):
+                case $contactType->equals(ContactType::REGISTRANT()):
                     $contact = $this->api()->updateRegistrantContact($domainName, $params->contact);
                     break;
-                case $contactType->isEqualValue(ContactType::ADMIN):
-                case $contactType->isEqualValue(ContactType::TECH):
-                case $contactType->isEqualValue(ContactType::BILLING):
+                case $contactType->equals(ContactType::ADMIN()):
+                case $contactType->equals(ContactType::TECH()):
+                case $contactType->equals(ContactType::BILLING()):
                     $contact = $this->api()->updateContact($domainName, $params->contact, $contactType);
                     break;
                 default:

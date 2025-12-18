@@ -467,7 +467,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Invalid contact type', ['contact_type' => $params->contact_type]);
         }
 
-        if ($contactType->isEqualValue(ContactType::REGISTRANT)) {
+        if ($contactType->equals(ContactType::REGISTRANT())) {
             return $this->updateDomainContact(
                 $params->sld,
                 $params->tld,
@@ -489,18 +489,18 @@ class Provider extends DomainNames implements ProviderInterface
             $infoFrame->setDomain($domainName);
 
             switch ($contactType) {
-                case $contactType->isEqualValue(ContactType::ADMIN):
+                case $contactType->equals(ContactType::ADMIN()):
                     $infoFrame->addAdminContact($contactId);
                     break;
-                case $contactType->isEqualValue(ContactType::TECH):
+                case $contactType->equals(ContactType::TECH()):
                     $infoFrame->addTechContact($contactId);
                     break;
-                case $contactType->isEqualValue(ContactType::BILLING):
+                case $contactType->equals(ContactType::BILLING()):
                     $infoFrame->addBillingContact($contactId);
                     break;
                 default:
                     // Should not happen as contact_type is already validated
-                    $this->errorResult('Invalid contact type', ['contact_type' => $params->contact_type]);
+                    $this->errorResult('Invalid contact type: ' . $params->contact_type);
             }
 
             $xmlResponse = $client->request($infoFrame);

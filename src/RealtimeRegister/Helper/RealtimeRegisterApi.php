@@ -433,22 +433,22 @@ class RealtimeRegisterApi
         $body = [];
 
         switch ($contactType) {
-            case $contactType->isEqualValue(ContactType::REGISTRANT):
+            case $contactType->equals(ContactType::REGISTRANT()):
                 $body['registrant'] = $this->createContact($contactParams);
                 break;
-            case $contactType->isEqualValue(ContactType::ADMIN):
+            case $contactType->equals(ContactType::ADMIN()):
                 $body['contacts'][] = [
                     'role' => self::CONTACT_TYPE_ADMIN,
                     'handle' => $this->createContact($contactParams),
                 ];
                 break;
-            case $contactType->isEqualValue(ContactType::TECH):
+            case $contactType->equals(ContactType::TECH()):
                 $body['contacts'][] = [
                     'role' => self::CONTACT_TYPE_TECH,
                     'handle' => $this->createContact($contactParams),
                 ];
                 break;
-            case $contactType->isEqualValue(ContactType::BILLING):
+            case $contactType->equals(ContactType::BILLING()):
                 $body['contacts'][] = [
                     'role' => self::CONTACT_TYPE_BILLING,
                     'handle' => $this->createContact($contactParams),
@@ -461,13 +461,13 @@ class RealtimeRegisterApi
         $domainInfo = $this->getDomainInfo($domainName);
 
         switch ($contactType) {
-            case $contactType->isEqualValue(ContactType::REGISTRANT):
+            case $contactType->equals(ContactType::REGISTRANT()):
                 return $domainInfo['registrant'];
-            case $contactType->isEqualValue(ContactType::ADMIN):
+            case $contactType->equals(ContactType::ADMIN()):
                 return $domainInfo['admin'];
-            case $contactType->isEqualValue(ContactType::TECH):
+            case $contactType->equals(ContactType::TECH()):
                 return $domainInfo['tech'];
-            case $contactType->isEqualValue(ContactType::BILLING):
+            case $contactType->equals(ContactType::BILLING()):
                 return $domainInfo['billing'];
             default:
                 throw ProvisionFunctionError::create('Unknown contact type');

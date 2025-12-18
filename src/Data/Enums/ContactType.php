@@ -32,9 +32,4 @@ final class ContactType extends Enum
     {
         return implode($separator, self::toValues());
     }
-
-    public function isEqualValue(string $value): bool
-    {
-        return $this->getValue() === $value;
-    }
 }

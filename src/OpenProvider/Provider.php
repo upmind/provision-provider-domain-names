@@ -10,6 +10,8 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -23,6 +25,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -304,29 +307,25 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        // now we always create a new contact
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue(),
+        ]));
+    }
 
-        // $params = $params->toArray();
-        // $contact =  Arr::get($params, 'contact');
-
-        // $contactHandle = (string)Arr::get($contact, 'id');
-        // if (!$contactHandle) {
-        //     $contactHandle = $this->_callDomain( Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld')))['owner_handle'];
-        // }
-
-        // return $this->_updateCustomer(
-        //     $params->tld,
-        //     $contactHandle,
-        //     Arr::get($contact, 'email'),
-        //     Arr::get($contact, 'phone'),
-        //     Arr::get($contact, 'name'),
-        //     Arr::get($contact, 'organisation')?? Arr::get($contact, 'name'),
-        //     Arr::get($contact, 'address1'),
-        //     Arr::get($contact, 'postcode'),
-        //     Arr::get($contact, 'city'),
-        //     Arr::get($contact, 'country_code'),
-        //     Arr::get($contact, 'state')
-        // );
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
 
         $domain = Utils::getDomain($params->sld, $params->tld);
         $domainId = $this->_getDomain($domain, '', false)->id;
@@ -344,21 +343,47 @@ class Provider extends DomainNames implements ProviderInterface
             $params->contact->state
         );
 
-        $this->_callApi([
-            'owner_handle' => $contactHandle,
-        ], 'domains/' . $domainId, 'PUT');
+        $data = [];
 
-        $contact = $this->_getDomain($domain, '', false)->registrant;
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $data['owner_handle'] = $contactHandle;
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $data['billing_handle'] = $contactHandle;
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $data['tech_handle'] = $contactHandle;
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $data['admin_handle'] = $contactHandle;
+                break;
+            default:
+                $this->errorResult('Invalid contact type: ' . $contactType->getValue());
+        }
 
-        return ContactResult::create($contact)->setMessage('Registrant contat updated');
-    }
+        $this->_callApi($data, 'domains/' . $domainId, 'PUT');
 
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function updateContact(UpdateContactParams $params): ContactResult
-    {
-        $this->errorResult('Not implemented');
+        $domainData = $this->_getDomain($domain, '', false);
+
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $contact = $domainData->registrant;
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $contact = $domainData->billing;
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $contact = $domainData->tech;
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $contact = $domainData->admin;
+                break;
+            default:
+                $this->errorResult('Invalid contact type: ' . $contactType->getValue());
+        }
+
+        return ContactResult::create($contact)->setMessage(ucfirst($contactType->getValue()) . ' contact updated');
     }
 
     /**

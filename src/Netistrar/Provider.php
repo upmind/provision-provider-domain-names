@@ -288,7 +288,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->updateContact($domainName, Utils::normalizeTld($params->tld), $params->contact, $contactType);
         } catch (ProvisionFunctionError $e) {
             $this->errorResult(
-                'Failed to update ' . mb_ucfirst($contactType->getValue()) . ' contact: ' . $e->getMessage(),
+                'Failed to update ' . ucfirst($contactType->getValue()) . ' contact: ' . $e->getMessage(),
                 $e->getData(),
                 $params->toArray(),
                 $e
@@ -303,12 +303,12 @@ class Provider extends DomainNames implements ProviderInterface
         // If the contact update is pending
         if ($domainContact->get('status') === NetistrarApi::CONTACT_STATUS_PENDING) {
             return ContactResult::create($domainContact)->setMessage(
-                mb_ucfirst($contactType->getValue()) . ' Contact update is pending'
+                ucfirst($contactType->getValue()) . ' Contact update is pending'
             );
         }
 
         return ContactResult::create($domainContact)->setMessage(
-            mb_ucfirst($contactType->getValue()) . ' Contact updated'
+            ucfirst($contactType->getValue()) . ' Contact updated'
         );
     }
 

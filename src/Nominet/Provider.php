@@ -507,7 +507,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'city' => $city,
                 'postcode' => $postcode,
                 'country_code' => $countryCode,
-            ])->setMessage(mb_ucfirst($contactType->getValue()) . ' details updated');
+            ])->setMessage(ucfirst($contactType->getValue()) . ' details updated');
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e, $params->toArray());
         }

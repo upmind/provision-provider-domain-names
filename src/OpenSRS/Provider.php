@@ -13,6 +13,7 @@ use GuzzleHttp\Promise\Utils as PromiseUtils;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Helper;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -773,7 +774,13 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $type = $this->getProviderContactTypeValue($params->contact_type);
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        $type = $this->getProviderContactTypeValue($contactType);
 
         try {
             $nameParts = OpenSrsApi::getNameParts($params->contact->name ?? $params->contact->organisation);
@@ -1078,19 +1085,19 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getProviderContactTypeValue(string $contactType): string
+    private function getProviderContactTypeValue(ContactType $contactType): string
     {
         switch ($contactType) {
-            case ContactType::REGISTRANT:
+            case $contactType->equals(ContactType::REGISTRANT()):
                 return OpenSrsApi::CONTACT_TYPE_REGISTRANT;
-            case ContactType::ADMIN:
+            case $contactType->equals(ContactType::ADMIN()):
                 return OpenSrsApi::CONTACT_TYPE_ADMIN;
-            case ContactType::BILLING:
+            case $contactType->equals(ContactType::BILLING()):
                 return OpenSrsApi::CONTACT_TYPE_BILLING;
-            case ContactType::TECH:
+            case $contactType->equals(ContactType::TECH()):
                 return OpenSrsApi::CONTACT_TYPE_TECH;
             default:
-                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType);
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
         }
     }
 }

@@ -484,7 +484,7 @@ class SynergyWholesaleApi
         ];
 
         // Unset the contact we will update.
-        unset($contacts[$this->getProviderContactTypeValue($contactType->getValue())]);
+        unset($contacts[$this->getProviderContactTypeValue($contactType)]);
 
         foreach ($contacts as $type => $contact) {
             if (empty($contact)) {
@@ -500,7 +500,7 @@ class SynergyWholesaleApi
         $params = array_merge($params, array_values(array_filter($contacts)));
         $params = array_merge($params, $this->setContactParams(
             $contactParams,
-            $this->getProviderContactTypeValue($contactType->getValue())
+            $this->getProviderContactTypeValue($contactType)
         ));
 
         $this->makeRequest($command, $params);
@@ -673,19 +673,19 @@ class SynergyWholesaleApi
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getProviderContactTypeValue(string $contactType): string
+    private function getProviderContactTypeValue(ContactType $contactType): string
     {
         switch ($contactType) {
-            case ContactType::REGISTRANT:
+            case $contactType->equals(ContactType::REGISTRANT()):
                 return self::CONTACT_TYPE_REGISTRANT;
-            case ContactType::ADMIN:
+            case $contactType->equals(ContactType::ADMIN()):
                 return self::CONTACT_TYPE_ADMIN;
-            case ContactType::BILLING:
+            case $contactType->equals(ContactType::BILLING()):
                 return self::CONTACT_TYPE_BILLING;
-            case ContactType::TECH:
+            case $contactType->equals(ContactType::TECH()):
                 return self::CONTACT_TYPE_TECH;
             default:
-                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType);
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
         }
     }
 }

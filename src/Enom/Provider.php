@@ -446,11 +446,11 @@ class Provider extends DomainNames implements ProviderInterface
                 Utils::normalizeSld($params->sld),
                 Utils::normalizeTld($params->tld),
                 $params->contact,
-                $this->getProviderContactTypeValue($contactType->getValue())
+                $this->getProviderContactTypeValue($contactType)
             );
 
             return ContactResult::create([
-                'contact_id' => mb_strtolower($this->getProviderContactTypeValue($contactType->getValue())),
+                'contact_id' => mb_strtolower($this->getProviderContactTypeValue($contactType)),
                 'name' => $params->contact->name,
                 'email' => $params->contact->email,
                 'phone' => $params->contact->phone,
@@ -667,19 +667,19 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    private function getProviderContactTypeValue(string $contactType): string
+    private function getProviderContactTypeValue(ContactType $contactType): string
     {
         switch ($contactType) {
-            case ContactType::REGISTRANT:
+            case $contactType->equals(ContactType::REGISTRANT()):
                 return EnomApi::CONTACT_TYPE_REGISTRANT;
-            case ContactType::ADMIN:
+            case $contactType->equals(ContactType::ADMIN()):
                 return EnomApi::CONTACT_TYPE_ADMIN;
-            case ContactType::BILLING:
+            case $contactType->equals(ContactType::BILLING()):
                 return EnomApi::CONTACT_TYPE_BILLING;
-            case ContactType::TECH:
+            case $contactType->equals(ContactType::TECH()):
                 return EnomApi::CONTACT_TYPE_TECH;
             default:
-                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType);
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
         }
     }
 }

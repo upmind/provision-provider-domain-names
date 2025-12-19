@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\Netim;
 
 use DateTimeImmutable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -14,6 +15,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -395,24 +397,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        $domain = Utils::getDomain(Utils::normalizeSld($params->sld), Utils::normalizeTld($params->tld));
-
-        try {
-            // Get the owner contact id
-            $domainInfo = $this->client()->domainInfo($domain);
-            $owner = $domainInfo->idOwner;
-
-            // Normalize the contact data
-            $registrant = $this->normalizeContactToArray($params->contact, 1);
-
-            // Update the contact
-            $this->client()->contactOwnerUpdate($owner, $registrant);
-
-            return ContactResult::create($this->getContactInfo($owner))
-                ->setMessage('Your domain : ' . $domain . ' registrant has been updated successfully');
-        } catch (NetimAPIException $e) {
-            $this->errorResult($e->getMessage());
-        }
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue(),
+        ]));
     }
 
     /**
@@ -420,7 +410,60 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $this->errorResult('Not implemented');
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            // Get the contact id
+            $domainInfo = $this->client()->domainInfo($domain);
+
+            switch ($contactType) {
+                case $contactType->equals(ContactType::REGISTRANT()):
+                    $contactId = $domainInfo->idOwner;
+
+                    break;
+                case $contactType->equals(ContactType::ADMIN()):
+                    $contactId = $domainInfo->idAdmin;
+
+                    break;
+                case $contactType->equals(ContactType::TECH()):
+                    $contactId = $domainInfo->idTech;
+
+                    break;
+                case $contactType->equals(ContactType::BILLING()):
+                    $contactId = $domainInfo->idBilling;
+
+                    break;
+                default:
+                    $this->errorResult('Invalid contact type: ' . $contactType->getValue());
+            }
+
+            // There's no way to update a domain with a new a contact, but only update existing contacts.
+            // Also, all contact types are mandatory on registration, so this should not happen.
+            if (!$contactId) {
+                $this->errorResult(ucfirst($contactType->getValue()) . ' contact not found for domain: ' . $domain);
+            }
+
+            // Normalize the contact data
+            $contactData = $this->normalizeContactToArray(
+                $params->contact,
+                $contactType->equals(ContactType::REGISTRANT()) ? 1 : 0
+            );
+
+            // Update the contact
+            $this->client()->contactUpdate($contactId, $contactData);
+
+            return ContactResult::create($this->getContactInfo($contactId))->setMessage(
+                'Your domain : ' . $domain . ' ' . ucfirst($contactType->getValue()) . ' contact has been updated successfully'
+            );
+        } catch (NetimAPIException $e) {
+            $this->errorResult($e->getMessage());
+        }
     }
 
     /**

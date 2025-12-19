@@ -215,6 +215,13 @@ class GoDaddyApi
         $this->makeRequest($command, null, $body, "PATCH");
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     *
+     * @deprecated Use updateContact with ContactType::REGISTRANT() instead.
+     */
     public function updateRegistrantContact(string $domainName, ContactParams $contactParams): ContactData
     {
         $command = "/v1/domains/{$domainName}/contacts";

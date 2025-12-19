@@ -1082,18 +1082,15 @@ class Provider extends DomainNames implements ProviderInterface
     {
         switch ($contactType) {
             case ContactType::REGISTRANT:
-                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_REGISTRANT);
+                return OpenSrsApi::CONTACT_TYPE_REGISTRANT;
             case ContactType::ADMIN:
-                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_ADMIN);
+                return OpenSrsApi::CONTACT_TYPE_ADMIN;
             case ContactType::BILLING:
-                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_BILLING);
+                return OpenSrsApi::CONTACT_TYPE_BILLING;
             case ContactType::TECH:
-                return mb_strtolower(OpenSrsApi::CONTACT_TYPE_TECH);
+                return OpenSrsApi::CONTACT_TYPE_TECH;
             default:
-                throw ProvisionFunctionError::create('Invalid contact type')
-                    ->withData([
-                        'contact_type' => $contactType,
-                    ]);
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType);
         }
     }
 }

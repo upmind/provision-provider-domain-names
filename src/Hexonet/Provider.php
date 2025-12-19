@@ -11,8 +11,10 @@ use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppContactHandle;
 use Metaregistrar\EPP\eppException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use UnexpectedValueException;
 use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Data\Configuration as CentralNicResellerConfiguration;
 use Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Provider as CentralNicResellerProvider;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Hexonet\Helper\EppHelper;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -723,19 +725,37 @@ class Provider extends DomainNames implements ProviderInterface
         // return HexonetHelper::updateRegistrant($api, Utils::getDomain($params->sld, $params->tld), $params->contact)
         //     ->setMessage('Registrant contact details updated');
 
-        $domain = Utils::getDomain($params->sld, $params->tld);
-
-        return $this->createContact($domain, eppContactHandle::CONTACT_TYPE_REGISTRANT, $params->contact)
-            ->setMessage('Registrant contact details updated');
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue(),
+        ]));
     }
 
     /**
     /**
+     * @throws \Metaregistrar\EPP\eppException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \RuntimeException
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
-        $this->errorResult('Not implemented');
+        if ($this->migrated) {
+            return $this->getMigratedProvider()->updateContact($params);
+        }
+
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        return $this->createContact($domain, $this->getProviderContactTypeValue($contactType), $params->contact)
+            ->setMessage(ucfirst($contactType->getValue()) . ' contact details updated');
     }
 
     /**z
@@ -1130,5 +1150,24 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_UNKNOWN)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return eppContactHandle::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return eppContactHandle::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return eppContactHandle::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return eppContactHandle::CONTACT_TYPE_TECH;
+            default:
+                $this->errorResult('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

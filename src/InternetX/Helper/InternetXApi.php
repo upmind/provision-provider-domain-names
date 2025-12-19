@@ -494,11 +494,11 @@ class InternetXApi
     {
         switch ($contactType) {
             case $contactType->equals(ContactType::REGISTRANT()):
-                return mb_strtolower(self::CONTACT_TYPE_REGISTRANT);
+                return self::CONTACT_TYPE_REGISTRANT;
             case $contactType->equals(ContactType::ADMIN()):
-                return mb_strtolower(self::CONTACT_TYPE_ADMIN);
+                return self::CONTACT_TYPE_ADMIN;
             case $contactType->equals(ContactType::TECH()):
-                return mb_strtolower(self::CONTACT_TYPE_TECH);
+                return self::CONTACT_TYPE_TECH;
             case $contactType->equals(ContactType::BILLING()):
             default:
                 throw ProvisionFunctionError::create(

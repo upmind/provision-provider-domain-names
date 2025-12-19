@@ -952,15 +952,15 @@ class Provider extends DomainNames implements ProviderInterface
     {
         switch ($contactType) {
             case ContactType::REGISTRANT:
-                return mb_strtolower(EppHelper::CONTACT_TYPE_REGISTRANT);
+                return EppHelper::CONTACT_TYPE_REGISTRANT;
             case ContactType::ADMIN:
-                return mb_strtolower(EppHelper::CONTACT_TYPE_ADMIN);
+                return EppHelper::CONTACT_TYPE_ADMIN;
             case ContactType::BILLING:
-                return mb_strtolower(EppHelper::CONTACT_TYPE_BILL);
+                return EppHelper::CONTACT_TYPE_BILL;
             case ContactType::TECH:
-                return mb_strtolower(EppHelper::CONTACT_TYPE_TECH);
+                return EppHelper::CONTACT_TYPE_TECH;
             default:
-                $this->errorResult('Invalid contact type', ['contact_type' => $contactType]);
+                $this->errorResult('Invalid contact type: ' . $contactType);
         }
     }
 }

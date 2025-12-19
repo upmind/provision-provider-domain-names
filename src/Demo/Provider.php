@@ -183,8 +183,12 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        return ContactResult::create($params->contact)
-            ->setMessage('Demo domain registrant updated');
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => 'registrant',
+        ]));
     }
 
     public function updateContact(UpdateContactParams $params): ContactResult

@@ -17,6 +17,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Metaregistrar\EPP\eppCheckDomainRequest;
 use Metaregistrar\EPP\eppCheckDomainResponse;
@@ -71,6 +72,14 @@ class EppHelper
     protected const CONTACT_LOC = 'loc';
     protected const CONTACT_INT = 'int';
     protected const CONTACT_AUTO = 'auto';
+
+    /**
+     * Epp contact type constants
+     */
+    private const CONTACT_TYPE_REGISTRANT = 'reg';
+    private const CONTACT_TYPE_ADMIN = 'admin';
+    private const CONTACT_TYPE_TECH = 'tech';
+    private const CONTACT_TYPE_BILLING = 'billing';
 
     protected array $lockedStatuses = [
         'clientTransferProhibited',
@@ -453,6 +462,73 @@ class EppHelper
         return $this->getContactInfo($contactID);
     }
 
+    /**
+     * In the UpdateDomain command you can set or add parameters
+     * - Registrant is always set (you can only have one registrant)
+     * - Admin, Tech, Billing contacts are Added (you can have multiple contacts, don't forget to remove the old ones)
+     *
+     * @throws \Metaregistrar\EPP\eppException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     */
+    public function updateContact(string $domainName, ContactParams $params, ContactType $contactType): ContactData
+    {
+        // If registrant update,
+        // we need to set it to the domain properties and perform update,
+        // as we only have 1 registrant contact.
+        if ($contactType->equals(ContactType::REGISTRANT())) {
+            return $this->updateRegistrantContact($domainName, $params);
+        }
+
+        // For other contact types (admin, tech, billing),
+        // we need to add the new contact and remove the old one of the same type.
+
+        // Get the existing domain info to find existing contacts
+        $info = new eppInfoDomainRequest(new eppDomain($domainName));
+
+        /** @var \Metaregistrar\EPP\eppInfoDomainResponse $response */
+        $response = $this->connection->request($info);
+
+        // Get existing contacts, and set empty array if none.
+        /** @var \Metaregistrar\EPP\eppContactHandle[] $contacts */
+        $contacts = $response->getDomainContacts() ?? [];
+
+        $providerContactType = $this->getProviderContactTypeValue($contactType);
+
+        // Placeholder for remove info
+        $removeInfo = null;
+
+        foreach ($contacts as $contact) {
+            if ($contact->getContactType() !== $providerContactType) {
+                continue;
+            }
+
+            $removeInfo = $removeInfo ?? new eppDomain($domainName);
+            $removeInfo->addContact(new eppContactHandle($contact->getContactHandle(), $providerContactType));
+        }
+
+        // Create the contact, regardless which type it will be created in
+        $contactId = $this->createContact($params);
+
+        // Now add info with the new contact
+        $addInfo = new eppDomain($domainName);
+        $addInfo->addContact(new eppContactHandle($contactId, $providerContactType));
+
+        $update = new eppUpdateDomainRequest(
+            new eppDomain($domainName),
+            $addInfo,
+            $removeInfo,
+            null
+        );
+
+        $this->connection->request($update);
+
+        return $this->getContactInfo($contactId);
+    }
+
+    /**
+     * @throws \Metaregistrar\EPP\eppException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     */
     public function createContact(ContactParams $params): string
     {
         $telephone = null;
@@ -662,5 +738,24 @@ class EppHelper
         $renewal = DateTimeImmutable::createFromFormat(DateTimeInterface::RFC3339_EXTENDED, $renewalDate);
 
         return $paidUntil <= $renewal ? $paidUntilDate : $renewalDate;
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return mb_strtolower(self::CONTACT_TYPE_REGISTRANT);
+            case $contactType->equals(ContactType::ADMIN()):
+                return mb_strtolower(self::CONTACT_TYPE_ADMIN);
+            case $contactType->equals(ContactType::BILLING()):
+                return mb_strtolower(self::CONTACT_TYPE_BILLING);
+            case $contactType->equals(ContactType::TECH()):
+                return mb_strtolower(self::CONTACT_TYPE_TECH);
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

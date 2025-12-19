@@ -240,6 +240,8 @@ class GoDaddyApi
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     *
+     * @deprecated Use updateContact with ContactType::REGISTRANT() instead.
      */
     public function updateRegistrantContact(string $domainName, ContactParams $contactParams): ContactData
     {

@@ -16,6 +16,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\InternetBS\Data\Configuration;
@@ -342,6 +343,35 @@ class InternetBSApi
         return $this->getDomainInfo($domainName)['registrant'];
     }
 
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(
+        string $domainName,
+        ContactParams $contactParams,
+        ContactType $contactType
+    ): ContactData {
+        if ($contactType->equals(ContactType::REGISTRANT())) {
+            return $this->updateRegistrantContact($domainName, $contactParams);
+        }
+
+        $params = [
+            'Domain' => $domainName,
+        ];
+
+        $contact = $this->setContactParams($contactParams, $this->getProviderContactTypeValue($contactType));
+
+        $params = array_merge($params, $contact);
+
+        $this->makeRequest('/Domain/Update', $params);
+
+        return $this->getDomainInfo($domainName)[$contactType->getValue()];
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function renew(string $domainName, int $period): void
     {
         $params = [
@@ -367,5 +397,26 @@ class InternetBSApi
         $response = $this->makeRequest('/Domain/Transfer/Initiate', $params);
 
         return (string)$response['transactid'];
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            case $contactType->equals(ContactType::BILLING()):
+                return self::CONTACT_TYPE_BILLING;
+            default:
+                throw ProvisionFunctionError::create(
+                    'Contact type not supported by InternetBS: ' . $contactType->getValue()
+                );
+        }
     }
 }

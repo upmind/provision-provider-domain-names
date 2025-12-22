@@ -842,8 +842,11 @@ class Provider extends DomainNames implements ProviderInterface
 
         $contact = $this->_contactInfo($response->getDomainRegistrant());
 
+        /** @var string|null $adminContactId */
         $adminContactId = $response->getDomainContact('admin');
+        /** @var string|null $techContactId */
         $techContactId = $response->getDomainContact('tech');
+        /** @var string|null $billingContactId */
         $billingContactId = $response->getDomainContact('billing');
 
         $adminContact = $adminContactId === null ? null : $this->_contactInfo($adminContactId);

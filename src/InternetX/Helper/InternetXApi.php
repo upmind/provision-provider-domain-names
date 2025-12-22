@@ -16,6 +16,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\InternetX\Data\Configuration;
@@ -355,6 +356,24 @@ class InternetXApi
     }
 
     /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(string $domainName, ContactParams $contactParams, ContactType $contactType): void
+    {
+        if ($contactType->equals(ContactType::REGISTRANT())) {
+            $this->updateRegistrantContact($domainName, $contactParams);
+        }
+
+        $contactData = $this->setContactParams($contactParams);
+        $body = [
+            $this->getProviderContactTypeValue($contactType) => $contactData,
+        ];
+
+        $this->makeRequest("/domain/{$domainName}", null, $body, "PUT");
+    }
+
+    /**
      * @param string $domainName
      * @param int $period
      * @return void
@@ -486,5 +505,25 @@ class InternetXApi
             'count_remaining' => $countRemaining,
             'notifications' => $notifications,
         ];
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            case $contactType->equals(ContactType::BILLING()):
+            default:
+                throw ProvisionFunctionError::create(
+                    'Contact type not supported by InternetX: ' . $contactType->getValue()
+                );
+        }
     }
 }

@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 use Psr\Http\Message\ResponseInterface;
 use SimpleXMLElement;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -27,6 +28,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -39,6 +41,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -75,6 +78,14 @@ class Provider extends DomainNames implements ProviderInterface
      * Max positions for nameservers
      */
     private const MAX_CUSTOM_NAMESERVERS = 4;
+
+    /**
+     * NameSilo contact types
+     */
+    private const CONTACT_TYPE_REGISTRANT = 'registrant';
+    private const CONTACT_TYPE_ADMIN = 'administrative';
+    private const CONTACT_TYPE_BILLING = 'billing';
+    private const CONTACT_TYPE_TECH = 'technical';
 
     public function __construct(NameSiloConfiguration $configuration)
     {
@@ -383,7 +394,27 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        $domainName = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue()
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
         $domainData = $this->_callApi(
             [
                 'domain' => $domainName,
@@ -392,41 +423,79 @@ class Provider extends DomainNames implements ProviderInterface
         );
 
         $contactIds = $domainData->reply->contact_ids;
-        $registrantId = (string)$contactIds->registrant;
+        $contactIdsAssociative = [
+            ContactType::REGISTRANT()->getValue() => (string) $contactIds->registrant,
+            ContactType::ADMIN()->getValue() => (string) $contactIds->administrative,
+            ContactType::TECH()->getValue() => (string) $contactIds->technical,
+            ContactType::BILLING()->getValue() => (string) $contactIds->billing,
+        ];
 
-        if (in_array($registrantId, [$contactIds->administrative, $contactIds->technical, $contactIds->billing])) {
-            // contact ID is shared with other contacts - create new contact
-            $registrantId = $this->_createContact(
-                $params->contact->email,
-                $params->contact->phone,
-                $params->contact->name ?: $params->contact->organisation,
-                $params->contact->organisation ?: $params->contact->name,
-                $params->contact->address1,
-                $params->contact->postcode,
-                $params->contact->city,
-                $params->contact->country_code,
-                $params->contact->state
-            );
+        // Depending the contact type, set contact ID and remove from the associative array
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $contactId = (string) $contactIds->registrant;
+                unset($contactIdsAssociative[ContactType::REGISTRANT()->getValue()]);
 
-            $this->_associateContact($domainName, $registrantId, 'registrant');
-        } else {
-            $this->_updateContact(
-                $registrantId,
-                $params->contact->email,
-                $params->contact->phone,
-                $params->contact->name ?: $params->contact->organisation,
-                $params->contact->organisation ?: $params->contact->name,
-                $params->contact->address1,
-                $params->contact->postcode,
-                $params->contact->city,
-                $params->contact->country_code,
-                $params->contact->state
-            );
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $contactId = (string) $contactIds->administrative;
+                unset($contactIdsAssociative[ContactType::ADMIN()->getValue()]);
+
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $contactId = (string) $contactIds->technical;
+                unset($contactIdsAssociative[ContactType::TECH()->getValue()]);
+
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $contactId = (string) $contactIds->billing;
+                unset($contactIdsAssociative[ContactType::BILLING()->getValue()]);
+
+                break;
+            default:
+                $this->errorResult('Invalid contact type: ' . $contactType->getValue());
         }
 
-        return $this->_contactInfo($registrantId);
+        // If contact ID is shared with other contacts - create new contact
+        if (in_array($contactId, $contactIdsAssociative, true)) {
+            $contactId = $this->_createContact(
+                $params->contact->email,
+                $params->contact->phone,
+                $params->contact->name ?: $params->contact->organisation,
+                $params->contact->organisation ?: $params->contact->name,
+                $params->contact->address1,
+                $params->contact->postcode,
+                $params->contact->city,
+                $params->contact->country_code,
+                $params->contact->state
+            );
+
+            $this->_associateContact($domainName, $contactId, $this->getProviderContactTypeValue($contactType));
+
+            return $this->_contactInfo($contactId);
+        }
+
+        // Otherwise update existing contact.
+        $this->_updateContact(
+            $contactId,
+            $params->contact->email,
+            $params->contact->phone,
+            $params->contact->name ?: $params->contact->organisation,
+            $params->contact->organisation ?: $params->contact->name,
+            $params->contact->address1,
+            $params->contact->postcode,
+            $params->contact->city,
+            $params->contact->country_code,
+            $params->contact->state
+        );
+
+        return $this->_contactInfo($contactId);
     }
 
+    /**
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function setLock(LockParams $params): DomainResult
     {
         $domainData = $this->_getDomain(Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld')));
@@ -1201,7 +1270,6 @@ class Provider extends DomainNames implements ProviderInterface
         $this->errorResult('Operation not supported', $params);
     }
 
-
     /**
      * @inheritDoc
      */
@@ -1211,5 +1279,24 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_UNKNOWN)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return self::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            default:
+                $this->errorResult('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

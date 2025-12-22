@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Throwable;
 use Illuminate\Support\Arr;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -17,6 +18,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -30,13 +32,13 @@ use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Helper\EuroDNSApi;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
-
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
@@ -96,6 +98,9 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * Check the availability of multiple domains.
+     *
+     * @throws Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
@@ -277,23 +282,49 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        // Generate the full domain name
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue()
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         // Call the API to update registrant contact details
-        $updateContact = $this->api()->updateRegistrantContactDetails($domainName, $params);
+        try {
+            $updateContact = $this->api()->updateContact($domainName, $params->contact, $contactType);
+        } catch (Throwable $t) {
+            $this->errorResult('Failed to update ' . $params->contact_type . ' contact: ' . $t->getMessage());
+        }
 
         // Check if the API response indicates success
         if (!$updateContact['error']) {
             // Create a ContactResult instance with the success message
             return ContactResult::create($updateContact['msg']);
-        } else {
-            // Throw an exception with the error message if the update fails
-            throw $this->errorResult(sprintf($updateContact['msg']), ['response' => $updateContact]);
         }
+
+        // Throw an exception with the error message if the update fails
+        $this->errorResult($updateContact['msg'], ['response' => $updateContact]);
     }
 
     /**

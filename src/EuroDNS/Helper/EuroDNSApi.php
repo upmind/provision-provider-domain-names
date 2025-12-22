@@ -9,9 +9,11 @@ use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Data\Configuration;
@@ -25,6 +27,14 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
  */
 class EuroDNSApi
 {
+    /**
+     * Contact Types
+     */
+    public const CONTACT_TYPE_REGISTRANT = 'org';
+    public const CONTACT_TYPE_TECH = 'tech';
+    public const CONTACT_TYPE_ADMIN = 'admin';
+    public const CONTACT_TYPE_BILLING = 'billing';
+
     protected $urlSandbox = 'https://secure.tryout-eurodns.com:20015/v2/';
     protected $urlProduction = 'https://secure.api-eurodns.com:20015/v2/';
     protected $username;
@@ -240,15 +250,26 @@ class EuroDNSApi
      */
     public function updateRegistrantContactDetails(string $domainName, UpdateDomainContactParams $updateDomainContactParams): array
     {
+        return $this->updateContact($domainName, $updateDomainContactParams->contact, ContactType::REGISTRANT());
+    }
+
+    /**
+     * Function to update registrant/admin/billing/technical contact details in EuroDNS.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(string $domainName, ContactParams $contactParams, ContactType $contactType): array
+    {
         // Set contact parameters and update parameters
-        $this->contactParams = $updateDomainContactParams->contact;
-        $this->params = $updateDomainContactParams;
+        $this->contactParams = $contactParams;
+        $this->params = ['contact' => $contactParams];
 
         // Construct XML request for updating registrant contact details
-        $request = $this->generateDomainUpdateRequest($domainName, 'update', true);
+        $request = $this->generateDomainUpdateRequest($domainName, 'update', true, $contactType);
 
         // Make the request to EuroDNS API
-        $response = $this->connect($request);
+        $this->connect($request);
 
         // Initialize the result array
         $result = [];
@@ -262,8 +283,10 @@ class EuroDNSApi
             $result['error'] = false;
             $domainInfo = $this->getDomainInfo($domainName);
 
+            $contactTypeKey = $contactType->getValue();
+
             // Set the result message to the updated registrant contact details, if available
-            $result['msg'] = isset($domainInfo['registrant']) ? $domainInfo['registrant'] : [];
+            $result['msg'] = $domainInfo[$contactTypeKey] ?? [];
         }
 
         // Return the result array
@@ -533,35 +556,35 @@ class EuroDNSApi
      *
      * @return string $contact
      */
-    private function setContactUpdate($action)
+    private function setContactUpdate($action, ContactType $contactType)
     {
         // Retrieve registrant details from the provided contact parameters
-        $registrantDetails = $this->contactParams;
+        $contactDetails = $this->contactParams;
 
         // Check if the phone number starts with '+'
-        if (!$this->startsWith($registrantDetails['phone'], '+')) {
+        if (!$this->startsWith($contactDetails['phone'], '+')) {
             // Get the formatted phone number with the correct extension
-            $contactPhone = Utils::localPhoneToInternational($registrantDetails['phone'], $registrantDetails['country_code']);
+            $contactPhone = Utils::localPhoneToInternational($contactDetails['phone'], $contactDetails['country_code']);
         } else {
             // Use the provided phone number if it already starts with '+'
-            $contactPhone = $registrantDetails['phone'];
+            $contactPhone = $contactDetails['phone'];
         }
 
-        $name = $this->splitName($registrantDetails['name']);
+        $name = $this->splitName($contactDetails['name']);
 
         // Construct the XML for the contact update
         $contact = '
         <contact:' . $action . '>
-            <contact:type>org</contact:type>
+            <contact:type>' . $this->getProviderContactTypeValue($contactType) . '</contact:type>
             <contact:firstname>' . htmlspecialchars($name['first_name'] ?? '', ENT_QUOTES, 'UTF-8') . '</contact:firstname>
             <contact:lastname>' . htmlspecialchars($name['last_name'] ?? '', ENT_QUOTES, 'UTF-8') . '</contact:lastname>
-            <contact:company>' . htmlspecialchars($registrantDetails['organisation'] ?? '', ENT_QUOTES, 'UTF-8') . '</contact:company>
-            <contact:address1>' . htmlspecialchars($registrantDetails['address1'], ENT_QUOTES, 'UTF-8') . '</contact:address1>
-            <contact:address2>' . htmlspecialchars($registrantDetails['state'] ?? '', ENT_QUOTES, 'UTF-8') . '</contact:address2>
-            <contact:city>' . htmlspecialchars($registrantDetails['city'], ENT_QUOTES, 'UTF-8') . '</contact:city>
-            <contact:zipcode>' . htmlspecialchars($registrantDetails['postcode'], ENT_QUOTES, 'UTF-8') . '</contact:zipcode>
-            <contact:country_code>' . htmlspecialchars($registrantDetails['country_code'], ENT_QUOTES, 'UTF-8') . '</contact:country_code>
-            <contact:email>' . htmlspecialchars($registrantDetails['email'], ENT_QUOTES, 'UTF-8') . '</contact:email>
+            <contact:company>' . htmlspecialchars($contactDetails['organisation'] ?? '', ENT_QUOTES, 'UTF-8') . '</contact:company>
+            <contact:address1>' . htmlspecialchars($contactDetails['address1'], ENT_QUOTES, 'UTF-8') . '</contact:address1>
+            <contact:address2>' . htmlspecialchars($contactDetails['state'] ?? '', ENT_QUOTES, 'UTF-8') . '</contact:address2>
+            <contact:city>' . htmlspecialchars($contactDetails['city'], ENT_QUOTES, 'UTF-8') . '</contact:city>
+            <contact:zipcode>' . htmlspecialchars($contactDetails['postcode'], ENT_QUOTES, 'UTF-8') . '</contact:zipcode>
+            <contact:country_code>' . htmlspecialchars($contactDetails['country_code'], ENT_QUOTES, 'UTF-8') . '</contact:country_code>
+            <contact:email>' . htmlspecialchars($contactDetails['email'], ENT_QUOTES, 'UTF-8') . '</contact:email>
             <contact:phone>' . $contactPhone . '</contact:phone>
             <contact:fax></contact:fax>
         </contact:' . $action . '>';
@@ -1648,11 +1671,16 @@ class EuroDNSApi
      * @param string $domainName The domain name to update.
      * @param string $updateType The type of update operation ('update' in this case).
      * @param bool $additionalInfoFlag Flag to include additional information in the update.
+     * @param ContactType $contactType The type of contact to update (e.g., registrant, admin, tech, billing).
      *
      * @return string The generated XML request.
      */
-    private function generateDomainUpdateRequest(string $domainName, string $updateType, bool $additionalInfoFlag): string
-    {
+    private function generateDomainUpdateRequest(
+        string $domainName,
+        string $updateType,
+        bool $additionalInfoFlag,
+        ContactType $contactType
+    ): string {
         return <<<XML
                 <?xml version="1.0" encoding="UTF-8"?>
                     <request
@@ -1662,9 +1690,28 @@ class EuroDNSApi
                         <domain:update>
                             <domain:name>{$domainName}</domain:name>
                         </domain:update>
-                        {$this->setContactUpdate($updateType)}
+                        {$this->setContactUpdate($updateType, $contactType)}
                         {$this->setAdditionalInformation($updateType, false, $additionalInfoFlag)}
                     </request>
                 XML;
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return self::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

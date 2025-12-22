@@ -7,6 +7,7 @@ namespace Upmind\ProvisionProviders\DomainNames\Netistrar;
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -18,6 +19,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -35,6 +37,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
 use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -256,15 +259,36 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT,
+        ]));
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
-        $this->validateContactParam($params->contact, 'registrant');
+        $this->validateContactParam($params->contact, $contactType->getValue());
 
         try {
-            $this->api()->updateRegistrantContact($domainName, $params);
+            $this->api()->updateContact($domainName, Utils::normalizeTld($params->tld), $params->contact, $contactType);
         } catch (ProvisionFunctionError $e) {
             $this->errorResult(
-                'Failed to update registrant contact: ' . $e->getMessage(),
+                'Failed to update ' . ucfirst($contactType->getValue()) . ' contact: ' . $e->getMessage(),
                 $e->getData(),
                 $params->toArray(),
                 $e
@@ -273,12 +297,19 @@ class Provider extends DomainNames implements ProviderInterface
 
         $domainInfo = $this->api()->getDomainInfo($domainName, [], true);
 
+        /** @var \Upmind\ProvisionProviders\DomainNames\Data\ContactData $domainContact */
+        $domainContact = $domainInfo->{$contactType->getValue()};
+
         // If the contact update is pending
-        if ($domainInfo->registrant->get('status') === NetistrarApi::CONTACT_STATUS_PENDING) {
-            return ContactResult::create($domainInfo->registrant)->setMessage('Registrant Contact update is pending');
+        if ($domainContact->get('status') === NetistrarApi::CONTACT_STATUS_PENDING) {
+            return ContactResult::create($domainContact)->setMessage(
+                ucfirst($contactType->getValue()) . ' Contact update is pending'
+            );
         }
 
-        return ContactResult::create($domainInfo->registrant)->setMessage('Registrant Contact updated');
+        return ContactResult::create($domainContact)->setMessage(
+            ucfirst($contactType->getValue()) . ' Contact updated'
+        );
     }
 
     /**

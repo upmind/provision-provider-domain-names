@@ -9,6 +9,7 @@ use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\LogsDebugData;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -22,6 +23,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -33,6 +35,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
@@ -251,6 +254,21 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => 'registrant',
+        ]));
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
         $domainName = Utils::getDomain($params->sld, $params->tld);
         $domainData = $this->_callApi(
             [
@@ -268,12 +286,26 @@ class Provider extends DomainNames implements ProviderInterface
             }
         }
 
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $e) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
         $contacts = [
             'contacts' => [
-                'registrant' => $this->_prepareContact($params->contact, 'registrant'),
-                'admin' => $domainData['data']['domain']['contacts']['admin'],
-                'billing' => $domainData['data']['domain']['contacts']['billing'],
-                'tech' => $domainData['data']['domain']['contacts']['tech']
+                'registrant' => $contactType->equals(ContactType::REGISTRANT())
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
+                    : ['data']['domain']['contacts']['registrant'],
+                'admin' => $contactType->equals(ContactType::ADMIN())
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
+                    : $domainData['data']['domain']['contacts']['admin'],
+                'billing' => $contactType->equals(ContactType::BILLING())
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
+                    : $domainData['data']['domain']['contacts']['billing'],
+                'tech' => $contactType->equals(ContactType::TECH())
+                    ? $this->_prepareContact($params->contact, $contactType->getValue())
+                    : $domainData['data']['domain']['contacts']['tech']
             ]
         ];
 
@@ -286,9 +318,14 @@ class Provider extends DomainNames implements ProviderInterface
             '/domains/whois'
         );
 
-        return $this->_parseContactInfo($domainData['data']['domain']['contacts']['registrant']);
+        return $this->_parseContactInfo($domainData['data']['domain']['contacts'][$contactType->getValue()]);
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function setLock(LockParams $params): DomainResult
     {
         $domain = Utils::getDomain($params->sld, $params->tld);

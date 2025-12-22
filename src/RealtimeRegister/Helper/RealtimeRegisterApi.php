@@ -21,6 +21,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\NoEppCodeTransfer;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
@@ -418,6 +419,65 @@ class RealtimeRegisterApi
         return $this->getDomainInfo($domainName)['registrant'];
     }
 
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateDomainContact(
+        string $domainName,
+        ContactParams $contactParams,
+        ContactType $contactType
+    ): ContactData {
+        $command = "/v2/domains/{$domainName}/update";
+
+        $body = [];
+
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $body['registrant'] = $this->createContact($contactParams);
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $body['contacts'][] = [
+                    'role' => self::CONTACT_TYPE_ADMIN,
+                    'handle' => $this->createContact($contactParams),
+                ];
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $body['contacts'][] = [
+                    'role' => self::CONTACT_TYPE_TECH,
+                    'handle' => $this->createContact($contactParams),
+                ];
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $body['contacts'][] = [
+                    'role' => self::CONTACT_TYPE_BILLING,
+                    'handle' => $this->createContact($contactParams),
+                ];
+                break;
+        }
+
+        $this->makeRequest($command, null, $body, "POST");
+
+        $domainInfo = $this->getDomainInfo($domainName);
+
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return $domainInfo['registrant'];
+            case $contactType->equals(ContactType::ADMIN()):
+                return $domainInfo['admin'];
+            case $contactType->equals(ContactType::TECH()):
+                return $domainInfo['tech'];
+            case $contactType->equals(ContactType::BILLING()):
+                return $domainInfo['billing'];
+            default:
+                throw ProvisionFunctionError::create('Unknown contact type');
+        }
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function createContact(ContactParams $params): string
     {
         $handle = uniqid();

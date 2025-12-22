@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\DomainNameApiSdk\Client as DomainNameApiSdkClient;
 use Upmind\DomainNameApiSdk\ClientFactory;
 use Upmind\DomainNameApiSdk\SDK\ArrayType\ArrayOfstring;
@@ -46,6 +47,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType as DomainContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -256,6 +258,28 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => DomainContactType::REGISTRANT(),
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+
+            $isUpdatingRegistrant = $contactType->equals(DomainContactType::REGISTRANT());
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
         $domain = Utils::getDomain($params->sld, $params->tld);
 
         try {
@@ -268,46 +292,89 @@ class Provider extends DomainNames implements ProviderInterface
             $contactResults = [];
         }
 
+        // Get the current registrant details to use as fallback
+        $currentRegistrantDetails = $contactResults[DomainContactType::REGISTRANT()->getValue()];
+
         /**
          * Due to some instances of domains having no contacts whatsoever, and DomainNameApi requiring all to be passed,
-         * we will fall back to the registrant contact for all contact types.
+         * and if we are not updating a specific contact type,
+         * we will fall back to the registrant contact for all contact types if they are not present.
          */
-        $request = (new SaveContactsRequest())
-            ->setDomainName($domain)
-            ->setRegistrantContact($this->contactParamsToSoap($params->contact))
-            ->setAdministrativeContact($this->contactParamsToSoap($params->contact))
-            ->setTechnicalContact($this->contactParamsToSoap($params->contact))
-            ->setBillingContact($this->contactParamsToSoap($params->contact));
-        if (isset($contactResults['admin'])) {
-            $request->setAdministrativeContact(
-                $this->contactParamsToSoap(new ContactParams($contactResults['admin'], false))
-            );
-        }
-        if (isset($contactResults['tech'])) {
-            $request->setTechnicalContact(
-                $this->contactParamsToSoap(new ContactParams($contactResults['tech'], false))
-            );
-        }
-        if (isset($contactResults['billing'])) {
-            $request->setBillingContact(
-                $this->contactParamsToSoap(new ContactParams($contactResults['billing'], false))
-            );
+        $request = (new SaveContactsRequest())->setDomainName($domain);
+
+        switch ($contactType) {
+            case $contactType->equals(DomainContactType::REGISTRANT()):
+                $contactSoapParams = $this->contactParamsToSoap($params->contact);
+
+                $request
+                    ->setRegistrantContact($contactSoapParams)
+                    ->setAdministrativeContact(isset($contactResults['admin'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['admin'], false))
+                        : $contactSoapParams
+                    )->setTechnicalContact(isset($contactResults['tech'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['tech'], false))
+                        : $contactSoapParams
+                    )->setBillingContact(isset($contactResults['billing'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['billing'], false))
+                        : $contactSoapParams
+                    );
+                    break;
+                case $contactType->equals(DomainContactType::ADMIN()):
+                    $registrantSoapParams = $this->contactParamsToSoap($currentRegistrantDetails);
+
+                    $request
+                        ->setRegistrantContact($registrantSoapParams)
+                        ->setAdministrativeContact($this->contactParamsToSoap($params->contact))
+                        ->setTechnicalContact(isset($contactResults['tech'])
+                            ? $this->contactParamsToSoap(new ContactParams($contactResults['tech'], false))
+                            : $registrantSoapParams
+                        )->setBillingContact(isset($contactResults['billing'])
+                            ? $this->contactParamsToSoap(new ContactParams($contactResults['billing'], false))
+                            : $registrantSoapParams
+                        );
+                    break;
+                case $contactType->equals(DomainContactType::TECH()):
+                    $registrantSoapParams = $this->contactParamsToSoap($currentRegistrantDetails);
+
+                    $request
+                        ->setRegistrantContact($registrantSoapParams)
+                        ->setAdministrativeContact(isset($contactResults['admin'])
+                            ? $this->contactParamsToSoap(new ContactParams($contactResults['admin'], false))
+                            : $registrantSoapParams
+                        )->setTechnicalContact($this->contactParamsToSoap($params->contact))
+                        ->setBillingContact(isset($contactResults['billing'])
+                            ? $this->contactParamsToSoap(new ContactParams($contactResults['billing'], false))
+                            : $registrantSoapParams
+                        );
+                    break;
+                case $contactType->equals(DomainContactType::BILLING()):
+                    $registrantSoapParams = $this->contactParamsToSoap($currentRegistrantDetails);
+
+                    $request
+                        ->setRegistrantContact($registrantSoapParams)
+                        ->setAdministrativeContact(isset($contactResults['admin'])
+                            ? $this->contactParamsToSoap(new ContactParams($contactResults['admin'], false))
+                            : $registrantSoapParams
+                        )->setTechnicalContact(isset($contactResults['tech'])
+                            ? $this->contactParamsToSoap(new ContactParams($contactResults['tech'], false))
+                            : $registrantSoapParams
+                        )
+                        ->setBillingContact($this->contactParamsToSoap($params->contact));
+                    break;
         }
 
         $response = $this->api()->SaveContacts(new SaveContacts($request));
         $result = $response->getSaveContactsResult();
 
+        if ($result === null) {
+            $this->errorResult(ucfirst($contactType->getValue()) . ' contact update failed');
+        }
+
         $this->assertResultSuccess($result);
 
-        return $this->getContactResults($domain)['registrant']->setMessage('Registrant contact updated');
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function updateContact(UpdateContactParams $params): ContactResult
-    {
-        $this->errorResult('Not implemented');
+        return $this->getContactResults($domain)[$contactType->getValue()]->setMessage(
+            ucfirst($contactType->getValue()) . ' contact updated'
+        );
     }
 
     /**

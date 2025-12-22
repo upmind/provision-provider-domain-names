@@ -45,6 +45,7 @@ use Upmind\ProvisionProviders\DomainNames\CentralNic\EppExtension\EppConnection;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\CentralNic\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
@@ -62,6 +63,14 @@ class CentralNicApi
     protected const CONTACT_LOC = 'loc';
     protected const CONTACT_INT = 'int';
     protected const CONTACT_AUTO = 'auto';
+
+    /**
+     * Epp contact type constants
+     */
+    private const CONTACT_TYPE_REGISTRANT = 'reg';
+    private const CONTACT_TYPE_ADMIN = 'admin';
+    private const CONTACT_TYPE_TECH = 'tech';
+    private const CONTACT_TYPE_BILLING = 'billing';
 
     protected array $lockedStatuses = [
         'clientTransferProhibited',
@@ -304,6 +313,64 @@ class CentralNicApi
         return $this->getContactInfo($contactID);
     }
 
+    /**
+     * @throws \Metaregistrar\EPP\eppException
+     */
+    public function updateContact(string $domainName, ContactParams $params, ContactType $contactType): ContactData
+    {
+        // If registrant update,
+        // we need to set it to the domain properties and perform update,
+        // as we only have 1 registrant contact.
+        if ($contactType->equals(ContactType::REGISTRANT())) {
+            return $this->updateRegistrantContact($domainName, $params);
+        }
+
+        // For other contact types (admin, tech, billing),
+        // we need to add the new contact and remove the old one of the same type.
+
+        // Get the existing domain info to find existing contacts
+        $info = new eppInfoDomainRequest(new eppDomain($domainName));
+
+        /** @var \Metaregistrar\EPP\eppInfoDomainResponse $response */
+        $response = $this->connection->request($info);
+
+        // Get existing contacts, and set empty array if none.
+        /** @var \Metaregistrar\EPP\eppContactHandle[] $contacts */
+        $contacts = $response->getDomainContacts() ?? [];
+
+        $providerContactType = $this->getProviderContactTypeValue($contactType);
+
+        // Placeholder for remove info
+        $removeInfo = null;
+
+        foreach ($contacts as $contact) {
+            if ($contact->getContactType() !== $providerContactType) {
+                continue;
+            }
+
+            $removeInfo = $removeInfo ?? new eppDomain($domainName);
+            $removeInfo->addContact(new eppContactHandle($contact->getContactHandle(), $providerContactType));
+        }
+
+        // Create the contact, regardless which type it will be created in
+        $contactId = $this->createContact($params);
+
+        // Now add info with the new contact
+        $addInfo = new eppDomain($domainName);
+        $addInfo->addContact(new eppContactHandle($contactId, $providerContactType));
+
+        $update = new eppUpdateDomainRequest(
+            new eppDomain($domainName),
+            $addInfo,
+            $removeInfo,
+            null
+        );
+
+        $this->connection->request($update);
+
+        return $this->getContactInfo($contactId);
+    }
+
     public function updateEppCode(string $domainName): string
     {
         $code = self::generateValidAuthCode();
@@ -539,5 +606,24 @@ class CentralNicApi
         $response = $this->connection->request($check);
 
         return $response->getCheckedHosts();
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return self::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

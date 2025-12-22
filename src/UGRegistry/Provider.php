@@ -337,7 +337,7 @@ class Provider extends DomainNames implements ProviderInterface
             'contacts' => [
                 'registrant' => $contactType->equals(ContactType::REGISTRANT())
                     ? $this->_prepareContact($params->contact, $contactType->getValue())
-                    : ['data']['domain']['contacts']['registrant'],
+                    : $domainData['data']['domain']['contacts']['registrant'],
                 'admin' => $contactType->equals(ContactType::ADMIN())
                     ? $this->_prepareContact($params->contact, $contactType->getValue())
                     : $domainData['data']['domain']['contacts']['admin'],

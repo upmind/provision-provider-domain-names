@@ -8,11 +8,13 @@ use Carbon\Carbon;
 use ErrorException;
 use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppException;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 //use Upmind\ProvisionProviders\DomainNames\Data\FinishTransferParams;
 //use Upmind\ProvisionProviders\DomainNames\Data\InitiateTransferResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
@@ -347,29 +349,47 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
+    {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()
+        ]));
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
     {
         $domainName = Utils::getDomain(
             Utils::normalizeSld($params->sld),
             Utils::normalizeTld($params->tld)
         );
 
+        if ($params->contact_type === 'admin') {
+            $this->errorResult('Admin contact update is not supported');
+        }
+
         try {
-            $contact = $this->epp()->updateRegistrantContact($domainName, $params->contact);
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $e) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        try {
+            $contact = $this->epp()->updateContact($domainName, $params->contact, $contactType);
 
             return ContactResult::create($contact);
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e);
         }
-    }
-
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function updateContact(UpdateContactParams $params): ContactResult
-    {
-        $this->errorResult('Not implemented');
     }
 
     /**

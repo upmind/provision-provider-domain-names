@@ -8,6 +8,8 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Throwable;
 use Illuminate\Support\Arr;
+use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -17,6 +19,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -97,6 +100,9 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * Check the availability of multiple domains.
+     *
+     * @throws Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
@@ -278,31 +284,49 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        // Generate the full domain name
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue()
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         // Call the API to update registrant contact details
-        $updateContact = $this->api()->updateRegistrantContactDetails($domainName, $params);
+        try {
+            $updateContact = $this->api()->updateContact($domainName, $params->contact, $contactType);
+        } catch (Throwable $t) {
+            $this->errorResult('Failed to update ' . $params->contact_type . ' contact: ' . $t->getMessage());
+        }
 
         // Check if the API response indicates success
         if (!$updateContact['error']) {
             // Create a ContactResult instance with the success message
             return ContactResult::create($updateContact['msg']);
-        } else {
-            // Throw an exception with the error message if the update fails
-            throw $this->errorResult(sprintf($updateContact['msg']), ['response' => $updateContact]);
         }
-    }
 
-    /**
-     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     */
-    public function updateContact(UpdateContactParams $params): ContactResult
-    {
-        $this->errorResult('Not implemented');
+        // Throw an exception with the error message if the update fails
+        $this->errorResult($updateContact['msg'], ['response' => $updateContact]);
     }
 
     /**

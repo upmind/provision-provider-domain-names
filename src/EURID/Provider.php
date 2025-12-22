@@ -39,7 +39,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\EURID\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\EURID\EppExtension\EppConnection;
-
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;

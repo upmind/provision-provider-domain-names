@@ -8,7 +8,6 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Throwable;
 use Illuminate\Support\Arr;
-use Throwable;
 use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -40,7 +39,6 @@ use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\EuroDNS\Helper\EuroDNSApi;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
-
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;

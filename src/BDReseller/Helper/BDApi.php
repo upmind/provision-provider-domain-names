@@ -242,6 +242,13 @@ class BDApi
      */
     public function register(string $domainName, int $period, ContactParams $registrant, array $nameServers): void
     {
+        $contactAddress = [
+            $registrant->address1,
+            $registrant->city,
+            Countries::codeToName(Countries::normalizeCode($registrant->country_code)),
+            $registrant->postcode,
+        ];
+
         $body = [
             'domain' => $domainName,
             'year' => $period,
@@ -249,10 +256,7 @@ class BDApi
             'fullName' => $registrant->name ?? $registrant->organisation,
             'nid' => $registrant->organisation, // National ID: 10 or 13 or 17-digit number
             'email' => $registrant->email,
-            'contactAddress' => $registrant->address1 . ', ' .
-                $registrant->city . ', ' .
-                Countries::codeToName(Countries::normalizeCode($registrant->country_code)) . ', ' .
-                $registrant->postcode,
+            'contactAddress' => implode(', ', $contactAddress),
             'contactNumber' => Utils::localPhoneToInternational($registrant->phone, null, false)
         ];
 

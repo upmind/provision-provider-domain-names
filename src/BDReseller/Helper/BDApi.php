@@ -9,12 +9,11 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
 use GuzzleHttp\Psr7\Response;
-use Illuminate\Support\Arr;
+use JsonException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
-use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Countries;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
@@ -45,8 +44,7 @@ class BDApi
         ?array $query = null,
         ?array $body = null,
         string $method = 'POST'
-    ): Promise
-    {
+    ): Promise {
         $requestParams = [];
         if ($query) {
             $requestParams = ['query' => $query];
@@ -90,7 +88,14 @@ class BDApi
      */
     private function parseResponseData(string $result): array
     {
-        $parsedResult = json_decode($result, true);
+        try {
+            $parsedResult = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw ProvisionFunctionError::create('Invalid Provider API Response: ' . $e->getMessage())
+                ->withData([
+                    'response' => $result,
+                ]);
+        }
 
         if (!$parsedResult) {
             throw ProvisionFunctionError::create('Unknown Provider API Error')
@@ -109,14 +114,14 @@ class BDApi
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function checkMultipleDomains(array $domains)
+    public function checkMultipleDomains(array $domains): array
     {
         $promises = array_map(function ($domain) {
             return $this->asyncRequest('domain_availability', null, [
                 'domain' => $domain
             ])
                 ->then(function (array $result) {
-                    $canRegister = $result['message'] === 'Domain is available';
+                    $canRegister = isset($result['message']) && $result['message'] === 'Domain is available';
 
                     return DacDomain::create([
                         'domain' => $result['domain'],

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\BDReseller\Helper;
 
-use Carbon\Carbon;
+use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
@@ -181,12 +181,16 @@ class BDApi
             'admin' => null,
             'ns' => NameserversResult::create($this->parseNameservers($nameservers)),
             'created_at' => isset($response['activationDate'])
-                ? Carbon::createFromFormat('d/m/Y', $response['activationDate'])->startOfDay()->format('Y-m-d H:i:s')
+                ? DateTimeImmutable::createFromFormat('d/m/Y', $response['activationDate'])
+                    ->setTime(0, 0)
+                    ->format('Y-m-d H:i:s')
                 : null,
             'updated_at' => null,
             'expires_at' => isset($response['expiryDate'])
-                ? Carbon::createFromFormat('d/m/Y', $response['expiryDate'])->startOfDay()->format('Y-m-d H:i:s')
-                : null,
+                ? DateTimeImmutable::createFromFormat('d/m/Y', $response['expiryDate'])
+                    ->setTime(0, 0)
+                    ->format('Y-m-d H:i:s')
+                : null
         ];
     }
 
@@ -303,7 +307,6 @@ class BDApi
      */
     public function renew(string $domainName, int $period): void
     {
-
         $body = [
             'domain' => $domainName,
             'year' => $period,

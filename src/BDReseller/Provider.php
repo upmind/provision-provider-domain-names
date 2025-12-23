@@ -32,7 +32,6 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\BDReseller\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\BDReseller\Helper\BDApi;
-
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
@@ -64,7 +63,6 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function poll(PollParams $params): PollResult
@@ -191,8 +189,6 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
-     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
@@ -227,7 +223,6 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function setLock(LockParams $params): DomainResult
@@ -244,7 +239,6 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getEppCode(EppParams $params): EppCodeResult
@@ -346,5 +340,4 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $this->errorResult('Operation not supported', $params);
     }
-
 }

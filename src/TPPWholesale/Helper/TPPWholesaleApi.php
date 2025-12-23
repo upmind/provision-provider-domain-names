@@ -456,6 +456,66 @@ class TPPWholesaleApi
     }
 
     /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateAdministrationContact(string $domainName, ContactParams $contactParams): void
+    {
+        $contactId = $this->createContact($contactParams);
+
+        $params = [
+            'Type' => 'Domains',
+            'Object' => 'Domain',
+            'Action' => 'UpdateContacts',
+            'Domain' => $domainName,
+            'AdministrationContactID' => $contactId,
+        ];
+
+        $response = $this->makeRequest("/order.pl", $params);
+        $response->parseUpdateContactResponse();
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateTechnicalContact(string $domainName, ContactParams $contactParams): void
+    {
+        $contactId = $this->createContact($contactParams);
+
+        $params = [
+            'Type' => 'Domains',
+            'Object' => 'Domain',
+            'Action' => 'UpdateContacts',
+            'Domain' => $domainName,
+            'TechnicalContactID' => $contactId,
+        ];
+
+        $response = $this->makeRequest("/order.pl", $params);
+        $response->parseUpdateContactResponse();
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateBillingContact(string $domainName, ContactParams $contactParams): void
+    {
+        $contactId = $this->createContact($contactParams);
+
+        $params = [
+            'Type' => 'Domains',
+            'Object' => 'Domain',
+            'Action' => 'UpdateContacts',
+            'Domain' => $domainName,
+            'BillingContactID' => $contactId,
+        ];
+
+        $response = $this->makeRequest("/order.pl", $params);
+        $response->parseUpdateContactResponse();
+    }
+
+    /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(string $domainName, int $period): void

@@ -11,6 +11,7 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
 use Illuminate\Support\Arr;
@@ -24,6 +25,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -35,6 +37,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -436,12 +439,33 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
-     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT,
+        ]));
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
         $domainName = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
+
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
 
         $domainData = $this->_getDomainData($domainName);
 
@@ -451,10 +475,18 @@ class Provider extends DomainNames implements ProviderInterface
 
         $this->_callApi([
             'order-id' => $domainData['entityid'],
-            'reg-contact-id' => $contactId,
-            'admin-contact-id' => $domainData['admincontact']['contactid'] ?? -1,
-            'tech-contact-id' => $domainData['techcontact']['contactid'] ?? -1,
-            'billing-contact-id' => $domainData['billingcontact']['contactid'] ?? -1,
+            'reg-contact-id' => $contactType->equals(ContactType::REGISTRANT())
+                ? $contactId
+                : ($domainData['registrantcontact']['contactid'] ?? -1),
+            'admin-contact-id' => $contactType->equals(ContactType::ADMIN())
+                ? $contactId
+                : ($domainData['admincontact']['contactid'] ?? -1),
+            'tech-contact-id' => $contactType->equals(ContactType::TECH())
+                ? $contactId
+                : ($domainData['techcontact']['contactid'] ?? -1),
+            'billing-contact-id' => $contactType->equals(ContactType::BILLING())
+                ? $contactId
+                : ($domainData['billingcontact']['contactid'] ?? -1),
         ], 'domains/modify-contact.json', 'POST');
 
         return new ContactResult($this->_contactInfo($contactId));
@@ -499,7 +531,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function updateContact(UpdateDomainContactParams $params): ResultData
+    public function updateDomainContact(UpdateDomainContactParams $params): ResultData
     {
         $contactInfo = $this->_contactInfo(Arr::get($params, 'contact_id'));
 

@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -27,6 +28,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -37,6 +39,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -301,22 +304,42 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue()
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type:' . $params->contact_type);
+        }
+
         $domain = Utils::getDomain($params->sld, $params->tld);
 
-        $registrantContactId = $this->_createContact($params->contact, $this->_getDomainCustomerId($domain));
+        $contactId = $this->_createContact($params->contact, $this->_getDomainCustomerId($domain));
 
         $domainInfo = $this->_getDomain($domain);
 
         $this->_setContacts(
             $domain,
-            $registrantContactId,
-            $domainInfo->billing->id,
-            $domainInfo->tech->id,
-            $domainInfo->admin->id
+            $contactType->equals(ContactType::REGISTRANT()) ? $contactId : $domainInfo->registrant->id,
+            $contactType->equals(ContactType::BILLING()) ? $contactId : $domainInfo->billing->id,
+            $contactType->equals(ContactType::TECH()) ? $contactId : $domainInfo->tech->id,
+            $contactType->equals(ContactType::ADMIN()) ? $contactId : $domainInfo->admin->id,
         );
 
-        return ContactResult::create($this->_getContactData($registrantContactId)->toArray())
-            ->setMessage('Registrant contact updated');
+        return ContactResult::create($this->_getContactData($contactId)->toArray())
+            ->setMessage(ucfirst($contactType->getValue()) . ' contact updated');
     }
 
     /**

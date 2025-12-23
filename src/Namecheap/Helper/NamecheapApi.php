@@ -14,6 +14,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\Namecheap\Data\NamecheapConfiguration;
@@ -256,6 +257,70 @@ class NamecheapApi
         $registrant = $this->getContacts($domainName)->Registrant;
 
         return $this->parseContact($registrant, self::CONTACT_TYPE_REGISTRANT);
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \InvalidArgumentException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \RuntimeException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(
+        string $domainName,
+        ContactParams $contactParams,
+        ContactType $contactType
+    ): ContactData {
+        $currentContacts = $this->getContacts($domainName);
+
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $registrantParams = $this->setContactParams($contactParams, self::CONTACT_TYPE_REGISTRANT);
+                $techParams = $this->setXMLContactParams($currentContacts->Tech, self::CONTACT_TYPE_TECH);
+                $adminParams = $this->setXMLContactParams($currentContacts->Admin, self::CONTACT_TYPE_ADMIN);
+                $auxBillingParams = $this->setXMLContactParams($currentContacts->AuxBilling, self::CONTACT_TYPE_BILLING);
+
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $registrantParams = $this->setXMLContactParams($currentContacts->Registrant, self::CONTACT_TYPE_REGISTRANT);
+                $techParams = $this->setContactParams($contactParams, self::CONTACT_TYPE_TECH);
+                $adminParams = $this->setXMLContactParams($currentContacts->Admin, self::CONTACT_TYPE_ADMIN);
+                $auxBillingParams = $this->setXMLContactParams($currentContacts->AuxBilling, self::CONTACT_TYPE_BILLING);
+
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $registrantParams = $this->setXMLContactParams($currentContacts->Registrant, self::CONTACT_TYPE_REGISTRANT);
+                $techParams = $this->setXMLContactParams($currentContacts->Tech, self::CONTACT_TYPE_TECH);
+                $adminParams = $this->setContactParams($contactParams, self::CONTACT_TYPE_ADMIN);
+                $auxBillingParams = $this->setXMLContactParams($currentContacts->AuxBilling, self::CONTACT_TYPE_BILLING);
+
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $registrantParams = $this->setXMLContactParams($currentContacts->Registrant, self::CONTACT_TYPE_REGISTRANT);
+                $techParams = $this->setXMLContactParams($currentContacts->Tech, self::CONTACT_TYPE_TECH);
+                $adminParams = $this->setXMLContactParams($currentContacts->Admin, self::CONTACT_TYPE_ADMIN);
+                $auxBillingParams = $this->setContactParams($contactParams, self::CONTACT_TYPE_BILLING);
+
+                break;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
+
+        $params = [
+            'command' => 'namecheap.domains.setContacts',
+            'DomainName' => $domainName,
+        ];
+
+        $params = array_merge($params, $registrantParams, $techParams, $adminParams, $auxBillingParams);
+
+        $this->makeRequest($params);
+
+        $namecheapContactType = $this->getProviderContactTypeValue($contactType);
+
+        // Will match the XML element name
+        $contact = $this->getContacts($domainName)->$namecheapContactType;
+
+        return $this->parseContact($contact, $namecheapContactType);
     }
 
     /**
@@ -640,5 +705,24 @@ class NamecheapApi
             $type . 'EmailAddress' => $contactParams->email,
             $type . 'Phone' => Utils::internationalPhoneToEpp($contactParams->phone),
         ];
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return self::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

@@ -16,6 +16,7 @@ use GuzzleHttp\Client;
 use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Helper\Network;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Data\Configuration;
@@ -258,15 +259,42 @@ class NetistrarApi
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
-    public function updateRegistrantContact(string $domainName, UpdateDomainContactParams $params): array
-    {
+    public function updateContact(
+        string $domainName,
+        string $tld,
+        ContactParams $contact,
+        ContactType $contactType
+    ): array {
         $data = [
             'domainNames' => [$domainName],
-            'ownerContact' => $this->transformContactToNetistrarContact(
-                $params->contact,
-                NetistrarUtils::isUkTld($params->tld)
-            )
+            'ownerContact' => null, // Default to null as mandatory field. If null, it will not be updated.
         ];
+
+        $netistrarContact = $this->transformContactToNetistrarContact(
+            $contact,
+            NetistrarUtils::isUkTld($tld)
+        );
+
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $data['ownerContact'] = $netistrarContact;
+
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $data['adminContact'] = $netistrarContact;
+
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $data['billingContact'] = $netistrarContact;
+
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $data['technicalContact'] = $netistrarContact;
+
+                break;
+            default:
+                $this->errorResult('Invalid contact type: ' . $contactType->getValue());
+        }
 
         return $this->updateDomain($data);
     }

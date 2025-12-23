@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Throwable;
 use SoapClient;
 use SoapFault;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -21,6 +22,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -32,6 +34,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -137,7 +140,7 @@ class Provider extends DomainNames implements ProviderInterface
             );
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -169,7 +172,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult(sprintf('Transfer for %s domain successfully created!', $domainName), [
                 'transaction_id' => null
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -182,7 +185,7 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $this->api()->renew($domainName, $period);
             return $this->_getInfo($domainName, sprintf('Renewal for %s domain was successful!', $domainName));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -193,7 +196,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             return $this->_getInfo($domainName, 'Domain data obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -205,15 +208,50 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
+    {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            $contact = $this->api()->updateRegistrantContact($domainName, $params->contact);
+            $contactType = ContactType::from($params->contact_type);
+
+            switch ($contactType) {
+                case $contactType->equals(ContactType::REGISTRANT()):
+                    $contact = $this->api()->updateRegistrantContact($domainName, $params->contact);
+                    break;
+                case $contactType->equals(ContactType::ADMIN()):
+                case $contactType->equals(ContactType::TECH()):
+                case $contactType->equals(ContactType::BILLING()):
+                    $contact = $this->api()->updateContact($domainName, $params->contact, $contactType);
+                    break;
+                default:
+                    // Should not happen as we use Enum::from above
+                    $this->errorResult('Invalid contact type: ' . $params->contact_type);
+            }
 
             return ContactResult::create($contact);
-        } catch (\Throwable $e) {
+        } catch (UnexpectedValueException $ex) {
+            // Where ContactType::from fails
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -230,7 +268,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return NameserversResult::create($result)
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domainName));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -253,7 +291,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->setRegistrarLock($domainName, $lock);
 
             return $this->_getInfo($domainName, sprintf("Lock %s!", $lock ? 'enabled' : 'disabled'));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -268,7 +306,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->setRenewalMode($domainName, $autoRenew);
 
             return $this->_getInfo($domainName, 'Auto-renew mode updated');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -283,7 +321,7 @@ class Provider extends DomainNames implements ProviderInterface
             return EppCodeResult::create([
                 'epp_code' => $eppCode,
             ])->setMessage('EPP/Auth code obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -294,7 +332,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
@@ -310,7 +348,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult

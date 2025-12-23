@@ -48,7 +48,7 @@ class Provider extends DomainNames implements ProviderInterface
 {
     protected Configuration $configuration;
 
-    protected BDApi|null $api = null;
+    protected ?BDApi $api = null;
 
     public function __construct(Configuration $configuration)
     {

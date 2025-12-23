@@ -105,10 +105,6 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Renew years must be between 2 and 10.');
         }
 
-        if ($params->nameservers) {
-            $this->errorResult('At least two nameservers are required.');
-        }
-
         $hosts = array_filter($params->nameservers->pluckHosts());
 
         if (count($hosts) < 2) {

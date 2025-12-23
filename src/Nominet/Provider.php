@@ -694,6 +694,10 @@ class Provider extends DomainNames implements ProviderInterface
         // - Admin, Tech, Billing contacts are Added (you can have multiple contacts, don't forget to remove the old ones)
         // - Nameservers are Added (you can have multiple nameservers, don't forget to remove the old ones)
 
+        // Placeholders, they will be set if required, prevent static analysis noise.
+        $response = null;
+        $contacts = null;
+
         $removeInfo = null;
         $addInfo = null;
         $updateInfo = null;
@@ -711,11 +715,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         // If new nameservers are given, get the old ones to remove them
         if (isset($nameservers)) {
-            /**
-             * Should exist at this stage as it's already checked and generated.
-             *
-             * @var \Metaregistrar\EPP\eppInfoDomainResponse $response
-             */
+            // $response should exist at this stage as it's already checked and generated.
             $oldNameservers = $response->getDomainNameservers();
 
             if ($oldNameservers) {
@@ -734,12 +734,7 @@ class Provider extends DomainNames implements ProviderInterface
             $addInfo ?? new eppDomain($domainName);
             $addInfo->addContact(new eppContactHandle($adminId, 'admin'));
 
-            /**
-             * This is already set at this stage.
-             * Remove the existing admin contacts if any
-             *
-             * @var \Metaregistrar\EPP\eppContactHandle[] $contacts
-             */
+            // $contacts should exist at this stage as it's already checked and generated.
             foreach ($contacts as $contact) {
                 if ($contact->getContactType() !== 'admin') {
                     continue;
@@ -755,12 +750,7 @@ class Provider extends DomainNames implements ProviderInterface
             $addInfo ?? new eppDomain($domainName);
             $addInfo->addContact(new eppContactHandle($adminId, 'tech'));
 
-            /**
-             * This is already set at this stage.
-             * Remove the existing tech contacts if any
-             *
-             * @var \Metaregistrar\EPP\eppContactHandle[] $contacts
-             */
+            // $response should exist at this stage as it's already checked and generated.
             foreach ($contacts as $contact) {
                 if ($contact->getContactType() !== 'tech') {
                     continue;
@@ -776,12 +766,7 @@ class Provider extends DomainNames implements ProviderInterface
             $addInfo ?? new eppDomain($domainName);
             $addInfo->addContact(new eppContactHandle($adminId, 'billing'));
 
-            /**
-             * This is already set at this stage.
-             * Remove the existing billing contacts if any
-             *
-             * @var \Metaregistrar\EPP\eppContactHandle[] $contacts
-             */
+            // $response should exist at this stage as it's already checked and generated.
             foreach ($contacts as $contact) {
                 if ($contact->getContactType() !== 'billing') {
                     continue;

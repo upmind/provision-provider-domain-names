@@ -93,8 +93,8 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
-     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
@@ -142,8 +142,6 @@ class Provider extends DomainNames implements ProviderInterface
 
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
-     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
@@ -210,8 +208,14 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
+        $hosts = array_filter($params->pluckHosts());
+
+        if (count($hosts) < 2) {
+            $this->errorResult('At least two nameservers are required.');
+        }
+
         try {
-            $this->api()->updateNameservers($domainName, $params->pluckHosts());
+            $this->api()->updateNameservers($domainName, $hosts);
         } catch (Throwable $e) {
             $this->handleException($e);
         }

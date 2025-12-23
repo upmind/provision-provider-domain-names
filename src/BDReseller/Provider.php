@@ -102,25 +102,37 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Registrant details are required.');
         }
 
-        $domainName = Utils::getDomain($params->sld, $params->tld);
+        if ($params->renew_years < 2 || $params->renew_years > 10) {
+            $this->errorResult('Renew years must be between 2 and 10.');
+        }
 
-        $checkResult = $this->api()->checkMultipleDomains([$domainName]);
+        if ($params->nameservers) {
+            $this->errorResult('At least two nameservers are required.');
+        }
 
-        if (count($checkResult) < 1) {
+        $hosts = array_filter($params->nameservers->pluckHosts());
+
+        if (count($hosts) < 2) {
+            $this->errorResult('At least two nameservers are required.');
+        }
+
+        $checkResult = $this->domainAvailabilityCheck(DacParams::create([
+            'sld' => $params->sld,
+            'tlds' => [$params->tld],
+        ]));
+
+        if (count($checkResult->domains) < 1) {
             $this->errorResult('Empty domain availability check result');
         }
 
-        if (!$checkResult[0]->can_register) {
-            $this->errorResult($checkResult[0]->description);
+        if (!$checkResult->domains[0]->can_register) {
+            $this->errorResult($checkResult->domains[0]->description);
         }
 
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
         try {
-            $this->api()->register(
-                $domainName,
-                intval($params->renew_years),
-                $params->registrant->register,
-                $params->nameservers->pluckHosts(),
-            );
+            $this->api()->register($domainName, (int) $params->renew_years, $params->registrant->register, $hosts);
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
         } catch (Throwable $e) {
@@ -148,7 +160,7 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            $this->api()->renew($domainName, intval($params->renew_years));
+            $this->api()->renew($domainName, (int) $params->renew_years);
             return $this->_getInfo($domainName, sprintf('Renewal for %s domain was successful!', $domainName));
         } catch (Throwable $e) {
             $this->handleException($e);

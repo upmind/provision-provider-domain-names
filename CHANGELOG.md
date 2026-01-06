@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.24.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.24.0) - 2026-01-06
+
+- Implement BDReseller provider
+
 ## [v2.23.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.23.0) - 2025-12-16
 
 - Add getStatus() function

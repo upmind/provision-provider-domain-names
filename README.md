@@ -66,6 +66,7 @@ The following providers are currently implemented:
   - [Synergy Wholesale](https://synergywholesale.com/wp-content/uploads/2024/06/Synergy-Wholesale-API-Documentation-v3-11.pdf)
   - [Netim](https://support.netim.com/en/docs/api-rest-1-0/get-started)
   - [Moniker](https://support.moniker.com/hc/en-gb/articles/24954146333981-Self-Development-Kit-for-PHP)
+  - [BDReseller](https://bdreseller.com)
 
 ## Functions
 

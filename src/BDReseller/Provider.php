@@ -194,6 +194,9 @@ class Provider extends DomainNames implements ProviderInterface
         $this->errorResult('Operation not supported');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
         $this->errorResult('Operation not supported');

@@ -835,7 +835,7 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create([
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
-            'statuses' => $response->getDomainStatuses() ?? [], // Not in standard response
+            'statuses' => $this->statusesToStrings($response->getDomainStatuses() ?? []),
             'registrant' => [
                 'id' => $response->getDomainRegistrant(),
                 'name' => $contact->getContactName(),
@@ -890,6 +890,22 @@ class Provider extends DomainNames implements ProviderInterface
                 ?? $this->formatDate($response->getDomainCreateDate()),
             'expires_at' => $this->formatDate($response->getDomainExpirationDate()),
         ])->setMessage($msg);
+    }
+
+    /**
+     * @param string[]|\Metaregistrar\EPP\eppStatus[] $statuses
+     *
+     * @return string[]
+     */
+    protected function statusesToStrings(array $statuses): array
+    {
+        return array_map(function ($status) {
+            if ($status instanceof \Metaregistrar\EPP\eppStatus) {
+                return $status->getStatusname();
+            }
+
+            return (string)$status;
+        }, $statuses);
     }
 
     protected function _contactInfo(string $contactID): NominetEppInfoContactResponse

@@ -180,7 +180,7 @@ class EppHelper
         $techId = $response->getDomainContact(eppContactHandle::CONTACT_TYPE_TECH);
         $adminId = $response->getDomainContact(eppContactHandle::CONTACT_TYPE_ADMIN);
 
-        $statuses = $response->getDomainStatuses() ?? [];
+        $statuses = $this->statusesToStrings($response->getDomainStatuses() ?? []);
 
         if ($response->getQuarantined()) {
             $statuses[] = 'quarantined';
@@ -202,7 +202,7 @@ class EppHelper
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
             'statuses' => $statuses,
-            'locked' => boolval(array_intersect($this->lockedStatuses, $response->getDomainStatuses() ?? [])),
+            'locked' => boolval(array_intersect($this->lockedStatuses, $this->statusesToStrings($response->getDomainStatuses() ?? []))),
             'registrant' => $registrantId ? $this->getContactInfo($registrantId) : null,
             'billing' => $billingId ? $this->getContactInfo($billingId) : null,
             'tech' => $techId ? $this->getContactInfo($techId) : null,
@@ -212,6 +212,22 @@ class EppHelper
             'updated_at' => Utils::formatDate($response->getDomainUpdateDate() ?: $response->getDomainCreateDate()),
             'expires_at' => Utils::formatDate($response->getDomainExpirationDate()),
         ];
+    }
+
+    /**
+     * @param string[]|\Metaregistrar\EPP\eppStatus[] $statuses
+     *
+     * @return string[]
+     */
+    protected function statusesToStrings(array $statuses): array
+    {
+        return array_map(function ($status) {
+            if ($status instanceof \Metaregistrar\EPP\eppStatus) {
+                return $status->getStatusname();
+            }
+
+            return (string)$status;
+        }, $statuses);
     }
 
     /**

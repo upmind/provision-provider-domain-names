@@ -82,6 +82,11 @@ class EppHelper
         ]
     ];
 
+    protected static array $lockedStatuses = [
+        'clientTransferProhibited',
+        'clientUpdateProhibited',
+    ];
+
     /**
      * Authenticate and establish a connection with the Domain Provider API and login.
      *
@@ -220,7 +225,8 @@ class EppHelper
         return [
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
-            'statuses' => $response->getDomainStatuses() ?? [],
+            'statuses' => static::statusesToStrings($response->getDomainStatuses() ?? []),
+            'locked' => boolval(array_intersect(static::$lockedStatuses, static::statusesToStrings($response->getDomainStatuses() ?? []))),
             'registrant' => $registrantId ? self::getContactInfo($connection, $registrantId) : null,
             // 'adminContactId' => $response->getDomainContact(eppContactHandle::CONTACT_TYPE_ADMIN),
             // 'billingContactId' => $response->getDomainContact(eppContactHandle::CONTACT_TYPE_BILLING),
@@ -230,6 +236,22 @@ class EppHelper
             'updated_at' => Utils::formatDate($updatedAt ?: $response->getDomainCreateDate()),
             'expires_at' => Utils::formatDate($response->getDomainExpirationDate())
         ];
+    }
+
+    /**
+     * @param string[]|\Metaregistrar\EPP\eppStatus[] $statuses
+     *
+     * @return string[]
+     */
+    protected static function statusesToStrings(array $statuses): array
+    {
+        return array_map(function ($status) {
+            if ($status instanceof \Metaregistrar\EPP\eppStatus) {
+                return $status->getStatusname();
+            }
+
+            return (string)$status;
+        }, $statuses);
     }
 
     /**

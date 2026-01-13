@@ -491,13 +491,10 @@ class SynergyWholesaleApi
                 continue;
             }
 
-            $contactData = $this->setContactData($contact, $type);
-
-            $contacts[$type] = $contactData;
+            $params = array_merge($params, $this->setContactData($contact, $type));
         }
 
         // Set the different contact types in the params, filtering out empty contacts.
-        $params = array_merge($params, array_values(array_filter($contacts)));
         $params = array_merge($params, $this->setContactParams(
             $contactParams,
             $this->getProviderContactTypeValue($contactType)

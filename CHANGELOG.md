@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.65](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.65) - 2026-01-16
+
+- Add `extra` to StatusResult
+- Implement OpenSRS getStatus() function
+
 ## [v2.12.64](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.64) - 2026-01-16
 
 - Fix errant whitespace in UpdateContactParams.contact_type `in:` rule

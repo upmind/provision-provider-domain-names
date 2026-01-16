@@ -118,6 +118,7 @@ class Provider extends DomainNames implements ProviderInterface
         $available = false;
         $isPremium = false;
         $description = 'Domain availability unknown';
+        $checkedStandard = false;
 
         // Try standard domain availability check first
         try {
@@ -130,13 +131,13 @@ class Provider extends DomainNames implements ProviderInterface
             if (isset($response['status'])) {
                 $available = strtolower($response['status']) === 'available';
                 $description = $available ? 'Domain is available' : 'Domain is not available';
+                $checkedStandard = true;
             }
         } catch (Throwable $e) {
             // If standard check fails, continue to other checks
-            $description = 'Standard check failed: ' . $e->getMessage();
         }
 
-        // Check if it's an IDN domain
+        // Check if it's an IDN domain - this might override the standard check
         if ($this->isIdnDomain($domain)) {
             try {
                 $response = $this->_callApi(
@@ -148,13 +149,14 @@ class Provider extends DomainNames implements ProviderInterface
                 if (isset($response['status'])) {
                     $available = strtolower($response['status']) === 'available';
                     $description = $available ? 'IDN domain is available' : 'IDN domain is not available';
+                    $checkedStandard = true;
                 }
             } catch (Throwable $e) {
-                // IDN check failed, use standard result
+                // IDN check failed, use standard result if available
             }
         }
 
-        // Check for premium domains
+        // Check for premium domains - this takes precedence if successful
         try {
             $response = $this->_callApi(
                 ['domain-name' => $domain],
@@ -165,15 +167,19 @@ class Provider extends DomainNames implements ProviderInterface
             if (isset($response['status'])) {
                 $premiumAvailable = strtolower($response['status']) === 'available';
 
-                // If we get a successful premium check response, mark as premium
-                if ($premiumAvailable || isset($response['ispremium'])) {
-                    $isPremium = true;
-                    $available = $premiumAvailable;
-                    $description = $available ? 'Premium domain is available' : 'Premium domain is not available';
-                }
+                // Mark as premium and use premium availability status
+                $isPremium = true;
+                $available = $premiumAvailable;
+                $description = $available ? 'Premium domain is available' : 'Premium domain is not available';
             }
         } catch (Throwable $e) {
             // Not a premium domain or premium check not supported for this TLD
+            // Use the standard/IDN result
+        }
+
+        // If no check succeeded, provide a meaningful error
+        if (!$checkedStandard && !$isPremium) {
+            $description = 'Unable to check domain availability';
         }
 
         return DacDomain::create()

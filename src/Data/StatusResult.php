@@ -14,6 +14,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string $status Normalized domain status
  * @property-read string|null $expires_at Expiry date in format Y-m-d H:i:s
  * @property-read string[]|null $raw_statuses Raw status strings from provider
+ * @property-read array|null $extra Extra data
  */
 class StatusResult extends ResultData
 {
@@ -30,6 +31,7 @@ class StatusResult extends ResultData
             'expires_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'raw_statuses' => ['nullable', 'array'],
             'raw_statuses.*' => ['string'],
+            'extra' => ['nullable', 'array'],
         ]);
     }
 
@@ -59,6 +61,17 @@ class StatusResult extends ResultData
     public function setRawStatuses(?array $rawStatuses): self
     {
         $this->setValue('raw_statuses', $rawStatuses);
+        return $this;
+    }
+
+    /**
+     * @param array|null $extra
+     *
+     * @return static $this
+     */
+    public function setExtra(?array $extra): self
+    {
+        $this->setValue('extra', $extra);
         return $this;
     }
 }

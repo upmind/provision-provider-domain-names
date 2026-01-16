@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\OpenSRS;
 
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\TransferException;
@@ -538,10 +539,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ]
             ]);
         } catch (ProvisionFunctionError $e) {
-            if (
-                Str::contains($e->getMessage(), 'Authentication Error')
-                && !Str::contains($e->getMessage(), 'Registrar API Authentication Error')
-            ) {
+            if (Str::contains($e->getMessage(), 'Registrant (end-user) authentication error')) {
                 // this actually means domain not found
                 $this->errorResult('Domain name not found', $e->getData(), $e->getDebug(), $e);
             }
@@ -1076,10 +1074,77 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $domainName = Utils::getDomain(Arr::get($params, 'sld'), Arr::get($params, 'tld'));
+
+        try {
+            $domainRaw = $this->api()->makeRequest([
+                'action' => 'GET',
+                'object' => 'DOMAIN',
+                'protocol' => 'XCP',
+                'attributes' => [
+                    'domain' => $domainName,
+                    'type' => 'all_info',
+                    'clean_ca_subset' => 1,
+                    // 'active_contacts_only' => 1
+                ]
+            ]);
+
+            $expiryDate = CarbonImmutable::parse($domainRaw['attributes']['expiredate']);
+
+            if ($expiryDate->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiryDate);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiryDate);
+        } catch (ProvisionFunctionError $e) {
+            $result = $this->api()->makeRequest([
+                'action' => 'GET_DELETED_DOMAINS',
+                'object' => 'DOMAIN',
+                'protocol' => 'XCP',
+                'attributes' => [
+                    'domain' => $domainName,
+                ]
+            ]);
+
+            $deletedDomain = $result['attributes']['del_domains'][0] ?? null;
+
+            if (isset($deletedDomain)) {
+                switch ($deletedDomain['reason']) {
+                    case 'Transfered':
+                        return StatusResult::create()
+                            ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                            ->setExpiresAt(null)
+                            ->setExtra([
+                                'delete_info' => $deletedDomain,
+                            ]);
+                    case 'Expired':
+                        return StatusResult::create()
+                            ->setStatus(StatusResult::STATUS_EXPIRED)
+                            ->setExpiresAt(Carbon::createFromTimeString($deletedDomain['expiredate_epoch']))
+                            ->setExtra([
+                                'delete_info' => $deletedDomain,
+                            ]);
+                    default:
+                        return StatusResult::create()
+                            ->setStatus(StatusResult::STATUS_CANCELLED)
+                            ->setExpiresAt(null)
+                            ->setExtra([
+                                'delete_info' => $deletedDomain,
+                            ]);
+                }
+            }
+
+            if (Str::contains($e->getMessage(), 'Registrant (end-user) authentication error')) {
+                // this actually means domain not found
+                $this->errorResult('Domain name not found', $e->getData(), $e->getDebug(), $e);
+            }
+
+            throw $e;
+        }
     }
 
     /**

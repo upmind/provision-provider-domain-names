@@ -42,61 +42,48 @@ class Provider extends LogicBoxesProvider
             $domains[] = $sld . '.' . Utils::normalizeTld($tld);
         }
 
+        // Call the API to check availability for all domains at once
+        $response = $this->_callApi(
+            ['domain-name' => $domains],
+            'domains/available.json',
+            'GET'
+        );
+
         $dacDomains = [];
 
-        // Check each domain
+        // Parse response for each domain
         foreach ($domains as $domain) {
             $parts = explode('.', $domain, 2);
             $tld = $parts[1] ?? '';
 
-            try {
-                // Call the API to check domain availability
-                $response = $this->_callApi(
-                    ['domain-name' => [$domain]],
-                    'domains/available.json',
-                    'GET'
-                );
+            $isAvailable = false;
+            $description = 'Unknown';
 
-                // Parse the response
-                $isAvailable = false;
-                $description = 'Unknown';
-
-                if (isset($response[$domain])) {
-                    $status = strtolower($response[$domain]['status'] ?? '');
-                    
-                    if ($status === 'available') {
-                        $isAvailable = true;
-                        $description = 'Domain is available for registration';
-                    } elseif ($status === 'regthroughus') {
-                        $isAvailable = false;
-                        $description = 'Domain is registered through this registrar';
-                    } elseif ($status === 'regthroughothers') {
-                        $isAvailable = false;
-                        $description = 'Domain is registered through another registrar';
-                    } else {
-                        $description = ucfirst($status);
-                    }
+            if (isset($response[$domain])) {
+                $status = strtolower($response[$domain]['status'] ?? '');
+                
+                if ($status === 'available') {
+                    $isAvailable = true;
+                    $description = 'Domain is available for registration';
+                } elseif ($status === 'regthroughus') {
+                    $isAvailable = false;
+                    $description = 'Domain is registered through this registrar';
+                } elseif ($status === 'regthroughothers') {
+                    $isAvailable = false;
+                    $description = 'Domain is registered through another registrar';
+                } else {
+                    $description = ucfirst($status);
                 }
-
-                $dacDomains[] = DacDomain::create([
-                    'domain' => $domain,
-                    'tld' => $tld,
-                    'can_register' => $isAvailable,
-                    'can_transfer' => !$isAvailable,
-                    'is_premium' => false,
-                    'description' => $description,
-                ]);
-            } catch (\Throwable $e) {
-                // If there's an error checking this domain, add it with error status
-                $dacDomains[] = DacDomain::create([
-                    'domain' => $domain,
-                    'tld' => $tld,
-                    'can_register' => false,
-                    'can_transfer' => false,
-                    'is_premium' => false,
-                    'description' => 'Error checking availability: ' . $e->getMessage(),
-                ]);
             }
+
+            $dacDomains[] = DacDomain::create([
+                'domain' => $domain,
+                'tld' => $tld,
+                'can_register' => $isAvailable,
+                'can_transfer' => !$isAvailable,
+                'is_premium' => false,
+                'description' => $description,
+            ]);
         }
 
         return DacResult::create([

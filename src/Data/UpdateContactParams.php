@@ -24,7 +24,7 @@ class UpdateContactParams extends DataSet
             'sld' => ['required', 'alpha-dash'],
             'tld' => ['required', 'alpha-dash-dot'],
             'contact' => ['required', ContactParams::class],
-            'contact_type' => ['required', 'string', 'in: ' . ContactType::stringifyValues()],
+            'contact_type' => ['required', 'string', 'in:' . ContactType::stringifyValues()],
         ]);
     }
 

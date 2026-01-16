@@ -369,12 +369,22 @@ class OpenSrsApi
             static::errorResult('Registrar API Response Error', ['response' => $result, 'data' => $data]);
         }
 
+        $data['response_code'] = (int)($data['response_code'] ?? 0);
+
         if ((int)$data['is_success'] === 0 && !in_array($data['response_code'], [200, 212])) {
             $providerMessage = $data['response_text'] ?? 'Empty response from provider';
             $errorMessage = 'Registrar API Error: ' . $providerMessage;
 
-            if ($data['response_code'] == 400) {
+            if ($data['response_code'] === 400) {
                 $errorMessage = 'Registrar API Authentication Error';
+            }
+
+            if ($data['response_code'] === 401) {
+                $errorMessage = 'Registrar API Invalid Credentials';
+            }
+
+            if ($data['response_code'] === 415) {
+                $errorMessage = 'Registrar API Registrant (end-user) authentication error';
             }
 
             static::errorResult($errorMessage, $data);

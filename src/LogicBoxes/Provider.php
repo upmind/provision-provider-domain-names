@@ -21,6 +21,7 @@ use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
@@ -87,10 +88,110 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
-        $this->errorResult('Operation not supported');
+        $sld = Utils::normalizeSld($params->sld);
+        $domains = [];
+
+        foreach ($params->tlds as $tld) {
+            $tld = Utils::normalizeTld($tld);
+            $domain = Utils::getDomain($sld, $tld);
+
+            // Collect all domain checks
+            $domains[] = $this->checkDomainAvailability($domain, $tld);
+        }
+
+        return DacResult::create([
+            'domains' => $domains,
+        ])->setMessage('Domain availability results');
+    }
+
+    /**
+     * Check availability for a single domain across standard, IDN, and premium endpoints
+     *
+     * @throws \Throwable
+     */
+    protected function checkDomainAvailability(string $domain, string $tld): DacDomain
+    {
+        $available = false;
+        $isPremium = false;
+        $description = 'Domain availability unknown';
+
+        // Try standard domain availability check first
+        try {
+            $response = $this->_callApi(
+                ['domain-name' => $domain],
+                'domains/available.json',
+                'GET'
+            );
+
+            if (isset($response['status'])) {
+                $available = strtolower($response['status']) === 'available';
+                $description = $available ? 'Domain is available' : 'Domain is not available';
+            }
+        } catch (Throwable $e) {
+            // If standard check fails, continue to other checks
+            $description = 'Standard check failed: ' . $e->getMessage();
+        }
+
+        // Check if it's an IDN domain
+        if ($this->isIdnDomain($domain)) {
+            try {
+                $response = $this->_callApi(
+                    ['domain-name' => $domain],
+                    'domains/idn-available.json',
+                    'GET'
+                );
+
+                if (isset($response['status'])) {
+                    $available = strtolower($response['status']) === 'available';
+                    $description = $available ? 'IDN domain is available' : 'IDN domain is not available';
+                }
+            } catch (Throwable $e) {
+                // IDN check failed, use standard result
+            }
+        }
+
+        // Check for premium domains
+        try {
+            $response = $this->_callApi(
+                ['domain-name' => $domain],
+                sprintf('domains/premium/%s/available.json', $tld),
+                'GET'
+            );
+
+            if (isset($response['status'])) {
+                $premiumAvailable = strtolower($response['status']) === 'available';
+
+                // If we get a successful premium check response, mark as premium
+                if ($premiumAvailable || isset($response['ispremium'])) {
+                    $isPremium = true;
+                    $available = $premiumAvailable;
+                    $description = $available ? 'Premium domain is available' : 'Premium domain is not available';
+                }
+            }
+        } catch (Throwable $e) {
+            // Not a premium domain or premium check not supported for this TLD
+        }
+
+        return DacDomain::create()
+            ->setDomain($domain)
+            ->setTld($tld)
+            ->setCanRegister($available)
+            ->setCanTransfer(!$available) // If not available, it might be transferrable
+            ->setIsPremium($isPremium)
+            ->setDescription($description);
+    }
+
+    /**
+     * Check if a domain name contains IDN (Internationalized Domain Name) characters
+     */
+    protected function isIdnDomain(string $domain): bool
+    {
+        // Check if domain contains non-ASCII characters
+        return !mb_detect_encoding($domain, 'ASCII', true);
     }
 
     /**
@@ -961,6 +1062,7 @@ class Provider extends DomainNames implements ProviderInterface
                                 ['response_body' => $body],
                                 $e
                             );
+                            // no break
                         default:
                             $this->errorResult(
                                 sprintf('Unexpected provider API error: %s', $matches[1]),

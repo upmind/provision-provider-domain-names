@@ -197,7 +197,8 @@ class Provider extends DomainNames implements ProviderInterface
     protected function isIdnDomain(string $domain): bool
     {
         // Check if domain contains non-ASCII characters
-        return !mb_detect_encoding($domain, 'ASCII', true);
+        // mb_detect_encoding returns false if the string cannot be encoded in ASCII
+        return mb_detect_encoding($domain, 'ASCII', true) === false;
     }
 
     /**

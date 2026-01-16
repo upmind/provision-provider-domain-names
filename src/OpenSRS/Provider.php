@@ -1117,15 +1117,24 @@ class Provider extends DomainNames implements ProviderInterface
                     case 'Transfered':
                         return StatusResult::create()
                             ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
-                            ->setExpiresAt(null);
+                            ->setExpiresAt(null)
+                            ->setExtra([
+                                'delete_info' => $deletedDomain,
+                            ]);
                     case 'Expired':
                         return StatusResult::create()
                             ->setStatus(StatusResult::STATUS_EXPIRED)
-                            ->setExpiresAt(Carbon::createFromTimeString($deletedDomain['expiredate_epoch']));
+                            ->setExpiresAt(Carbon::createFromTimeString($deletedDomain['expiredate_epoch']))
+                            ->setExtra([
+                                'delete_info' => $deletedDomain,
+                            ]);
                     default:
                         return StatusResult::create()
                             ->setStatus(StatusResult::STATUS_CANCELLED)
-                            ->setExpiresAt(null);
+                            ->setExpiresAt(null)
+                            ->setExtra([
+                                'delete_info' => $deletedDomain,
+                            ]);
                 }
             }
 

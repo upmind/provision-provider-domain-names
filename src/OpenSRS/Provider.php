@@ -538,10 +538,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ]
             ]);
         } catch (ProvisionFunctionError $e) {
-            if (
-                Str::contains($e->getMessage(), 'Authentication Error')
-                && !Str::contains($e->getMessage(), 'Registrar API Authentication Error')
-            ) {
+            if (Str::contains($e->getMessage(), 'Registrant (end-user) authentication error')) {
                 // this actually means domain not found
                 $this->errorResult('Domain name not found', $e->getData(), $e->getDebug(), $e);
             }

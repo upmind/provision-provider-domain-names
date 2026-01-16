@@ -15,6 +15,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
@@ -150,16 +151,16 @@ class SynergyWholesaleApi
                 ->values()
                 ->toArray(),
             'locked' => $response['domain_status'] == 'clientTransferProhibited',
-            'registrant' => isset($response['contacts']['registrant'])
+            ContactType::REGISTRANT => isset($response['contacts']['registrant'])
                 ? $this->parseContact($response['contacts']['registrant'])
                 : null,
-            'billing' => isset($response['contacts']['billing'])
+            ContactType::BILLING => isset($response['contacts']['billing'])
                 ? $this->parseContact($response['contacts']['billing'])
                 : null,
-            'tech' => isset($response['contacts']['tech'])
+            ContactType::TECH => isset($response['contacts']['tech'])
                 ? $this->parseContact($response['contacts']['tech'])
                 : null,
-            'admin' => isset($response['contacts']['admin'])
+            ContactType::ADMIN => isset($response['contacts']['admin'])
                 ? $this->parseContact($response['contacts']['admin'])
                 : null,
             'ns' => NameserversResult::create($this->parseNameservers($response['nameServers'])),
@@ -460,6 +461,50 @@ class SynergyWholesaleApi
         return $this->getDomainInfo($domainName)['registrant'];
     }
 
+    public function updateContact(
+        string $domainName,
+        ContactParams $contactParams,
+        ContactType $contactType
+    ): ContactData {
+        $command = 'updateContact';
+
+        $params = [
+            'domainName' => $domainName,
+            "appPurpose" => "",
+            "nexusCategory" => "",
+        ];
+
+        $info = $this->getDomainInfo($domainName);
+
+        $contacts = [
+            self::CONTACT_TYPE_REGISTRANT => $info[ContactType::REGISTRANT],
+            self::CONTACT_TYPE_ADMIN => $info[ContactType::ADMIN],
+            self::CONTACT_TYPE_TECH => $info[ContactType::TECH],
+            self::CONTACT_TYPE_BILLING => $info[ContactType::BILLING],
+        ];
+
+        // Unset the contact we will update.
+        unset($contacts[$this->getProviderContactTypeValue($contactType)]);
+
+        foreach ($contacts as $type => $contact) {
+            if (empty($contact)) {
+                continue;
+            }
+
+            $params = array_merge($params, $this->setContactData($contact, $type));
+        }
+
+        // Set the different contact types in the params, filtering out empty contacts.
+        $params = array_merge($params, $this->setContactParams(
+            $contactParams,
+            $this->getProviderContactTypeValue($contactType)
+        ));
+
+        $this->makeRequest($command, $params);
+
+        return $this->getDomainInfo($domainName)[$contactType->getValue()];
+    }
+
 
     private function parseContact(array $contact): ContactData
     {
@@ -620,5 +665,24 @@ class SynergyWholesaleApi
         return $this->makeRequest('listAllHosts', [
             'domainName' => $domainName,
         ]);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return self::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

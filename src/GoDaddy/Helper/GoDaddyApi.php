@@ -13,6 +13,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\GoDaddy\Data\Configuration;
@@ -214,6 +215,13 @@ class GoDaddyApi
         $this->makeRequest($command, null, $body, "PATCH");
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     *
+     * @deprecated Use updateContact with ContactType::REGISTRANT() instead.
+     */
     public function updateRegistrantContact(string $domainName, ContactParams $contactParams): ContactData
     {
         $command = "/v1/domains/{$domainName}/contacts";
@@ -223,6 +231,26 @@ class GoDaddyApi
         $this->makeRequest($command, null, $registrantParams, "PATCH");
 
         return $this->getDomainInfo($domainName)['registrant'];
+    }
+
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(
+        string $domainName,
+        ContactParams $contactParams,
+        ContactType $contactType
+    ): ContactData {
+        $command = "/v1/domains/{$domainName}/contacts";
+
+        $params = $this->setContactParams($contactParams, $this->getProviderContactTypeValue($contactType));
+
+        $this->makeRequest($command, null, $params, "PATCH");
+
+        return $this->getDomainInfo($domainName)[$contactType->getValue()];
     }
 
     /**
@@ -250,6 +278,10 @@ class GoDaddyApi
         return compact('firstName', 'lastName');
     }
 
+    /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     */
     private function setContactParams(ContactParams $contactParams, string $type): array
     {
         $nameParts = $this->getNameParts($contactParams->name ?? $contactParams->organisation);
@@ -371,5 +403,24 @@ class GoDaddyApi
         }
 
         return $errorMessage ?? null;
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return self::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return self::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return self::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return self::CONTACT_TYPE_TECH;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use ErrorException;
 use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppException;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -15,6 +16,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\FinishTransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\InitiateTransferResult;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\EURID\Helper\EppHelper;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
@@ -37,7 +39,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\EURID\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\EURID\EppExtension\EppConnection;
-
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
@@ -308,15 +310,45 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo, false)->setMessage($msg);
     }
 
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
+    {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()
+        ]));
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
     {
         $domainName = Utils::getDomain(
             Utils::normalizeSld($params->sld),
             Utils::normalizeTld($params->tld)
         );
 
+        if ($params->contact_type === 'admin') {
+            $this->errorResult('Admin contact update is not supported');
+        }
+
         try {
-            $contact = $this->epp()->updateRegistrantContact($domainName, $params->contact);
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $e) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        try {
+            $contact = $this->epp()->updateContact($domainName, $params->contact, $contactType);
 
             return ContactResult::create($contact);
         } catch (eppException $e) {
@@ -324,6 +356,9 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
         $sld = Utils::normalizeSld($params->sld);

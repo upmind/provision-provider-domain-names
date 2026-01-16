@@ -10,6 +10,7 @@ use GuzzleHttp\Exception\RequestException;
 use Throwable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -32,6 +33,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
@@ -298,24 +300,50 @@ class Provider extends DomainNames implements ProviderInterface
         return DomainResult::create($domainInfo)->setMessage($message);
     }
 
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
+    {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => 'registrant',
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
     {
         try {
             $contact = $this->api()
-                ->updateRegistrantContact(
+                ->updateDomainContact(
                     Utils::getDomain(
                         Utils::normalizeSld($params->sld),
                         Utils::normalizeTld($params->tld)
                     ),
-                    $params->contact
+                    $params->contact,
+                    $params->getContactTypeEnum()
                 );
 
             return ContactResult::create($contact);
-        } catch (\Throwable $e) {
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type provided: ' . $params->contact_type);
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
 
+    /**
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
         $domainName = Utils::getDomain(

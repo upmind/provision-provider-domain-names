@@ -12,6 +12,7 @@ use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -29,6 +30,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -39,6 +41,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -446,7 +449,136 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        return $this->updateContact($params->sld, $params->tld, $params->contact, EppHelper::CONTACT_TYPE_REGISTRANT);
+        return $this->updateDomainContact($params->sld, $params->tld, $params->contact, EppHelper::CONTACT_TYPE_REGISTRANT);
+    }
+
+    /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Exception
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            // Should not happen as contact_type is already validated
+            $this->errorResult('Invalid contact type', ['contact_type' => $params->contact_type]);
+        }
+
+        if ($contactType->equals(ContactType::REGISTRANT())) {
+            return $this->updateDomainContact(
+                $params->sld,
+                $params->tld,
+                $params->contact,
+                $this->getProviderContactTypeValue($contactType)
+            );
+        }
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+        $domain = $this->_getDomain($domainName)->toArray();
+
+        $client = $this->getClient();
+
+        // If contact does not exist for domain, create it.
+        if (!isset($domain[$contactType->getValue()])) {
+            $contactId = $this->createContact($params->contact);
+
+            $infoFrame = new \AfriCC\EPP\Frame\Command\Update\Domain();
+            $infoFrame->setDomain($domainName);
+
+            switch ($contactType) {
+                case $contactType->equals(ContactType::ADMIN()):
+                    $infoFrame->addAdminContact($contactId);
+                    break;
+                case $contactType->equals(ContactType::TECH()):
+                    $infoFrame->addTechContact($contactId);
+                    break;
+                case $contactType->equals(ContactType::BILLING()):
+                    $infoFrame->addBillingContact($contactId);
+                    break;
+                default:
+                    // Should not happen as contact_type is already validated
+                    $this->errorResult('Invalid contact type: ' . $params->contact_type);
+            }
+
+            $xmlResponse = $client->request($infoFrame);
+            $this->checkResponse($xmlResponse);
+
+            return ContactResult::create([
+                'contact_id' => $contactId,
+                'name' => $params->contact->name,
+                'email' => $params->contact->email,
+                'phone' => $params->contact->phone,
+                'organisation' => $params->contact->organisation,
+                'address1' => $params->contact->address1,
+                'city' => $params->contact->city,
+                'postcode' => $params->contact->postcode,
+                'country_code' => $params->contact->country_code,
+                'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
+            ])->setMessage(ucfirst($contactType->getValue()) . ' contact details added');
+        }
+
+        // Otherwise, update it.
+        $contactId = $domain[$contactType->getValue()]['id'];
+        $infoFrame = new \AfriCC\EPP\Frame\Command\Update\Contact();
+        $infoFrame->setId($contactId);
+
+        $mode = 'chg';
+        $infoFrame->appendCity(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:city',
+            $params->contact->city
+        );
+        $infoFrame->appendEmail('contact:chg/contact:email', $params->contact->email);
+        $infoFrame->appendCountryCode(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:cc',
+            Utils::normalizeCountryCode($params->contact->country_code)
+        );
+        $infoFrame->appendName(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:name',
+                $params->contact->name ?? ''
+        );
+        if (!$params->contact->name) {
+            $infoFrame->appendOrganization(
+                'contact:chg/contact:postalInfo[@type=\'%s\']/contact:org',
+                $params->contact->organisation
+            );
+        } else {
+            $infoFrame->appendOrganization(
+                'contact:chg/contact:postalInfo[@type=\'%s\']/contact:org',
+                    $params->contact->organisation ?? ''
+            );
+        }
+        $infoFrame->appendPostalCode(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:pc',
+            $params->contact->postcode
+        );
+        $infoFrame->appendProvince(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:sp',
+            Utils::stateNameToCode($params->contact->country_code, $params->contact->state)
+        );
+        $infoFrame->appendVoice('contact:chg/contact:voice', Utils::internationalPhoneToEpp($params->contact->phone));
+        $infoFrame->appendStreet(
+            'contact:chg/contact:postalInfo[@type=\'%s\']/contact:addr/contact:street[]',
+            $params->contact->address1
+        );
+
+        $xmlResponse = $client->request($infoFrame);
+        $this->checkResponse($xmlResponse);
+
+        return ContactResult::create([
+            'contact_id' => $contactId,
+            'name' => $params->contact->name,
+            'email' => $params->contact->email,
+            'phone' => $params->contact->phone,
+            'organisation' => $params->contact->organisation,
+            'address1' => $params->contact->address1,
+            'city' => $params->contact->city,
+            'postcode' => $params->contact->postcode,
+            'country_code' => $params->contact->country_code,
+            'state' => Utils::stateNameToCode($params->contact->country_code, $params->contact->state),
+        ])->setMessage(ucfirst($contactType->getValue()) . ' contact details updated');
     }
 
     /**
@@ -629,10 +761,10 @@ class Provider extends DomainNames implements ProviderInterface
             'statuses' => $currentStatuses,
             'locked' => $lockStatus,
             // 'renew' => $renewStatus,
-            'registrant' => $contacts['registrant'],
-            'billing' => $contacts['billing'] ?? null,
-            'admin' => $contacts['administrative'] ?? null,
-            'tech' => $contacts['technical'] ?? null,
+            ContactType::REGISTRANT => $contacts['registrant'],
+            ContactType::BILLING => $contacts['billing'] ?? null,
+            ContactType::ADMIN => $contacts['administrative'] ?? null,
+            ContactType::TECH => $contacts['technical'] ?? null,
             'ns' => $ns,
             'created_at' => Utils::formatDate($domainData['infData']['crDate']),
             'updated_at' => Utils::formatDate($domainData['infData']['upDate'] ?? $domainData['infData']['crDate']),
@@ -698,7 +830,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @return ContactResult
      * @throws \Exception
      */
-    private function updateContact(string $sld, string $tld, \Upmind\ProvisionProviders\DomainNames\Data\ContactParams $contact, string $type)
+    private function updateDomainContact(string $sld, string $tld, ContactParams $contact, string $type)
     {
         $domainName = Utils::getDomain($sld, $tld);
         $domain = $this->_getDomain($domainName)->toArray();
@@ -754,7 +886,7 @@ class Provider extends DomainNames implements ProviderInterface
             'postcode' => $contact->postcode,
             'country_code' => $contact->country_code,
             'state' => Utils::stateNameToCode($contact->country_code, $contact->state),
-        ])->setMessage('Contact details updated');
+        ])->setMessage('Registrant contact details updated');
     }
 
     private function addNameserverHost(string $nameserver): void
@@ -790,6 +922,8 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @param ContactParams $contact
      * @return string Contact id
+     *
+     * @throws \libphonenumber\NumberParseException
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      */
     private function createContact(ContactParams $contact): string
@@ -898,5 +1032,23 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_UNKNOWN)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return EppHelper::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return EppHelper::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return EppHelper::CONTACT_TYPE_BILL;
+            case $contactType->equals(ContactType::TECH()):
+                return EppHelper::CONTACT_TYPE_TECH;
+            default:
+                $this->errorResult('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

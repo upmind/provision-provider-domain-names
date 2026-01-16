@@ -6,6 +6,7 @@ namespace Upmind\ProvisionProviders\DomainNames\Nominet;
 
 use Carbon\Carbon;
 use ErrorException;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
 use Illuminate\Support\Arr;
@@ -44,6 +45,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainNotification;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -55,6 +57,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
@@ -342,22 +345,158 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue(),
+        ]));
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
             $domainInfo = $this->_getDomain($domainName);
+        } catch (eppException $e) {
+            $this->_eppExceptionHandler($e, $params->toArray());
+        }
 
-            $this->_updateContact(
-                $domainInfo->registrant->id,
-                $email = $params->contact->email,
-                $phone = $params->contact->phone,
-                $name = $params->contact->name ?: $params->contact->organisation,
-                $organisation = $params->contact->organisation ?: $params->contact->name,
-                $address1 = $params->contact->address1,
-                $postcode = $params->contact->postcode,
-                $city = $params->contact->city,
-                $countryCode = $params->contact->country_code,
-            );
+        $email = $params->contact->email;
+        $phone = $params->contact->phone;
+        $name = $params->contact->name ?: $params->contact->organisation;
+        $organisation = $params->contact->organisation ?: $params->contact->name;
+        $address1 = $params->contact->address1;
+        $postcode = $params->contact->postcode;
+        $city = $params->contact->city;
+        $countryCode = $params->contact->country_code;
+
+        try {
+            switch ($contactType) {
+                case $contactType->equals(ContactType::REGISTRANT()):
+                    // Registrant contact always exist, so just update it.
+                    $this->_updateContact(
+                        $domainInfo->registrant->id,
+                        $email,
+                        $phone,
+                        $name,
+                        $organisation,
+                        $address1,
+                        $postcode,
+                        $city,
+                        $countryCode,
+                    );
+                    break;
+                case $contactType->equals(ContactType::ADMIN()):
+                    if ($domainInfo->admin === null) {
+                        $contact = $this->_createContact(
+                            $email,
+                            $phone,
+                            $name,
+                            $organisation,
+                            $address1,
+                            $postcode,
+                            $city,
+                            $countryCode,
+                            'IND' // ToDo: Hardcoded to individual, until we allow dynamic ccTLD fields.
+                        );
+
+                        $this->_updateDomain($domainName, null, null, $contact);
+
+                        break;
+                    }
+
+                    $this->_updateContact(
+                        $domainInfo->admin->id,
+                        $email,
+                        $phone,
+                        $name,
+                        $organisation,
+                        $address1,
+                        $postcode,
+                        $city,
+                        $countryCode,
+                    );
+
+                    break;
+                case $contactType->equals(ContactType::TECH()):
+                    if ($domainInfo->tech === null) {
+                        $contact = $this->_createContact(
+                            $email,
+                            $phone,
+                            $name,
+                            $organisation,
+                            $address1,
+                            $postcode,
+                            $city,
+                            $countryCode,
+                            'IND' // ToDo: Hardcoded to individual, until we allow dynamic ccTLD fields.
+                        );
+
+                        $this->_updateDomain($domainName, null, null, null, $contact);
+
+                        break;
+                    }
+
+                    $this->_updateContact(
+                        $domainInfo->tech->id,
+                        $email,
+                        $phone,
+                        $name,
+                        $organisation,
+                        $address1,
+                        $postcode,
+                        $city,
+                        $countryCode,
+                    );
+
+                    break;
+                case $contactType->equals(ContactType::BILLING()):
+                    if ($domainInfo->billing === null) {
+                        $contact = $this->_createContact(
+                            $email,
+                            $phone,
+                            $name,
+                            $organisation,
+                            $address1,
+                            $postcode,
+                            $city,
+                            $countryCode,
+                            'IND' // ToDo: Hardcoded to individual, until we allow dynamic ccTLD fields.
+                        );
+
+                        $this->_updateDomain($domainName, null, null, null, null, $contact);
+
+                        break;
+                    }
+
+                    $this->_updateContact(
+                        $domainInfo->billing->id,
+                        $email,
+                        $phone,
+                        $name,
+                        $organisation,
+                        $address1,
+                        $postcode,
+                        $city,
+                        $countryCode,
+                    );
+
+                    break;
+                default:
+                    $this->errorResult('Unsupported contact type: ' . $params->contact_type);
+            }
 
             return ContactResult::create([
                 'name' => $name,
@@ -368,12 +507,15 @@ class Provider extends DomainNames implements ProviderInterface
                 'city' => $city,
                 'postcode' => $postcode,
                 'country_code' => $countryCode,
-            ])->setMessage('Registrant details updated');
+            ])->setMessage(ucfirst($contactType->getValue()) . ' details updated');
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e, $params->toArray());
         }
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function setLock(LockParams $params): DomainResult
     {
         throw $this->errorResult('Operation not supported');
@@ -532,20 +674,41 @@ class Provider extends DomainNames implements ProviderInterface
     protected function _updateDomain(
         string $domainName,
         ?string $registrantId = null,
-        ?array $nameservers = null
+        ?array $nameservers = null,
+        ?string $adminId = null,
+        ?string $techId = null,
+        ?string $billingId = null
     ): string {
         // In the UpdateDomain command you can set or add parameters
         // - Registrant is always set (you can only have one registrant)
         // - Admin, Tech, Billing contacts are Added (you can have multiple contacts, don't forget to remove the old ones)
         // - Nameservers are Added (you can have multiple nameservers, don't forget to remove the old ones)
 
-        // If new nameservers are given, get the old ones to remove them
-        if (isset($nameservers)) {
+        $removeInfo = null;
+        $addInfo = null;
+        $updateInfo = null;
+
+        // If any of the nullable parameters are given, get the old info to remove/add.
+        if (isset($nameservers) || isset($adminId) || isset($techId) || isset($billingId)) {
             $info = new eppInfoDomainRequest(new eppDomain($domainName));
             /** @var eppInfoDomainResponse $response */
             $response = $this->epp()->request($info);
 
-            if ($oldNameservers = $response->getDomainNameservers()) {
+            // Get existing contacts, and set empty array if none.
+            /** @var \Metaregistrar\EPP\eppContactHandle[] $contacts */
+            $contacts = $response->getDomainContacts() ?? [];
+        }
+
+        // If new nameservers are given, get the old ones to remove them
+        if (isset($nameservers)) {
+            /**
+             * Should exist at this stage as it's already checked and generated.
+             *
+             * @var \Metaregistrar\EPP\eppInfoDomainResponse $response
+             */
+            $oldNameservers = $response->getDomainNameservers();
+
+            if ($oldNameservers) {
                 $removeInfo = new eppDomain($domainName);
                 foreach ($oldNameservers as $ns) {
                     $removeInfo->addHost(new eppHost($ns->getHostname()));
@@ -554,6 +717,69 @@ class Provider extends DomainNames implements ProviderInterface
 
             $addInfo = new eppDomain($domainName);
             $addInfo = $this->setNameservers($addInfo, $nameservers);
+        }
+
+        if (isset($adminId)) {
+            // Prep contact handle to add.
+            $addInfo ?? new eppDomain($domainName);
+            $addInfo->addContact(new eppContactHandle($adminId, 'admin'));
+
+            /**
+             * This is already set at this stage.
+             * Remove the existing admin contacts if any
+             *
+             * @var \Metaregistrar\EPP\eppContactHandle[] $contacts
+             */
+            foreach ($contacts as $contact) {
+                if ($contact->getContactType() !== 'admin') {
+                    continue;
+                }
+
+                $removeInfo = $removeInfo ?? new eppDomain($domainName);
+                $removeInfo->addContact(new eppContactHandle($contact->getContactHandle(), 'admin'));
+            }
+        }
+
+        if (isset($techId)) {
+            // Prep contact handle to add.
+            $addInfo ?? new eppDomain($domainName);
+            $addInfo->addContact(new eppContactHandle($adminId, 'tech'));
+
+            /**
+             * This is already set at this stage.
+             * Remove the existing tech contacts if any
+             *
+             * @var \Metaregistrar\EPP\eppContactHandle[] $contacts
+             */
+            foreach ($contacts as $contact) {
+                if ($contact->getContactType() !== 'tech') {
+                    continue;
+                }
+
+                $removeInfo = $removeInfo ?? new eppDomain($domainName);
+                $removeInfo->addContact(new eppContactHandle($contact->getContactHandle(), 'tech'));
+            }
+        }
+
+        if (isset($billingId)) {
+            // Prep billing contact handle to add.
+            $addInfo ?? new eppDomain($domainName);
+            $addInfo->addContact(new eppContactHandle($adminId, 'billing'));
+
+            /**
+             * This is already set at this stage.
+             * Remove the existing billing contacts if any
+             *
+             * @var \Metaregistrar\EPP\eppContactHandle[] $contacts
+             */
+            foreach ($contacts as $contact) {
+                if ($contact->getContactType() !== 'billing') {
+                    continue;
+                }
+
+                $removeInfo = $removeInfo ?? new eppDomain($domainName);
+                $removeInfo->addContact(new eppContactHandle($contact->getContactHandle(), 'billing'));
+            }
         }
 
         if (isset($registrantId)) {
@@ -598,10 +824,18 @@ class Provider extends DomainNames implements ProviderInterface
 
         $contact = $this->_contactInfo($response->getDomainRegistrant());
 
+        $adminContactId = $response->getDomainContact('admin');
+        $techContactId = $response->getDomainContact('tech');
+        $billingContactId = $response->getDomainContact('billing');
+
+        $adminContact = $adminContactId === null ? null : $this->_contactInfo($adminContactId);
+        $techContact = $techContactId === null ? null : $this->_contactInfo($techContactId);
+        $billingContact = $billingContactId === null ? null : $this->_contactInfo($billingContactId);
+
         return DomainResult::create([
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
-            'statuses' => $response->getDomainStatuses() ?? [], // Not in standard response
+            'statuses' => $this->statusesToStrings($response->getDomainStatuses() ?? []),
             'registrant' => [
                 'id' => $response->getDomainRegistrant(),
                 'name' => $contact->getContactName(),
@@ -614,12 +848,64 @@ class Provider extends DomainNames implements ProviderInterface
                 'country_code' => $contact->getContactCountrycode(),
                 'extra' => $contact->getNominetContactData(),
             ],
+            'billing' => $billingContact === null ? null : [
+                'id' => $billingContact->getContactId(),
+                'name' => $billingContact->getContactName(),
+                'email' => $billingContact->getContactEmail(),
+                'phone' => $billingContact->getContactVoice(),
+                'organisation' => $billingContact->getContactCompanyname(),
+                'address1' => $billingContact->getContactStreet(),
+                'city' => $billingContact->getContactCity(),
+                'postcode' => $billingContact->getContactZipcode(),
+                'country_code' => $billingContact->getContactCountrycode(),
+                'extra' => $billingContact->getNominetContactData(),
+            ],
+            'tech' => $techContact === null ? null : [
+                'id' => $techContact->getContactId(),
+                'name' => $techContact->getContactName(),
+                'email' => $techContact->getContactEmail(),
+                'phone' => $techContact->getContactVoice(),
+                'organisation' => $techContact->getContactCompanyname(),
+                'address1' => $techContact->getContactStreet(),
+                'city' => $techContact->getContactCity(),
+                'postcode' => $techContact->getContactZipcode(),
+                'country_code' => $techContact->getContactCountrycode(),
+                'extra' => $techContact->getNominetContactData(),
+            ],
+            'admin' => $adminContact === null ? null : [
+                'id' => $adminContact->getContactId(),
+                'name' => $adminContact->getContactName(),
+                'email' => $adminContact->getContactEmail(),
+                'phone' => $adminContact->getContactVoice(),
+                'organisation' => $adminContact->getContactCompanyname(),
+                'address1' => $adminContact->getContactStreet(),
+                'city' => $adminContact->getContactCity(),
+                'postcode' => $adminContact->getContactZipcode(),
+                'country_code' => $adminContact->getContactCountrycode(),
+                'extra' => $adminContact->getNominetContactData(),
+            ],
             'ns' => $returnNs,
             'created_at' => $this->formatDate($response->getDomainCreateDate()),
             'updated_at' => $this->formatDate($response->getDomainUpdateDate())
                 ?? $this->formatDate($response->getDomainCreateDate()),
             'expires_at' => $this->formatDate($response->getDomainExpirationDate()),
         ])->setMessage($msg);
+    }
+
+    /**
+     * @param string[]|\Metaregistrar\EPP\eppStatus[] $statuses
+     *
+     * @return string[]
+     */
+    protected function statusesToStrings(array $statuses): array
+    {
+        return array_map(function ($status) {
+            if ($status instanceof \Metaregistrar\EPP\eppStatus) {
+                return $status->getStatusname();
+            }
+
+            return (string)$status;
+        }, $statuses);
     }
 
     protected function _contactInfo(string $contactID): NominetEppInfoContactResponse

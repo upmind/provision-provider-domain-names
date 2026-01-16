@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
 use Throwable;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -19,6 +20,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -30,6 +32,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -193,13 +196,28 @@ class Provider extends DomainNames implements ProviderInterface
             );
 
             // TODO: eNom allows registering a domain only with the registrant contact data. In our case - we're passing all of the contact data, so we'll update it in the proper places after we have the domain registered.
-            $this->updateContact($sld, $tld, $params->admin->register, EnomApi::CONTACT_TYPE_ADMIN);
-            $this->updateContact($sld, $tld, $params->tech->register, EnomApi::CONTACT_TYPE_TECH);
-            $this->updateContact($sld, $tld, $params->billing->register, EnomApi::CONTACT_TYPE_BILLING);
+            $this->updateContact(UpdateContactParams::create([
+                'sld' => $sld,
+                'tld' => $tld,
+                'contact' => $params->admin->register,
+                'contact_type' => ContactType::ADMIN
+            ]));
+            $this->updateContact(UpdateContactParams::create([
+                'sld' => $sld,
+                'tld' => $tld,
+                'contact' => $params->tech->register,
+                'contact_type' => ContactType::TECH
+            ]));
+            $this->updateContact(UpdateContactParams::create([
+                'sld' => $sld,
+                'tld' => $tld,
+                'contact' => $params->billing->register,
+                'contact_type' => ContactType::BILLING
+            ]));
 
             // Return newly fetched data for the domain
             return $this->_getInfo($sld, $tld, sprintf('Domain %s was registered successfully!', $domain));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -216,7 +234,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             return $this->_getInfo($sld, $tld, 'Domain is active in registrar account');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Domain not active in account: proceed to initiate or check transfer order below
         }
 
@@ -288,7 +306,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->renew($sld, $tld, $period, false);
 
             return $info->setExpiresAt(Carbon::parse($info->expires_at)->addYears($period));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -301,7 +319,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         try {
             return $this->_getInfo($params->sld, $params->tld, 'Domain data obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -351,7 +369,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setNs4($params->ns4 ?? null)
                 ->setNs5($params->ns5 ?? null)
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domain));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -388,7 +406,7 @@ class Provider extends DomainNames implements ProviderInterface
             return EppCodeResult::create([
                 'epp_code' => 'Sent to registrant\'s email!'
             ])->setMessage('EPP/Auth code obtained');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -408,7 +426,46 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        return $this->updateContact($params->sld, $params->tld, $params->contact, EnomApi::CONTACT_TYPE_REGISTRANT);
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT
+        ]));
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+
+            $this->api()->createUpdateDomainContact(
+                Utils::normalizeSld($params->sld),
+                Utils::normalizeTld($params->tld),
+                $params->contact,
+                $this->getProviderContactTypeValue($contactType)
+            );
+
+            return ContactResult::create([
+                'contact_id' => mb_strtolower($this->getProviderContactTypeValue($contactType)),
+                'name' => $params->contact->name,
+                'email' => $params->contact->email,
+                'phone' => $params->contact->phone,
+                'organisation' => $params->contact->organisation,
+                'address1' => $params->contact->address1,
+                'city' => $params->contact->city,
+                'postcode' => $params->contact->postcode,
+                'country_code' => Utils::normalizeCountryCode($params->contact->country_code),
+            ]);
+        } catch (UnexpectedValueException $e) {
+            // Invalid contact type from enum.
+            $this->errorResult('Invalid contact type provided: ' . $params->contact_type);
+        } catch (Throwable $e) {
+            $this->handleException($e, $params);
+        }
     }
 
     /**
@@ -432,7 +489,7 @@ class Provider extends DomainNames implements ProviderInterface
             $this->api()->setRegLock($sld, $tld, $lock);
 
             return $this->_getInfo($sld, $tld, sprintf("Lock %s!", $lock ? 'enabled' : 'disabled'));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e, $params);
         }
     }
@@ -466,7 +523,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @param string $type
      * @return ContactResult
      */
-    private function updateContact(string $sld, string $tld, ContactParams $params, string $type): ContactResult
+    private function updateDomainContact(string $sld, string $tld, ContactParams $params, string $type): ContactResult
     {
         try {
             $this->api()->createUpdateDomainContact($sld, $tld, $params, $type);
@@ -606,5 +663,24 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_UNKNOWN)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return EnomApi::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return EnomApi::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return EnomApi::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return EnomApi::CONTACT_TYPE_TECH;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        }
     }
 }

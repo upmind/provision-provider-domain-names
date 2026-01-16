@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.25.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.25.1) - 2026-01-16
+
+- Fix errant whitespace in UpdateContactParams.contact_type `in:` rule
+
 ## [v2.25.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.25.0) - 2026-01-16
 
 - Implement updateContact() function to update billing, tech and admin contacts

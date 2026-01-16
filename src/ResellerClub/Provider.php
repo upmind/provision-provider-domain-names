@@ -61,7 +61,7 @@ class Provider extends LogicBoxesProvider
             $description = 'Unknown';
 
             if (isset($response[$domain])) {
-                $status = strtolower($response[$domain]['status'] ?? '');
+                $status = strtolower($response[$domain]['status']);
                 
                 if ($status === 'available') {
                     $isAvailable = true;
@@ -76,7 +76,7 @@ class Provider extends LogicBoxesProvider
                     $canTransfer = true;
                     $description = 'Domain is registered through another registrar';
                 } else {
-                    $description = ucfirst($status);
+                    $description = 'Domain status could not be determined';
                 }
             }
 

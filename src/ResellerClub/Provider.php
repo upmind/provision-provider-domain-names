@@ -57,6 +57,7 @@ class Provider extends LogicBoxesProvider
             $tld = $parts[1] ?? '';
 
             $isAvailable = false;
+            $canTransfer = false;
             $description = 'Unknown';
 
             if (isset($response[$domain])) {
@@ -64,12 +65,15 @@ class Provider extends LogicBoxesProvider
                 
                 if ($status === 'available') {
                     $isAvailable = true;
+                    $canTransfer = false;
                     $description = 'Domain is available for registration';
                 } elseif ($status === 'regthroughus') {
                     $isAvailable = false;
+                    $canTransfer = false;
                     $description = 'Domain is registered through this registrar';
                 } elseif ($status === 'regthroughothers') {
                     $isAvailable = false;
+                    $canTransfer = true;
                     $description = 'Domain is registered through another registrar';
                 } else {
                     $description = ucfirst($status);
@@ -80,7 +84,7 @@ class Provider extends LogicBoxesProvider
                 'domain' => $domain,
                 'tld' => $tld,
                 'can_register' => $isAvailable,
-                'can_transfer' => !$isAvailable,
+                'can_transfer' => $canTransfer,
                 'is_premium' => false,
                 'description' => $description,
             ]);

@@ -490,6 +490,19 @@ class EnomApi
     }
 
     /**
+     * Check if a single domain is available for registration.
+     *
+     * @return array{available: bool, reason: string}
+     */
+    public function checkDomainAvailable(string $sld, string $tld): array
+    {
+        $domain = Utils::getDomain($sld, $tld);
+        $results = $this->checkMultipleDomains($domain);
+
+        return $results[0] ?? ['available' => false, 'reason' => 'Unknown'];
+    }
+
+    /**
      * @return int Order ID
      */
     public function register(

@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.66](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.66) - 2026-01-19
+
+- Add `sandbox` configuration value to BDReseller provider for determining API URL
+
 ## [v2.12.65](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.65) - 2026-01-16
 
 - Add `extra` to StatusResult

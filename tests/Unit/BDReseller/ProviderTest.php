@@ -1,0 +1,113 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Upmind\ProvisionProviders\DomainNames\Tests\Unit\BDReseller;
+
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
+use Upmind\ProvisionProviders\DomainNames\BDReseller\Data\Configuration;
+use Upmind\ProvisionProviders\DomainNames\BDReseller\Provider;
+use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
+use Upmind\ProvisionProviders\DomainNames\Tests\TestCase;
+use ReflectionClass;
+
+class ProviderTest extends TestCase
+{
+    public function test_api_client_uses_sandbox_base_url_when_sandbox_is_true(): void
+    {
+        $config = new Configuration([
+            'username' => 'test_username',
+            'password' => 'test_password',
+            'sandbox' => true,
+        ]);
+
+        $provider = new Provider($config);
+
+        // Use reflection to access the private apiClient method and check the client configuration
+        $reflection = new ReflectionClass($provider);
+        $method = $reflection->getMethod('apiClient');
+        $method->setAccessible(true);
+
+        $client = $method->invoke($provider);
+
+        // Get the base URI from the client configuration
+        $clientConfig = $client->getConfig();
+        $baseUri = $clientConfig['base_uri'] ?? null;
+
+        $this->assertEquals('https://141.lyre.us', (string) $baseUri, 'Sandbox base URL should be used when sandbox is true');
+    }
+
+    public function test_api_client_uses_production_base_url_when_sandbox_is_false(): void
+    {
+        $config = new Configuration([
+            'username' => 'test_username',
+            'password' => 'test_password',
+            'sandbox' => false,
+        ]);
+
+        $provider = new Provider($config);
+
+        // Use reflection to access the private apiClient method and check the client configuration
+        $reflection = new ReflectionClass($provider);
+        $method = $reflection->getMethod('apiClient');
+        $method->setAccessible(true);
+
+        $client = $method->invoke($provider);
+
+        // Get the base URI from the client configuration
+        $clientConfig = $client->getConfig();
+        $baseUri = $clientConfig['base_uri'] ?? null;
+
+        $this->assertEquals('https://bdia.btcl.com.bd', (string) $baseUri, 'Production base URL should be used when sandbox is false');
+    }
+
+    public function test_api_client_uses_production_base_url_when_sandbox_is_null(): void
+    {
+        $config = new Configuration([
+            'username' => 'test_username',
+            'password' => 'test_password',
+            'sandbox' => null,
+        ]);
+
+        $provider = new Provider($config);
+
+        // Use reflection to access the private apiClient method and check the client configuration
+        $reflection = new ReflectionClass($provider);
+        $method = $reflection->getMethod('apiClient');
+        $method->setAccessible(true);
+
+        $client = $method->invoke($provider);
+
+        // Get the base URI from the client configuration
+        $clientConfig = $client->getConfig();
+        $baseUri = $clientConfig['base_uri'] ?? null;
+
+        $this->assertEquals('https://bdia.btcl.com.bd', (string) $baseUri, 'Production base URL should be used when sandbox is null');
+    }
+
+    public function test_api_client_uses_production_base_url_when_sandbox_is_not_set(): void
+    {
+        $config = new Configuration([
+            'username' => 'test_username',
+            'password' => 'test_password',
+        ]);
+
+        $provider = new Provider($config);
+
+        // Use reflection to access the private apiClient method and check the client configuration
+        $reflection = new ReflectionClass($provider);
+        $method = $reflection->getMethod('apiClient');
+        $method->setAccessible(true);
+
+        $client = $method->invoke($provider);
+
+        // Get the base URI from the client configuration
+        $clientConfig = $client->getConfig();
+        $baseUri = $clientConfig['base_uri'] ?? null;
+
+        $this->assertEquals('https://bdia.btcl.com.bd', (string) $baseUri, 'Production base URL should be used when sandbox is not set');
+    }
+}

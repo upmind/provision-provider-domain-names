@@ -297,7 +297,7 @@ class Provider extends DomainNames implements ProviderInterface
         $credentials = base64_encode("{$this->configuration->username}:{$this->configuration->password}");
 
         $client = new Client([
-            'base_uri' => 'https://141.lyre.us',
+            'base_uri' => 'https://bdia.btcl.com.bd',
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/BDReseller',
                 'Authorization' => "Basic $credentials",

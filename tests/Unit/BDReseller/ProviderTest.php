@@ -5,12 +5,8 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\Tests\Unit\BDReseller;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
 use Upmind\ProvisionProviders\DomainNames\BDReseller\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\BDReseller\Provider;
-use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Tests\TestCase;
 use ReflectionClass;
 
@@ -26,12 +22,19 @@ class ProviderTest extends TestCase
 
         $provider = new Provider($config);
 
-        // Use reflection to access the private apiClient method and check the client configuration
-        $reflection = new ReflectionClass($provider);
-        $method = $reflection->getMethod('apiClient');
-        $method->setAccessible(true);
+        // Use reflection to access the protected api method
+        $providerReflection = new ReflectionClass($provider);
+        $apiMethod = $providerReflection->getMethod('api');
+        $apiMethod->setAccessible(true);
 
-        $client = $method->invoke($provider);
+        $bdApi = $apiMethod->invoke($provider);
+
+        // Use reflection to access the protected client property from BDApi
+        $bdApiReflection = new ReflectionClass($bdApi);
+        $clientProperty = $bdApiReflection->getProperty('client');
+        $clientProperty->setAccessible(true);
+
+        $client = $clientProperty->getValue($bdApi);
 
         // Get the base URI from the client configuration
         $clientConfig = $client->getConfig();
@@ -50,12 +53,19 @@ class ProviderTest extends TestCase
 
         $provider = new Provider($config);
 
-        // Use reflection to access the private apiClient method and check the client configuration
-        $reflection = new ReflectionClass($provider);
-        $method = $reflection->getMethod('apiClient');
-        $method->setAccessible(true);
+        // Use reflection to access the protected api method
+        $providerReflection = new ReflectionClass($provider);
+        $apiMethod = $providerReflection->getMethod('api');
+        $apiMethod->setAccessible(true);
 
-        $client = $method->invoke($provider);
+        $bdApi = $apiMethod->invoke($provider);
+
+        // Use reflection to access the protected client property from BDApi
+        $bdApiReflection = new ReflectionClass($bdApi);
+        $clientProperty = $bdApiReflection->getProperty('client');
+        $clientProperty->setAccessible(true);
+
+        $client = $clientProperty->getValue($bdApi);
 
         // Get the base URI from the client configuration
         $clientConfig = $client->getConfig();
@@ -74,12 +84,19 @@ class ProviderTest extends TestCase
 
         $provider = new Provider($config);
 
-        // Use reflection to access the private apiClient method and check the client configuration
-        $reflection = new ReflectionClass($provider);
-        $method = $reflection->getMethod('apiClient');
-        $method->setAccessible(true);
+        // Use reflection to access the protected api method
+        $providerReflection = new ReflectionClass($provider);
+        $apiMethod = $providerReflection->getMethod('api');
+        $apiMethod->setAccessible(true);
 
-        $client = $method->invoke($provider);
+        $bdApi = $apiMethod->invoke($provider);
+
+        // Use reflection to access the protected client property from BDApi
+        $bdApiReflection = new ReflectionClass($bdApi);
+        $clientProperty = $bdApiReflection->getProperty('client');
+        $clientProperty->setAccessible(true);
+
+        $client = $clientProperty->getValue($bdApi);
 
         // Get the base URI from the client configuration
         $clientConfig = $client->getConfig();
@@ -97,12 +114,19 @@ class ProviderTest extends TestCase
 
         $provider = new Provider($config);
 
-        // Use reflection to access the private apiClient method and check the client configuration
-        $reflection = new ReflectionClass($provider);
-        $method = $reflection->getMethod('apiClient');
-        $method->setAccessible(true);
+        // Use reflection to access the protected api method
+        $providerReflection = new ReflectionClass($provider);
+        $apiMethod = $providerReflection->getMethod('api');
+        $apiMethod->setAccessible(true);
 
-        $client = $method->invoke($provider);
+        $bdApi = $apiMethod->invoke($provider);
+
+        // Use reflection to access the protected client property from BDApi
+        $bdApiReflection = new ReflectionClass($bdApi);
+        $clientProperty = $bdApiReflection->getProperty('client');
+        $clientProperty->setAccessible(true);
+
+        $client = $clientProperty->getValue($bdApi);
 
         // Get the base URI from the client configuration
         $clientConfig = $client->getConfig();

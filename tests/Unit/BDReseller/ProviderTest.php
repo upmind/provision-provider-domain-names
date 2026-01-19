@@ -20,27 +20,9 @@ class ProviderTest extends TestCase
             'sandbox' => true,
         ]);
 
-        $provider = new Provider($config);
+        $baseUri = $this->getApiClientBaseUri($config);
 
-        // Use reflection to access the protected api method
-        $providerReflection = new ReflectionClass($provider);
-        $apiMethod = $providerReflection->getMethod('api');
-        $apiMethod->setAccessible(true);
-
-        $bdApi = $apiMethod->invoke($provider);
-
-        // Use reflection to access the protected client property from BDApi
-        $bdApiReflection = new ReflectionClass($bdApi);
-        $clientProperty = $bdApiReflection->getProperty('client');
-        $clientProperty->setAccessible(true);
-
-        $client = $clientProperty->getValue($bdApi);
-
-        // Get the base URI from the client configuration
-        $clientConfig = $client->getConfig();
-        $baseUri = $clientConfig['base_uri'] ?? null;
-
-        $this->assertEquals('https://141.lyre.us', (string) $baseUri, 'Sandbox base URL should be used when sandbox is true');
+        $this->assertEquals('https://141.lyre.us', $baseUri, 'Sandbox base URL should be used when sandbox is true');
     }
 
     public function test_api_client_uses_production_base_url_when_sandbox_is_false(): void
@@ -51,27 +33,9 @@ class ProviderTest extends TestCase
             'sandbox' => false,
         ]);
 
-        $provider = new Provider($config);
+        $baseUri = $this->getApiClientBaseUri($config);
 
-        // Use reflection to access the protected api method
-        $providerReflection = new ReflectionClass($provider);
-        $apiMethod = $providerReflection->getMethod('api');
-        $apiMethod->setAccessible(true);
-
-        $bdApi = $apiMethod->invoke($provider);
-
-        // Use reflection to access the protected client property from BDApi
-        $bdApiReflection = new ReflectionClass($bdApi);
-        $clientProperty = $bdApiReflection->getProperty('client');
-        $clientProperty->setAccessible(true);
-
-        $client = $clientProperty->getValue($bdApi);
-
-        // Get the base URI from the client configuration
-        $clientConfig = $client->getConfig();
-        $baseUri = $clientConfig['base_uri'] ?? null;
-
-        $this->assertEquals('https://bdia.btcl.com.bd', (string) $baseUri, 'Production base URL should be used when sandbox is false');
+        $this->assertEquals('https://bdia.btcl.com.bd', $baseUri, 'Production base URL should be used when sandbox is false');
     }
 
     public function test_api_client_uses_production_base_url_when_sandbox_is_null(): void
@@ -82,27 +46,9 @@ class ProviderTest extends TestCase
             'sandbox' => null,
         ]);
 
-        $provider = new Provider($config);
+        $baseUri = $this->getApiClientBaseUri($config);
 
-        // Use reflection to access the protected api method
-        $providerReflection = new ReflectionClass($provider);
-        $apiMethod = $providerReflection->getMethod('api');
-        $apiMethod->setAccessible(true);
-
-        $bdApi = $apiMethod->invoke($provider);
-
-        // Use reflection to access the protected client property from BDApi
-        $bdApiReflection = new ReflectionClass($bdApi);
-        $clientProperty = $bdApiReflection->getProperty('client');
-        $clientProperty->setAccessible(true);
-
-        $client = $clientProperty->getValue($bdApi);
-
-        // Get the base URI from the client configuration
-        $clientConfig = $client->getConfig();
-        $baseUri = $clientConfig['base_uri'] ?? null;
-
-        $this->assertEquals('https://bdia.btcl.com.bd', (string) $baseUri, 'Production base URL should be used when sandbox is null');
+        $this->assertEquals('https://bdia.btcl.com.bd', $baseUri, 'Production base URL should be used when sandbox is null');
     }
 
     public function test_api_client_uses_production_base_url_when_sandbox_is_not_set(): void
@@ -112,6 +58,16 @@ class ProviderTest extends TestCase
             'password' => 'test_password',
         ]);
 
+        $baseUri = $this->getApiClientBaseUri($config);
+
+        $this->assertEquals('https://bdia.btcl.com.bd', $baseUri, 'Production base URL should be used when sandbox is not set');
+    }
+
+    /**
+     * Helper method to extract the base URI from the API client.
+     */
+    private function getApiClientBaseUri(Configuration $config): string
+    {
         $provider = new Provider($config);
 
         // Use reflection to access the protected api method
@@ -132,6 +88,6 @@ class ProviderTest extends TestCase
         $clientConfig = $client->getConfig();
         $baseUri = $clientConfig['base_uri'] ?? null;
 
-        $this->assertEquals('https://bdia.btcl.com.bd', (string) $baseUri, 'Production base URL should be used when sandbox is not set');
+        return (string) $baseUri;
     }
 }

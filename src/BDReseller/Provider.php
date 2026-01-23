@@ -102,10 +102,6 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Registrant details are required.');
         }
 
-        if ($params->renew_years < 2 || $params->renew_years > 10) {
-            $this->errorResult('Renew years must be between 2 and 10.');
-        }
-
         $hosts = array_filter($params->nameservers->pluckHosts());
 
         if (count($hosts) < 2) {
@@ -118,7 +114,7 @@ class Provider extends DomainNames implements ProviderInterface
         ]));
 
         if (count($checkResult->domains) < 1) {
-            $this->errorResult('Empty domain availability check result');
+            $this->errorResult('The domain is not available');
         }
 
         if (!$checkResult->domains[0]->can_register) {

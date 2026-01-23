@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.67](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.67) - 2026-01-23
+
+- Remove registration period check from BDReseller register() implementation
+
 ## [v2.12.66](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.66) - 2026-01-19
 
 - Add `sandbox` configuration value to BDReseller provider for determining API URL

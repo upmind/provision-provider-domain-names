@@ -102,10 +102,6 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Registrant details are required.');
         }
 
-        if ($params->renew_years < 2 || $params->renew_years > 10) {
-            $this->errorResult('Renew years must be between 2 and 10.');
-        }
-
         $hosts = array_filter($params->nameservers->pluckHosts());
 
         if (count($hosts) < 2) {

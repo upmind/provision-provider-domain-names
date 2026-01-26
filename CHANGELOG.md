@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.68](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.68) - 2026-01-26
+
+- Implement Enom getStatus() function
+
 ## [v2.12.67](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.67) - 2026-01-23
 
 - Remove registration period check from BDReseller register() implementation

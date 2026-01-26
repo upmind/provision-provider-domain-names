@@ -664,7 +664,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             // Get domain info - will throw ProvisionFunctionError if domain not found
-            $domainInfo = $this->api()->getDomainInfo($sld, $tld);
+            $domainInfo = $this->api()->getDomainInfo($sld, $tld, false);
 
             $expiresAt = Carbon::parse($domainInfo['expires_at']);
 
@@ -680,7 +680,6 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setStatus(StatusResult::STATUS_ACTIVE)
                 ->setExpiresAt($expiresAt)
                 ->setRawStatuses($domainInfo['statuses'] ?? null);
-
         } catch (ProvisionFunctionError $e) {
             // Domain not found in account - check registry availability
             try {

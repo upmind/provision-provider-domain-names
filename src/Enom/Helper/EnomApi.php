@@ -67,7 +67,7 @@ class EnomApi
      * @param string $tld
      * @return array
      */
-    public function getDomainInfo(string $sld, string $tld): array
+    public function getDomainInfo(string $sld, string $tld, bool $withContacts = true): array
     {
         // Params for basic domain info
         $params = [
@@ -78,8 +78,10 @@ class EnomApi
 
         $domainInfo = $this->makeRequest($params);
 
-        // Get Contacts
-        $contacts = $this->getDomainContacts($sld, $tld);
+        if ($withContacts) {
+            // Get Contacts
+            $contacts = $this->getDomainContacts($sld, $tld);
+        }
 
         // Get NS from whois
         $whois = $this->getDomainWhois($sld, $tld);
@@ -92,7 +94,7 @@ class EnomApi
             'id' => (string) $domainInfo->GetDomainInfo->domainname->attributes()['domainnameid'],
             'domain' => (string) $domainInfo->GetDomainInfo->{'domainname'},
             'statuses' => [(string) $status->{'purchase-status'}, (string) $status->{'registrationstatus'}],
-            'registrant' => $contacts['registrant'],
+            'registrant' => isset($contacts) ? $contacts['registrant'] : null,
             'ns' => $this->parseNameservers($nameServers),
             // Can't execute GetWhoisContact on test environment, so I wasn't able to test that.
             'created_at' => $this->configuration->sandbox ? Carbon::today()->toDateTimeString() : $whois['created_at'],
@@ -491,6 +493,19 @@ class EnomApi
         }
 
         return $domainResults;
+    }
+
+    /**
+     * Check if a single domain is available for registration.
+     *
+     * @return array{available: bool, reason: string}
+     */
+    public function checkDomainAvailable(string $sld, string $tld): array
+    {
+        $domain = Utils::getDomain($sld, $tld);
+        $results = $this->checkMultipleDomains($domain);
+
+        return $results[0] ?? ['available' => false, 'reason' => 'Unknown'];
     }
 
     /**

@@ -61,7 +61,7 @@ class Provider extends DomainNames implements ProviderInterface
         return AboutData::create()
             ->setName('BD Reseller')
             ->setDescription('Register, renew, and manage .bd domain names')
-            ->setLogoUrl('https://api.upmind.io/images/logos/provision/bd-reseller-logo.png');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/bd-reseller-logo.svg');
     }
 
     /**

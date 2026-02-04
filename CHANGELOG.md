@@ -2,9 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
-## Unreleased
+## [v2.12.69](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.69) - 2026-02-04
 
-- Update BDReseller provider URL & logo asset.
+- Update BDReseller provider URL & logo asset
+- Increase timeout for OpenSRS & HRS Domain availability check request to 15 seconds
 
 ## [v2.12.68](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.68) - 2026-01-26
 

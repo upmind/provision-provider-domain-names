@@ -130,7 +130,7 @@ class Provider extends DomainNames implements ProviderInterface
                     'tlds' => $tlds,
                 ]
             ], [
-                'timeout' => 10, // Set a reduced timeout for the request
+                'timeout' => 15, // Set a reduced timeout for the request
             ]);
 
         $dacDomains = [];

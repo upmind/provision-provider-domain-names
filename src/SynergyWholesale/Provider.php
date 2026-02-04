@@ -496,9 +496,66 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            // Get domain info - throws ProvisionFunctionError if not found
+            $domainInfo = $this->api()->getDomainInfo($domainName);
+
+            $expiresAt = isset($domainInfo['expires_at'])
+                ? Carbon::parse($domainInfo['expires_at'])
+                : null;
+
+            if ($expiresAt !== null && $expiresAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo['statuses'] ?? null);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiresAt)
+                ->setRawStatuses($domainInfo['statuses'] ?? null);
+
+        } catch (ProvisionFunctionError $e) {
+            // Domain not found - check registry availability
+            try {
+                $availability = $this->checkDomainAvailableAtRegistry($domainName);
+
+                if ($availability['available']) {
+                    // Available at registry = was cancelled/deleted
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $availability]);
+                }
+
+                // Not available = registered elsewhere (transferred)
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt(null)
+                    ->setExtra(['availability_check' => $availability]);
+
+            } catch (Throwable $checkException) {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * Check if a domain is available for registration at the registry.
+     *
+     * @return array{available: bool, raw_result: array}
+     */
+    protected function checkDomainAvailableAtRegistry(string $domainName): array
+    {
+        $results = $this->api()->checkMultipleDomains([$domainName]);
+        $result = $results[0] ?? null;
+
+        return [
+            'available' => $result ? $result->can_register : false,
+            'raw_result' => $result ? $result->toArray() : [],
+        ];
     }
 }

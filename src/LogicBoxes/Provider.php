@@ -1226,9 +1226,80 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $sld = $params->sld;
+        $tld = $params->tld;
+        $domainName = Utils::getDomain($sld, $tld);
+
+        try {
+            // Get domain info - throws ProvisionFunctionError if not found
+            $domainData = $this->_getDomainData($domainName);
+
+            $expiresAt = isset($domainData['endtime'])
+                ? Carbon::createFromTimestamp((int) $domainData['endtime'])
+                : null;
+
+            if ($expiresAt !== null && $expiresAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiresAt);
+
+        } catch (ProvisionFunctionError $e) {
+            // Domain not found - check registry availability (Enom pattern)
+            try {
+                $availability = $this->checkDomainAvailableAtRegistry($sld, $tld);
+
+                if ($availability['available']) {
+                    // Available at registry = was cancelled/deleted
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $availability]);
+                }
+
+                // Not available = registered elsewhere (transferred)
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt(null)
+                    ->setExtra(['availability_check' => $availability]);
+
+            } catch (Throwable $checkException) {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * Check if a domain is available for registration at the registry.
+     *
+     * @return array{available: bool, status: string|null, raw_response: array}
+     */
+    protected function checkDomainAvailableAtRegistry(string $sld, string $tld): array
+    {
+        $domainName = Utils::getDomain($sld, $tld);
+        $normalizedTld = Utils::normalizeTld($tld);
+
+        $response = $this->_callApi(
+            [
+                'domain-name' => $sld,
+                'tlds' => $normalizedTld,
+            ],
+            'domains/available.json',
+            'GET'
+        );
+
+        // Response: { "example.com": { "status": "available" } }
+        $domainStatus = $response[$domainName] ?? null;
+        $status = is_array($domainStatus) ? ($domainStatus['status'] ?? null) : $domainStatus;
+
+        return [
+            'available' => strtolower((string) $status) === 'available',
+            'status' => $status,
+            'raw_response' => $response,
+        ];
     }
 }

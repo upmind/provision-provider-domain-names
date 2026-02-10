@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.70](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.70) - 2026-02-10
+
+- Implement LogicBoxes getStatus() function
+
 ## [v2.12.69](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.69) - 2026-02-04
 
 - Update BDReseller provider URL & logo asset

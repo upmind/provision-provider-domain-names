@@ -39,6 +39,7 @@ use Upmind\ProvisionProviders\DomainNames\SynergyWholesale\Provider as SynergyWh
 use Upmind\ProvisionProviders\DomainNames\Netim\Provider as Netim;
 use Upmind\ProvisionProviders\DomainNames\Netistrar\Provider as Netistrar;
 use Upmind\ProvisionProviders\DomainNames\BDReseller\Provider as BDReseller;
+use Upmind\ProvisionProviders\DomainNames\Ascio\Provider as Ascio;
 
 class LaravelServiceProvider extends ProvisionServiceProvider
 {
@@ -81,5 +82,6 @@ class LaravelServiceProvider extends ProvisionServiceProvider
         $this->bindProvider('domain-names', 'moniker', Moniker::class);
         $this->bindProvider('domain-names', 'netistrar', Netistrar::class);
         $this->bindProvider('domain-names', 'bd-reseller', BDReseller::class);
+        $this->bindProvider('domain-names', 'ascio', Ascio::class);
     }
 }

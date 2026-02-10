@@ -28,6 +28,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\BDReseller\Data\Configuration;
@@ -60,7 +61,7 @@ class Provider extends DomainNames implements ProviderInterface
         return AboutData::create()
             ->setName('BD Reseller')
             ->setDescription('Register, renew, and manage .bd domain names')
-            ->setLogoUrl('https://api.upmind.io/images/logos/provision/bd-reseller-logo.png');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/bd-reseller-logo.svg');
     }
 
     /**
@@ -101,10 +102,6 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Registrant details are required.');
         }
 
-        if ($params->renew_years < 2 || $params->renew_years > 10) {
-            $this->errorResult('Renew years must be between 2 and 10.');
-        }
-
         $hosts = array_filter($params->nameservers->pluckHosts());
 
         if (count($hosts) < 2) {
@@ -117,7 +114,7 @@ class Provider extends DomainNames implements ProviderInterface
         ]));
 
         if (count($checkResult->domains) < 1) {
-            $this->errorResult('Empty domain availability check result');
+            $this->errorResult('The domain is not available');
         }
 
         if (!$checkResult->domains[0]->can_register) {
@@ -189,6 +186,14 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
+    {
+        $this->errorResult('Operation not supported');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
     {
         $this->errorResult('Operation not supported');
     }
@@ -288,7 +293,7 @@ class Provider extends DomainNames implements ProviderInterface
         $credentials = base64_encode("{$this->configuration->username}:{$this->configuration->password}");
 
         $client = new Client([
-            'base_uri' => 'https://141.lyre.us',
+            'base_uri' => $this->configuration->isSandbox() ? 'https://141.lyre.us' : 'https://bdia.btcl.com.bd',
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/BDReseller',
                 'Authorization' => "Basic $credentials",

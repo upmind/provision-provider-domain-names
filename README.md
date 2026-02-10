@@ -66,29 +66,30 @@ The following providers are currently implemented:
   - [Synergy Wholesale](https://synergywholesale.com/wp-content/uploads/2024/06/Synergy-Wholesale-API-Documentation-v3-11.pdf)
   - [Netim](https://support.netim.com/en/docs/api-rest-1-0/get-started)
   - [Moniker](https://support.moniker.com/hc/en-gb/articles/24954146333981-Self-Development-Kit-for-PHP)
-  - [BDReseller](https://bdreseller.com)
+  - [BDReseller](https://bdia.btcl.com.bd)
 
 ## Functions
 
-| Function | Parameters | Return Data | Description |
-|---|---|---|---|
-| poll() | [_PollParams_](src/Data/PollParams.php) | [_PollResult_](src/Data/PollResult.php) | Poll for the latest relevant domain event notifications e.g., successful transfer-in, domain deletion etc |
-| domainAvailabilityCheck() | [_DacParams_](src/Data/DacParams.php) | [_DacResult_](src/Data/DacResult.php) | Check the availability of a domain SLD across one or more TLDs |
-| register() | [_RegisterDomainParams_](src/Data/RegisterDomainParams.php) | [_DomainResult_](src/Data/DomainResult.php) | Register a new domain name |
-| transfer() | [_TransferParams_](src/Data/TransferParams.php) | [_DomainResult_](src/Data/DomainResult.php) | Initiate and/or check a domain name transfer, returning successfully if transfer is complete |
-| renew() | [_RenewParams_](src/Data/RenewParams.php) | [_DomainResult_](src/Data/DomainResult.php) | Renew a domain name for a given number of years |
-| getInfo() | [_DomainInfoParams_](src/Data/DomainInfoParams.php) | [_DomainResult_](src/Data/DomainResult.php) | Get information about a domain name including status, expiry date, nameservers, contacts etc |
-| updateRegistrantContact() | [_UpdateDomainContactParams_](src/Data/UpdateDomainContactParams.php) | [_ContactResult_](src/Data/ContactResult.php) | Update the registrant contact details of a domain name |
-| updateNameservers() | [_UpdateNameserversParams_](src/Data/UpdateNameserversParams.php) | [_NameserversResult_](src/Data/NameserversResult.php) | Update a domain's nameservers |
-| setLock() | [_LockParams_](src/Data/LockParams.php) | [_DomainResult_](src/Data/DomainResult.php) | Lock or unlock a domain name for transfers and changes |
-| setAutoRenew() | [_AutoRenewParams_](src/Data/AutoRenewParams.php) | [_DomainResult_](src/Data/DomainResult.php) | Toggle registry auto-renewal for a domain name |
-| getEppCode() | [_EppParams_](src/Data/EppParams.php) | [_EppCodeResult_](src/Data/EppCodeResult.php) | Get the EPP/Auth code of a domain name |
-| updateIpsTag() | [_IpsTagParams_](src/Data/IpsTagParams.php) | [_ResultData_](src/Data/ResultData.php) | Release a domain name to a new IPS tag (UK-only) |
-| getVerificationStatus() | [_VerificationStatusParams_](src/Data/VerificationStatusParams.php) | [_VerificationStatusResult_](src/Data/VerificationStatusResult.php) | Get the verification status of a domain name |
-| resendVerificationEmail() | [_ResendVerificationParams_](src/Data/ResendVerificationParams.php) | [_ResendVerificationResult_](src/Data/ResendVerificationResult.php) | Resend the verification email for a domain name |
-| setGlueRecord() | [_SetGlueRecordParams_](src/Data/SetGlueRecordParams.php) | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Set a glue record for a domain name |
-| removeGlueRecord() | [_RemoveGlueRecordParams_](src/Data/RemoveGlueRecordParams.php) | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Remove a glue record from a domain name |
-| getStatus() | [_DomainInfoParams_](src/Data/DomainInfoParams.php) | [_StatusResult_](src/Data/StatusResult.php) | Get the current normalized status of a domain name along with the expiry date and raw provider statuses |
+| Function                  | Parameters                                                            | Return Data | Description                                                                                               |
+|---------------------------|-----------------------------------------------------------------------|---|-----------------------------------------------------------------------------------------------------------|
+| poll()                    | [_PollParams_](src/Data/PollParams.php)                               | [_PollResult_](src/Data/PollResult.php) | Poll for the latest relevant domain event notifications e.g., successful transfer-in, domain deletion etc |
+| domainAvailabilityCheck() | [_DacParams_](src/Data/DacParams.php)                                 | [_DacResult_](src/Data/DacResult.php) | Check the availability of a domain SLD across one or more TLDs                                            |
+| register()                | [_RegisterDomainParams_](src/Data/RegisterDomainParams.php)           | [_DomainResult_](src/Data/DomainResult.php) | Register a new domain name                                                                                |
+| transfer()                | [_TransferParams_](src/Data/TransferParams.php)                       | [_DomainResult_](src/Data/DomainResult.php) | Initiate and/or check a domain name transfer, returning successfully if transfer is complete              |
+| renew()                   | [_RenewParams_](src/Data/RenewParams.php)                             | [_DomainResult_](src/Data/DomainResult.php) | Renew a domain name for a given number of years                                                           |
+| getInfo()                 | [_DomainInfoParams_](src/Data/DomainInfoParams.php)                   | [_DomainResult_](src/Data/DomainResult.php) | Get information about a domain name including status, expiry date, nameservers, contacts etc              |
+| updateRegistrantContact() | [_UpdateDomainContactParams_](src/Data/UpdateDomainContactParams.php) | [_ContactResult_](src/Data/ContactResult.php) | Update the registrant contact details of a domain name                                                    |
+| updateContact()           | [_UpdateContactParams_](src/Data/UpdateContactParams.php)       | [_ContactResult_](src/Data/ContactResult.php) | Update the contact details of a domain name for every contact type, registrant/techinical/admin/billing   |
+| updateNameservers()       | [_UpdateNameserversParams_](src/Data/UpdateNameserversParams.php)     | [_NameserversResult_](src/Data/NameserversResult.php) | Update a domain's nameservers                                                                             |
+| setLock()                 | [_LockParams_](src/Data/LockParams.php)                               | [_DomainResult_](src/Data/DomainResult.php) | Lock or unlock a domain name for transfers and changes                                                    |
+| setAutoRenew()            | [_AutoRenewParams_](src/Data/AutoRenewParams.php)                     | [_DomainResult_](src/Data/DomainResult.php) | Toggle registry auto-renewal for a domain name                                                            |
+| getEppCode()              | [_EppParams_](src/Data/EppParams.php)                                 | [_EppCodeResult_](src/Data/EppCodeResult.php) | Get the EPP/Auth code of a domain name                                                                    |
+| updateIpsTag()            | [_IpsTagParams_](src/Data/IpsTagParams.php)                           | [_ResultData_](src/Data/ResultData.php) | Release a domain name to a new IPS tag (UK-only)                                                          |
+| getVerificationStatus()   | [_VerificationStatusParams_](src/Data/VerificationStatusParams.php)   | [_VerificationStatusResult_](src/Data/VerificationStatusResult.php) | Get the verification status of a domain name                                                              |
+| resendVerificationEmail() | [_ResendVerificationParams_](src/Data/ResendVerificationParams.php)   | [_ResendVerificationResult_](src/Data/ResendVerificationResult.php) | Resend the verification email for a domain name                                                           |
+| setGlueRecord()           | [_SetGlueRecordParams_](src/Data/SetGlueRecordParams.php)             | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Set a glue record for a domain name                                                                       |
+| removeGlueRecord()        | [_RemoveGlueRecordParams_](src/Data/RemoveGlueRecordParams.php)       | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Remove a glue record from a domain name                                                                   |
+| getStatus()               | [_DomainInfoParams_](src/Data/DomainInfoParams.php)                   | [_StatusResult_](src/Data/StatusResult.php) | Get the current normalized status of a domain name along with the expiry date and raw provider statuses   |
 
 ## Changelog
 

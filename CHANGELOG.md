@@ -2,6 +2,36 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.26.4](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.4) - 2026-02-04
+
+- Update BDReseller provider URL & logo asset
+- Increase timeout for OpenSRS & HRS Domain availability check request to 15 seconds
+
+## [v2.26.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.3) - 2026-01-26
+
+- Implement Enom getStatus() function
+
+## [v2.26.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.2) - 2026-01-23
+
+- Remove registration period check from BDReseller register() implementation
+
+## [v2.26.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.1) - 2026-01-19
+
+- Add `sandbox` configuration value to BDReseller provider for determining API URL
+
+## [v2.26.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.0) - 2026-01-16
+
+- Add `extra` to StatusResult
+- Implement OpenSRS getStatus() function
+
+## [v2.25.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.25.1) - 2026-01-16
+
+- Fix errant whitespace in UpdateContactParams.contact_type `in:` rule
+
+## [v2.25.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.25.0) - 2026-01-16
+
+- Implement updateContact() function to update billing, tech and admin contacts
+
 ## [v2.24.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.24.0) - 2026-01-06
 
 - Implement BDReseller provider

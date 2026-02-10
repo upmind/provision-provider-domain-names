@@ -365,30 +365,30 @@ class AscioApi
 
         $params = [
             'Type' => 'Register',
-            'Domain' => (object) [
+            'Domain' => (object)[
                 'Name' => $domainName,
                 'NameServers' => $nameserverParams,
                 'RenewPeriod' => $period,
                 'Owner' => new SoapVar(
-                    (object) ['Handle' => $contacts[self::CONTACT_TYPE_REGISTRANT]],
+                    (object)['Handle' => $contacts[self::CONTACT_TYPE_REGISTRANT]],
                     SOAP_ENC_OBJECT,
                     'Registrant',
                     'http://www.ascio.com/2013/02'
                 ),
                 'Admin' => new SoapVar(
-                    (object) ['Handle' => $contacts[self::CONTACT_TYPE_ADMIN]],
+                    (object)['Handle' => $contacts[self::CONTACT_TYPE_ADMIN]],
                     SOAP_ENC_OBJECT,
                     'Contact',
                     'http://www.ascio.com/2013/02'
                 ),
                 'Tech' => new SoapVar(
-                    (object) ['Handle' => $contacts[self::CONTACT_TYPE_TECH]],
+                    (object)['Handle' => $contacts[self::CONTACT_TYPE_TECH]],
                     SOAP_ENC_OBJECT,
                     'Contact',
                     'http://www.ascio.com/2013/02'
                 ),
                 'Billing' => new SoapVar(
-                    (object) ['Handle' => $contacts[self::CONTACT_TYPE_BILLING]],
+                    (object)['Handle' => $contacts[self::CONTACT_TYPE_BILLING]],
                     SOAP_ENC_OBJECT,
                     'Contact',
                     'http://www.ascio.com/2013/02'
@@ -497,30 +497,30 @@ class AscioApi
 
         $params = [
             'Type' => 'Transfer',
-            'Domain' => (object) [
+            'Domain' => (object)[
                 'Name' => $domainName,
                 'NameServers' => $nameserverParams,
                 'AuthInfo' => $eppCode,
                 'Owner' => new SoapVar(
-                    (object) $this->setContactParams($contacts[self::CONTACT_TYPE_REGISTRANT]),
+                    (object)$this->setContactParams($contacts[self::CONTACT_TYPE_REGISTRANT]),
                     SOAP_ENC_OBJECT,
                     'Registrant',
                     'http://www.ascio.com/2013/02'
                 ),
                 'Admin' => new SoapVar(
-                    (object) $this->setContactParams($contacts[self::CONTACT_TYPE_ADMIN]),
+                    (object)$this->setContactParams($contacts[self::CONTACT_TYPE_ADMIN]),
                     SOAP_ENC_OBJECT,
                     'Contact',
                     'http://www.ascio.com/2013/02'
                 ),
                 'Tech' => new SoapVar(
-                    (object) $this->setContactParams($contacts[self::CONTACT_TYPE_TECH]),
+                    (object)$this->setContactParams($contacts[self::CONTACT_TYPE_TECH]),
                     SOAP_ENC_OBJECT,
                     'Contact',
                     'http://www.ascio.com/2013/02'
                 ),
                 'Billing' => new SoapVar(
-                    (object) $this->setContactParams($contacts[self::CONTACT_TYPE_BILLING]),
+                    (object)$this->setContactParams($contacts[self::CONTACT_TYPE_BILLING]),
                     SOAP_ENC_OBJECT,
                     'Contact',
                     'http://www.ascio.com/2013/02'
@@ -688,4 +688,35 @@ class AscioApi
 
         return $this->makeRequest($command, $params, 'CreateRegistrantResult')['Registrant']['Handle'] ?? null;
     }
+
+    /**
+     * @throws \SoapFault
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws NumberParseException
+     */
+    public function updateContact(
+        string        $domainName,
+        ContactParams $contactParams,
+        string        $contactType
+    ): ContactData
+    {
+        $command = 'createOrder';
+
+        if ($contactType == self::CONTACT_TYPE_REGISTRANT) {
+            return $this->updateRegistrantContact($domainName, $contactParams);
+        }
+
+        $params = [
+            'Type' => "ContactUpdate",
+            'Domain' => [
+                'Name' => $domainName,
+                $contactType => $this->setContactParams($contactParams)
+            ],
+        ];
+
+        $this->makeRequest($command, $params, 'CreateOrderResult');
+
+        return $this->getDomainInfo($domainName)[$contactType];
+    }
+
 }

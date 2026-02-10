@@ -22,6 +22,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -33,6 +34,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
@@ -281,6 +283,32 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            $contact = $this->api()->updateContact($domainName, $params->contact, $this->getProviderContactTypeValue($contactType));
+
+            return ContactResult::create($contact);
+        } catch (Throwable $e) {
+            $this->handleException($e, $params);
+        }
+    }
+
+
     public function updateNameservers(UpdateNameserversParams $params): NameserversResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -305,6 +333,25 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setMessage(sprintf('Name servers for %s domain were updated!', $domainName));
         } catch (\Throwable $e) {
             $this->handleException($e);
+        }
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getProviderContactTypeValue(ContactType $contactType): string
+    {
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                return AscioApi::CONTACT_TYPE_REGISTRANT;
+            case $contactType->equals(ContactType::ADMIN()):
+                return AscioApi::CONTACT_TYPE_ADMIN;
+            case $contactType->equals(ContactType::BILLING()):
+                return AscioApi::CONTACT_TYPE_BILLING;
+            case $contactType->equals(ContactType::TECH()):
+                return AscioApi::CONTACT_TYPE_TECH;
+            default:
+                throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
         }
     }
 

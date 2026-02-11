@@ -11,6 +11,7 @@ use SoapHeader;
 use Throwable;
 use SoapClient;
 use SoapFault;
+use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -293,7 +294,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         try {
             $contactType = $params->getContactTypeEnum();
-        } catch (UnexpectedValueException $ex) {
+        } catch (UnexpectedValueException) {
             $this->errorResult('Invalid contact type: ' . $params->contact_type);
         }
 
@@ -304,7 +305,7 @@ class Provider extends DomainNames implements ProviderInterface
 
             return ContactResult::create($contact);
         } catch (Throwable $e) {
-            $this->handleException($e, $params);
+            $this->handleException($e);
         }
     }
 

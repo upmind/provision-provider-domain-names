@@ -152,14 +152,17 @@ class AscioApi
 
         $info = $this->makeRequest($command, $params, 'GetDomainsResult');
 
-        try {
-            return $info['DomainInfos']['DomainInfo'];
-        } catch (\Exception $e) {
-            throw ProvisionFunctionError::create("Domain info not found for $domainName")
+
+        $domainInfo = $info['DomainInfos']['DomainInfo'] ?? null;
+
+        if ($domainInfo == null) {
+            throw ProvisionFunctionError::create("Domain not found: $domainName")
                 ->withData([
                     'response' => $info,
                 ]);
         }
+
+        return $domainInfo;
     }
 
 

@@ -109,6 +109,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
  - [PEWEO](https://www.peweo.com/)
  - [Dan](https://github.com/domainregistrar)
 -  [Roussetos Karafyllakis](https://github.com/RoussKS)
+-  [Nicolas Ramirez](https://github.com/nramirez-yapi)
  - [All Contributors](../../contributors)
 
 ## License

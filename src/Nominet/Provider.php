@@ -1186,9 +1186,49 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            $domainInfo = $this->_getDomain($domainName);
+
+            $expiresAt = $domainInfo->expires_at
+                ? Carbon::parse($domainInfo->expires_at)
+                : null;
+
+            if ($expiresAt !== null && $expiresAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo->statuses ?? null);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiresAt)
+                ->setRawStatuses($domainInfo->statuses ?? null);
+        } catch (Throwable $e) {
+            // Domain not found in account - check registry availability
+            try {
+                $checkResults = $this->_checkDomains([$domainName]);
+                $availability = $checkResults[0] ?? null;
+
+                if ($availability && $availability['available']) {
+                    // Available at registry = was cancelled/deleted
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $availability]);
+                }
+
+                // Not available = registered elsewhere (transferred away)
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt(null)
+                    ->setExtra(['availability_check' => $availability]);
+            } catch (Throwable $checkException) {
+                // If check also fails, re-throw original error
+                throw $e;
+            }
+        }
     }
 }

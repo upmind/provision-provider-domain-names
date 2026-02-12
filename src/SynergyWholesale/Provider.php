@@ -499,8 +499,8 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            // Get domain info - throws ProvisionFunctionError if not found
-            $domainInfo = $this->api()->getDomainInfo($domainName);
+            // Get domain info - use minimal mode to skip extra API calls (glue records, etc.)
+            $domainInfo = $this->api()->getDomainInfo($domainName, minimal: true);
 
             $expiresAt = isset($domainInfo['expires_at'])
                 ? Carbon::parse($domainInfo['expires_at'])

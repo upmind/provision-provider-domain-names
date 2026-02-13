@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.26.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.6) - 2026-02-12
+
+- Implement SynergyWholesale getStatus() function
+
 ## [v2.26.5](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.5) - 2026-02-10
 
 - Implement LogicBoxes getStatus() function

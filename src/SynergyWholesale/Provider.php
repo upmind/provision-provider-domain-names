@@ -500,7 +500,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             // Get domain info - use minimal mode to skip extra API calls (glue records, etc.)
-            $domainInfo = $this->api()->getDomainInfo($domainName, minimal: true);
+            $domainInfo = $this->api()->getDomainInfo($domainName, true);
 
             $expiresAt = isset($domainInfo['expires_at'])
                 ? Carbon::parse($domainInfo['expires_at'])

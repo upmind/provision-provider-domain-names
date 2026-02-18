@@ -560,7 +560,7 @@ class Provider extends DomainNames implements ProviderInterface
             'ns' => $ns,
             'created_at' => $domainData['creation_date'] ?? null,
             'updated_at' => $domainData['last_changed'] ?? null,
-            'expires_at' => $domainData['expiration_date'] ?? null,
+            'expires_at' => $domainData['renewal_date'] ?? null,
         ])->setMessage($msg);
 
         /**

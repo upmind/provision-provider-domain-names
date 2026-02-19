@@ -552,9 +552,9 @@ class Provider extends DomainNames implements ProviderInterface
         $expirationDate = $domainData['expiration_date'] ?? null;
 
         if ($renewalDate && $expirationDate) {
-            $expiresAt = Carbon::parse($renewalDate)->lessThan(Carbon::parse($expirationDate))
-                ? $renewalDate
-                : $expirationDate;
+            $renewalCarbon = Carbon::parse($renewalDate);
+            $expirationCarbon = Carbon::parse($expirationDate);
+            $expiresAt = $renewalCarbon->lessThan($expirationCarbon) ? $renewalDate : $expirationDate;
         } elseif ($renewalDate) {
             $expiresAt = $renewalDate;
         } elseif ($expirationDate) {

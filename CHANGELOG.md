@@ -5,6 +5,7 @@ All notable changes to the package will be documented in this file.
 ## Unreleased
 
 - Fix OpenProvider getting `renewal_date` as expiration date if present when getting domain info.
+- Fix OpenProvider, sanitising city, state, and postal code fields to exclude special characters. 
 
 ## [v2.26.5](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.26.5) - 2026-02-10
 

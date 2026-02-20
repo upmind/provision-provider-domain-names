@@ -546,21 +546,6 @@ class Provider extends DomainNames implements ProviderInterface
                 $renew = null;
         }
 
-        // Compare renewal_date and expiration_date, use the earlier one
-        $expiresAt = null;
-        $renewalDate = $domainData['renewal_date'] ?? null;
-        $expirationDate = $domainData['expiration_date'] ?? null;
-
-        if ($renewalDate && $expirationDate) {
-            $renewalCarbon = Carbon::parse($renewalDate);
-            $expirationCarbon = Carbon::parse($expirationDate);
-            $expiresAt = $renewalCarbon->lessThan($expirationCarbon) ? $renewalDate : $expirationDate;
-        } elseif ($renewalDate) {
-            $expiresAt = $renewalDate;
-        } elseif ($expirationDate) {
-            $expiresAt = $expirationDate;
-        }
-
         $result = DomainResult::create([
             'id' => (string)$domainData['id'],
             'domain' => Utils::getDomain(Arr::get($domainData, 'domain.name'), Arr::get($domainData, 'domain.extension')),
@@ -575,7 +560,7 @@ class Provider extends DomainNames implements ProviderInterface
             'ns' => $ns,
             'created_at' => $domainData['creation_date'] ?? null,
             'updated_at' => $domainData['last_changed'] ?? null,
-            'expires_at' => $expiresAt,
+            'expires_at' => $domainData['renewal_date'] ?? $domainData['expiration_date'], // use renewal date if present, otherwise fallback to standard.
         ])->setMessage($msg);
 
         /**

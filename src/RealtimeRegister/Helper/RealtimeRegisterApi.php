@@ -616,7 +616,8 @@ class RealtimeRegisterApi
         return !in_array(Utils::getRootTld($domain), [
             'nl',
             'nu',
-            'lu'
+            'lu',
+            'uk',
         ]);
     }
 }

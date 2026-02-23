@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\GoDaddy;
 
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Arr;
@@ -481,9 +482,65 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            $domainInfo = $this->api()->getDomainInfo($domainName);
+
+            $expiresAt = isset($domainInfo['expires_at'])
+                ? Carbon::parse($domainInfo['expires_at'])
+                : null;
+
+            if ($expiresAt !== null && $expiresAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo['statuses'] ?? null);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiresAt)
+                ->setRawStatuses($domainInfo['statuses'] ?? null);
+
+        } catch (Throwable $e) {
+            // Domain not found in account - check registry availability
+            try {
+                $availability = $this->checkDomainAvailability($domainName);
+
+                if ($availability['available']) {
+                    // Available at registry = was cancelled/deleted
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $availability]);
+                }
+
+                // Not available = registered elsewhere (transferred away)
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt(null)
+                    ->setExtra(['availability_check' => $availability]);
+
+            } catch (Throwable $checkException) {
+                $this->handleException($e, $params);
+            }
+        }
+    }
+
+    /**
+     * Check domain availability for status determination.
+     *
+     * @return array{available: bool, raw_result: array}
+     */
+    protected function checkDomainAvailability(string $domainName): array
+    {
+        $results = $this->api()->checkMultipleDomains([$domainName]);
+        $result = $results[0] ?? null;
+
+        return [
+            'available' => $result ? $result->can_register : false,
+            'raw_result' => $result ? $result->toArray() : [],
+        ];
     }
 }

@@ -590,9 +590,70 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $domainName = Utils::getDomain(
+            Utils::normalizeSld($params->sld),
+            Utils::normalizeTld($params->tld)
+        );
+
+        try {
+            $domainInfo = $this->epp()->getDomainInfo($domainName);
+
+            $expiresAt = isset($domainInfo['expires_at'])
+                ? Carbon::parse($domainInfo['expires_at'])
+                : null;
+
+            if ($expiresAt !== null && $expiresAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo['statuses'] ?? null);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiresAt)
+                ->setRawStatuses($domainInfo['statuses'] ?? null);
+
+        } catch (eppException $e) {
+            // Domain not found in account - check registry availability
+            try {
+                $availability = $this->checkDomainAvailability($domainName);
+
+                if ($availability['available']) {
+                    // Available at registry = was cancelled/deleted
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $availability]);
+                }
+
+                // Not available = registered elsewhere (transferred away)
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt(null)
+                    ->setExtra(['availability_check' => $availability]);
+
+            } catch (eppException $checkException) {
+                $this->_eppExceptionHandler($e);
+            }
+        }
+    }
+
+    /**
+     * Check domain availability for status determination.
+     *
+     * @return array{available: bool, raw_result: array}
+     *
+     * @throws eppException
+     */
+    protected function checkDomainAvailability(string $domainName): array
+    {
+        $results = $this->epp()->checkMultipleDomains([$domainName]);
+        $result = $results[0] ?? null;
+
+        return [
+            'available' => $result ? $result->can_register : false,
+            'raw_result' => $result ? $result->toArray() : [],
+        ];
     }
 }

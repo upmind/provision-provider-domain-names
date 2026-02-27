@@ -490,28 +490,47 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $domainInfo = $this->api()->getDomainInfo($domainName);
 
-            if (in_array('TRANSFERRED_OUT', $domainInfo['statuses'])) {
-                return StatusResult::create()
-                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
-                    ->setExpiresAt(null)
-                    ->setRawStatuses($domainInfo['statuses'] ?? null);
-            }
-
             $expiresAt = isset($domainInfo['expires_at'])
                 ? Carbon::parse($domainInfo['expires_at'])
                 : null;
 
-            if ($expiresAt !== null && $expiresAt->isPast()) {
+            $status = $domainInfo['statuses'][0] ?? null;
+
+            // Check API status field for non-active states
+            // Note: GoDaddy returns status variants like TRANSFERRED_OUT, CANCELLED_HELD, EXPIRED_REASSIGNED
+            if (Str::startsWith($status, 'TRANSFERRED')) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo['statuses']);
+            }
+
+            if (Str::startsWith($status, 'CANCELLED')) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_CANCELLED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo['statuses']);
+            }
+
+            if (Str::startsWith($status, 'EXPIRED') || ($expiresAt !== null && $expiresAt->isPast())) {
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_EXPIRED)
                     ->setExpiresAt($expiresAt)
-                    ->setRawStatuses($domainInfo['statuses'] ?? null);
+                    ->setRawStatuses($domainInfo['statuses']);
             }
 
+            if ($status === 'ACTIVE') {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_ACTIVE)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo['statuses']);
+            }
+
+            // Unknown/other status - return as active with raw statuses for debugging
             return StatusResult::create()
                 ->setStatus(StatusResult::STATUS_ACTIVE)
                 ->setExpiresAt($expiresAt)
-                ->setRawStatuses($domainInfo['statuses'] ?? null);
+                ->setRawStatuses($domainInfo['statuses']);
         } catch (ProvisionFunctionError | GuzzleException $e) {
             try {
                 if (!$this->isDomainNotFoundException($e)) {

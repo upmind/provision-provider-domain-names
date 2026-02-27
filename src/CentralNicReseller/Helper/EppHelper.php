@@ -713,8 +713,7 @@ class EppHelper
 
         if ($renewalDate === null) {
             throw new ProvisionFunctionError(
-                'Renewal date (keysys:renDate) not found in EPP response. '
-                . 'CentralNic Reseller requires the renewal date for accurate expiration tracking.'
+                'Renewal date (keysys:renDate) not found in EPP response'
             );
         }
 

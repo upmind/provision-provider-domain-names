@@ -2,7 +2,7 @@
 
 All notable changes to the package will be documented in this file.
 
-## [v2.27.5](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.27.5) - 2026-02-27
+## [v2.27.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.27.0) - 2026-02-27
 
 - Fix RealtimeRegister .uk transfer period error
 - Fix OpenProvider getting `renewal_date` as expiration date if present when getting domain info

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\CentralNicReseller\Helper;
 
 use Carbon\Carbon;
-use DateTimeImmutable;
-use DateTimeInterface;
 use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppResponse;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
@@ -699,47 +697,27 @@ class EppHelper
     }
 
     /**
+     * Get the domain renewal date from the EPP response.
+     *
+     * CentralNic Reseller uses the keysys:renDate as the authoritative date for
+     * automated renewal or deletion. This date must always be present and is the
+     * only date that should be used for expiration tracking.
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private function getDomainExpirationDateFromResponse(eppResponse $response): string
     {
-        $expirationDate = $response->queryPath('/epp:epp/epp:response/epp:resData/domain:infData/domain:exDate')
-            ?? $response->queryPath('/epp:epp/epp:response/epp:resData/domain:creData/domain:exDate');
-
-        $paidUntilDate = $response->queryPath(
-            '/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:punDate'
-        );
-
         $renewalDate = $response->queryPath(
             '/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:renDate'
         );
 
-        // If all potential expiration dates are null, throw error
-        if ($expirationDate === null && $paidUntilDate === null && $renewalDate === null) {
-            throw new ProvisionFunctionError('No expiration date found in EPP response.');
+        if ($renewalDate === null) {
+            throw new ProvisionFunctionError(
+                'Renewal date (keysys:renDate) not found in EPP response'
+            );
         }
 
-        // If only the expiration date is available, return it
-        if ($paidUntilDate === null && $renewalDate === null) {
-            return $expirationDate;
-        }
-
-        // Now we handle cases where either paidUntilDate or renewalDate is available
-        if ($paidUntilDate !== null && $renewalDate === null) {
-            return $paidUntilDate;
-        }
-
-        if ($paidUntilDate === null && $renewalDate !== null) {
-            return $renewalDate;
-        }
-
-        // Lastly, if both paidUntilDate and renewalDate are available,
-        // compare the two dates,
-        // and return the earliest one.
-        $paidUntil = DateTimeImmutable::createFromFormat(DateTimeInterface::RFC3339_EXTENDED, $paidUntilDate);
-        $renewal = DateTimeImmutable::createFromFormat(DateTimeInterface::RFC3339_EXTENDED, $renewalDate);
-
-        return $paidUntil <= $renewal ? $paidUntilDate : $renewalDate;
+        return $renewalDate;
     }
 
     /**

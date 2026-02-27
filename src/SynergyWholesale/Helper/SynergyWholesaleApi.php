@@ -128,7 +128,11 @@ class SynergyWholesaleApi
         return $response['fields'] ?? [];
     }
 
-    public function getDomainInfo(string $domainName): array
+    /**
+     * @param string $domainName
+     * @param bool $minimal When true, skip extra API calls (glue records, etc.)
+     */
+    public function getDomainInfo(string $domainName, bool $minimal = false): array
     {
         $command = 'bulkDomainInfo';
         $params = [
@@ -140,7 +144,7 @@ class SynergyWholesaleApi
         /** @var \Illuminate\Support\Collection $statusesCollection */
         $statusesCollection = collect([$response['status'], $response['domain_status']]);
 
-        $glueRecords = $this->listGlueRecords($domainName);
+        $glueRecords = $minimal ? [] : $this->listGlueRecords($domainName);
 
         return [
             'id' => $response['domainRoid'],

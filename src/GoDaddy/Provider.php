@@ -6,11 +6,13 @@ namespace Upmind\ProvisionProviders\DomainNames\GoDaddy;
 
 use Carbon\Carbon;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
 use UnexpectedValueException;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
@@ -31,6 +33,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
 use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
 use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
+use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
@@ -487,6 +490,13 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $domainInfo = $this->api()->getDomainInfo($domainName);
 
+            if (in_array('TRANSFERRED_OUT', $domainInfo['statuses'])) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt(null)
+                    ->setRawStatuses($domainInfo['statuses'] ?? null);
+            }
+
             $expiresAt = isset($domainInfo['expires_at'])
                 ? Carbon::parse($domainInfo['expires_at'])
                 : null;
@@ -502,13 +512,17 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setStatus(StatusResult::STATUS_ACTIVE)
                 ->setExpiresAt($expiresAt)
                 ->setRawStatuses($domainInfo['statuses'] ?? null);
-
-        } catch (Throwable $e) {
-            // Domain not found in account - check registry availability
+        } catch (ProvisionFunctionError | GuzzleException $e) {
             try {
+                if (!$this->isDomainNotFoundException($e)) {
+                    throw $e;
+                }
+
+                // Domain not found in account - check registry availability
+
                 $availability = $this->checkDomainAvailability($domainName);
 
-                if ($availability['available']) {
+                if ($availability->can_register ?? false) {
                     // Available at registry = was cancelled/deleted
                     return StatusResult::create()
                         ->setStatus(StatusResult::STATUS_CANCELLED)
@@ -516,12 +530,18 @@ class Provider extends DomainNames implements ProviderInterface
                         ->setExtra(['availability_check' => $availability]);
                 }
 
-                // Not available = registered elsewhere (transferred away)
-                return StatusResult::create()
-                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
-                    ->setExpiresAt(null)
-                    ->setExtra(['availability_check' => $availability]);
+                if ($availability->can_transfer ?? false) {
+                    // Registered elsewhere (transferred away)
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $availability]);
+                }
 
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_UNKNOWN)
+                    ->setExpiresAt(null)
+                    ->setExtra(['availability_check' => $availability ?? null]);
             } catch (Throwable $checkException) {
                 $this->handleException($e, $params);
             }
@@ -529,18 +549,31 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * Determine whether the given exception means "domain not found in account".
+     */
+    protected function isDomainNotFoundException(Throwable $e): bool
+    {
+        do {
+            if ($e instanceof RequestException && $e->hasResponse()) {
+                $response = $e->getResponse();
+                $data = json_decode($response->getBody()->__toString(), true);
+                if ($response->getStatusCode() === 404 && Str::contains(strtolower($data['message'] ?? ''), 'domain')) {
+                    return true;
+                }
+            }
+        } while ($e instanceof ProvisionFunctionError && ($e = $e->getPrevious()));
+
+        return false;
+    }
+
+    /**
      * Check domain availability for status determination.
      *
-     * @return array{available: bool, raw_result: array}
+     * @return DacDomain|null
      */
-    protected function checkDomainAvailability(string $domainName): array
+    protected function checkDomainAvailability(string $domainName): ?DacDomain
     {
         $results = $this->api()->checkMultipleDomains([$domainName]);
-        $result = $results[0] ?? null;
-
-        return [
-            'available' => $result ? $result->can_register : false,
-            'raw_result' => $result ? $result->toArray() : [],
-        ];
+        return $results[0] ?? null;
     }
 }

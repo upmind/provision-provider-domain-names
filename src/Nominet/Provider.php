@@ -846,7 +846,7 @@ class Provider extends DomainNames implements ProviderInterface
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
             'statuses' => $this->statusesToStrings($response->getDomainStatuses() ?? []),
-            'registrant' => [
+            'registrant' => !isset($contact) ? null : [
                 'id' => $response->getDomainRegistrant(),
                 'name' => $contact->getContactName(),
                 'email' => $contact->getContactEmail(),
@@ -1210,7 +1210,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setStatus(StatusResult::STATUS_ACTIVE)
                 ->setExpiresAt($expiresAt)
                 ->setRawStatuses($domainInfo->statuses ?? null);
-        } catch (Throwable $e) {
+        } catch (eppException $e) {
             // Domain not found in account - check registry availability
             try {
                 $checkResults = $this->_checkDomains([$domainName]);
@@ -1224,14 +1224,19 @@ class Provider extends DomainNames implements ProviderInterface
                         ->setExtra(['availability_check' => $availability]);
                 }
 
+                if ($availability && $availability['reason'] === 'Domain name invalid') {
+                    // invalid tld
+                    $this->_eppExceptionHandler($e, $params->toArray());
+                }
+
                 // Not available = registered elsewhere (transferred away)
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
                     ->setExpiresAt(null)
                     ->setExtra(['availability_check' => $availability]);
-            } catch (Throwable $checkException) {
+            } catch (eppException $checkException) {
                 // If check also fails, re-throw original error
-                throw $e;
+                $this->_eppExceptionHandler($e, $params->toArray());
             }
         }
     }

@@ -799,9 +799,19 @@ class Provider extends DomainNames implements ProviderInterface
         return $response->getResultMessage();
     }
 
+    /**
+     * @param  string  $domainName
+     * @param  string  $msg
+     * @param  bool    $minimal  If true, skip additional requests for things like contacts
+     * @return DomainResult
+     *
+     * @throws \Metaregistrar\EPP\eppException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     protected function _getDomain(
         string $domainName,
-        string $msg = 'Domain info obtained'
+        string $msg = 'Domain info obtained',
+        bool $minimal = false
     ): DomainResult {
         $domain = new eppDomain($domainName);
         $info = new eppInfoDomainRequest($domain, eppInfoDomainRequest::HOSTS_ALL);
@@ -822,15 +832,20 @@ class Provider extends DomainNames implements ProviderInterface
             }
         }
 
-        $contact = $this->_contactInfo($response->getDomainRegistrant());
+        if (!$minimal) {
+            $contact = $this->_contactInfo($response->getDomainRegistrant());
 
-        $adminContactId = $response->getDomainContact('admin');
-        $techContactId = $response->getDomainContact('tech');
-        $billingContactId = $response->getDomainContact('billing');
+            /** @var string|null $adminContactId */
+            $adminContactId = $response->getDomainContact('admin');
+            /** @var string|null $techContactId */
+            $techContactId = $response->getDomainContact('tech');
+            /** @var string|null $billingContactId */
+            $billingContactId = $response->getDomainContact('billing');
 
-        $adminContact = $adminContactId === null ? null : $this->_contactInfo($adminContactId);
-        $techContact = $techContactId === null ? null : $this->_contactInfo($techContactId);
-        $billingContact = $billingContactId === null ? null : $this->_contactInfo($billingContactId);
+            $adminContact = $adminContactId === null ? null : $this->_contactInfo($adminContactId);
+            $techContact = $techContactId === null ? null : $this->_contactInfo($techContactId);
+            $billingContact = $billingContactId === null ? null : $this->_contactInfo($billingContactId);
+        }
 
         return DomainResult::create([
             'id' => $response->getDomainId(),
@@ -848,7 +863,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'country_code' => $contact->getContactCountrycode(),
                 'extra' => $contact->getNominetContactData(),
             ],
-            'billing' => $billingContact === null ? null : [
+            'billing' => !isset($billingContact) ? null : [
                 'id' => $billingContact->getContactId(),
                 'name' => $billingContact->getContactName(),
                 'email' => $billingContact->getContactEmail(),
@@ -860,7 +875,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'country_code' => $billingContact->getContactCountrycode(),
                 'extra' => $billingContact->getNominetContactData(),
             ],
-            'tech' => $techContact === null ? null : [
+            'tech' => !isset($techContact) ? null : [
                 'id' => $techContact->getContactId(),
                 'name' => $techContact->getContactName(),
                 'email' => $techContact->getContactEmail(),
@@ -872,7 +887,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'country_code' => $techContact->getContactCountrycode(),
                 'extra' => $techContact->getNominetContactData(),
             ],
-            'admin' => $adminContact === null ? null : [
+            'admin' => !isset($adminContact) ? null : [
                 'id' => $adminContact->getContactId(),
                 'name' => $adminContact->getContactName(),
                 'email' => $adminContact->getContactEmail(),
@@ -1164,7 +1179,7 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            $domainInfo = $this->_getDomain($domainName);
+            $domainInfo = $this->_getDomain($domainName, 'Domain status obtained', true);
 
             $expiresAt = $domainInfo->expires_at
                 ? Carbon::parse($domainInfo->expires_at)

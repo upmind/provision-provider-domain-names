@@ -798,6 +798,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @param  string  $domainName
      * @param  string  $msg
+     * @param  bool    $minimal  If true, skip additional requests for things like contacts
      * @return DomainResult
      *
      * @throws \Metaregistrar\EPP\eppException
@@ -805,7 +806,8 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function _getDomain(
         string $domainName,
-        string $msg = 'Domain info obtained'
+        string $msg = 'Domain info obtained',
+        bool $minimal = false
     ): DomainResult {
         $domain = new eppDomain($domainName);
         $info = new eppInfoDomainRequest($domain, eppInfoDomainRequest::HOSTS_ALL);
@@ -825,24 +827,26 @@ class Provider extends DomainNames implements ProviderInterface
             }
         }
 
-        $contact = $this->_contactInfo($response->getDomainRegistrant());
+        if (!$minimal) {
+            $contact = $this->_contactInfo($response->getDomainRegistrant());
 
-        /** @var string|null $adminContactId */
-        $adminContactId = $response->getDomainContact('admin');
-        /** @var string|null $techContactId */
-        $techContactId = $response->getDomainContact('tech');
-        /** @var string|null $billingContactId */
-        $billingContactId = $response->getDomainContact('billing');
+            /** @var string|null $adminContactId */
+            $adminContactId = $response->getDomainContact('admin');
+            /** @var string|null $techContactId */
+            $techContactId = $response->getDomainContact('tech');
+            /** @var string|null $billingContactId */
+            $billingContactId = $response->getDomainContact('billing');
 
-        $adminContact = $adminContactId === null ? null : $this->_contactInfo($adminContactId);
-        $techContact = $techContactId === null ? null : $this->_contactInfo($techContactId);
-        $billingContact = $billingContactId === null ? null : $this->_contactInfo($billingContactId);
+            $adminContact = $adminContactId === null ? null : $this->_contactInfo($adminContactId);
+            $techContact = $techContactId === null ? null : $this->_contactInfo($techContactId);
+            $billingContact = $billingContactId === null ? null : $this->_contactInfo($billingContactId);
+        }
 
         return DomainResult::create([
             'id' => $response->getDomainId(),
             'domain' => $response->getDomainName(),
             'statuses' => $this->statusesToStrings($response->getDomainStatuses() ?? []),
-            'registrant' => [
+            'registrant' => !isset($contact) ? null : [
                 'id' => $response->getDomainRegistrant(),
                 'name' => $contact->getContactName(),
                 'email' => $contact->getContactEmail(),
@@ -854,7 +858,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'country_code' => $contact->getContactCountrycode(),
                 'extra' => $contact->getNominetContactData(),
             ],
-            'billing' => $billingContact === null ? null : [
+            'billing' => !isset($billingContact) ? null : [
                 'id' => $billingContact->getContactId(),
                 'name' => $billingContact->getContactName(),
                 'email' => $billingContact->getContactEmail(),
@@ -866,7 +870,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'country_code' => $billingContact->getContactCountrycode(),
                 'extra' => $billingContact->getNominetContactData(),
             ],
-            'tech' => $techContact === null ? null : [
+            'tech' => !isset($techContact) ? null : [
                 'id' => $techContact->getContactId(),
                 'name' => $techContact->getContactName(),
                 'email' => $techContact->getContactEmail(),
@@ -878,7 +882,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'country_code' => $techContact->getContactCountrycode(),
                 'extra' => $techContact->getNominetContactData(),
             ],
-            'admin' => $adminContact === null ? null : [
+            'admin' => !isset($adminContact) ? null : [
                 'id' => $adminContact->getContactId(),
                 'name' => $adminContact->getContactName(),
                 'email' => $adminContact->getContactEmail(),
@@ -1186,9 +1190,54 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            $domainInfo = $this->_getDomain($domainName, 'Domain status obtained', true);
+
+            $expiresAt = $domainInfo->expires_at
+                ? Carbon::parse($domainInfo->expires_at)
+                : null;
+
+            if ($expiresAt !== null && $expiresAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($domainInfo->statuses ?? null);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiresAt)
+                ->setRawStatuses($domainInfo->statuses ?? null);
+        } catch (eppException $e) {
+            // Domain not found in account - check registry availability
+            try {
+                $checkResults = $this->_checkDomains([$domainName]);
+                $availability = $checkResults[0] ?? null;
+
+                if ($availability && $availability['available']) {
+                    // Available at registry = was cancelled/deleted
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $availability]);
+                }
+
+                if ($availability && $availability['reason'] === 'Domain name invalid') {
+                    // invalid tld
+                    $this->_eppExceptionHandler($e, $params->toArray());
+                }
+
+                // Not available = registered elsewhere (transferred away)
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setExpiresAt(null)
+                    ->setExtra(['availability_check' => $availability]);
+            } catch (eppException $checkException) {
+                // If check also fails, re-throw original error
+                $this->_eppExceptionHandler($e, $params->toArray());
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ All notable changes to the package will be documented in this file.
 - Fix OpenProvider, sanitising city, state, and postal code fields to exclude special characters
 - Implement SynergyWholesale getStatus() function
 - Implement Nominet getStatus() function
+- Fix CentralnicReseller DomainResult to always use the `renewal_date` as expiry date
 
 ## [v2.12.70](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.70) - 2026-02-10
 

@@ -556,17 +556,29 @@ class Provider extends DomainNames implements ProviderInterface
                 ? Carbon::parse($domainInfo['expires_at'])
                 : null;
 
+            $statuses = $domainInfo['statuses'] ?? [];
+
+            // Check EPP status codes for non-active states
+            // pendingDelete or redemptionPeriod indicate domain is being/was deleted
+            if ($this->hasAnyStatus($statuses, ['pendingDelete', 'redemptionPeriod'])) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_CANCELLED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($statuses);
+            }
+
+            // Check expiration date
             if ($expiresAt !== null && $expiresAt->isPast()) {
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_EXPIRED)
                     ->setExpiresAt($expiresAt)
-                    ->setRawStatuses($domainInfo['statuses'] ?? null);
+                    ->setRawStatuses($statuses);
             }
 
             return StatusResult::create()
                 ->setStatus(StatusResult::STATUS_ACTIVE)
                 ->setExpiresAt($expiresAt)
-                ->setRawStatuses($domainInfo['statuses'] ?? null);
+                ->setRawStatuses($statuses);
 
         } catch (eppException $e) {
             // Domain not found in account - check registry availability
@@ -591,6 +603,17 @@ class Provider extends DomainNames implements ProviderInterface
                 $this->_eppExceptionHandler($e);
             }
         }
+    }
+
+    /**
+     * Check if statuses array contains any of the given status codes.
+     *
+     * @param string[] $statuses
+     * @param string[] $checkFor
+     */
+    protected function hasAnyStatus(array $statuses, array $checkFor): bool
+    {
+        return !empty(array_intersect($statuses, $checkFor));
     }
 
     /**

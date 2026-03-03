@@ -613,10 +613,18 @@ class Provider extends DomainNames implements ProviderInterface
                 : null;
 
             // Check status codes for non-active states
-            // pendingDelete or redemptionPeriod indicate domain is being/was deleted
-            if ($this->hasAnyStatus($statuses, ['pendingDelete', 'redemptionPeriod'])) {
+            // pendingDelete = domain queued for deletion, will be released to registry
+            if ($this->hasAnyStatus($statuses, ['pendingDelete'])) {
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_CANCELLED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($statuses);
+            }
+
+            // redemptionPeriod = domain expired, in grace period (can still be restored)
+            if ($this->hasAnyStatus($statuses, ['redemptionPeriod'])) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
                     ->setExpiresAt($expiresAt)
                     ->setRawStatuses($statuses);
             }

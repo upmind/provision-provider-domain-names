@@ -586,6 +586,14 @@ class Provider extends DomainNames implements ProviderInterface
 
 
     /**
+     * Get domain status using HTTP API with StatusDomainHistory fallback.
+     *
+     * Uses StatusDomain for active domains and StatusDomainHistory for deleted domains.
+     * StatusDomainHistory provides authoritative deletion reasons (like OpenSRS's GET_DELETED_DOMAINS).
+     *
+     * @see https://kb.centralnicreseller.com/api/api-command/StatusDomain
+     * @see https://kb.centralnicreseller.com/api/api-command/StatusDomainHistory
+     *
      * @inheritDoc
      */
     public function getStatus(DomainInfoParams $params): StatusResult
@@ -596,15 +604,15 @@ class Provider extends DomainNames implements ProviderInterface
         );
 
         try {
-            $domainInfo = $this->epp()->getDomainInfo($domainName);
+            // Use HTTP API StatusDomain command to get domain info
+            $response = $this->api()->statusDomain($domainName);
 
-            $expiresAt = isset($domainInfo['expires_at'])
-                ? Carbon::parse($domainInfo['expires_at'])
+            $statuses = $response['PROPERTY']['STATUS'] ?? [];
+            $expiresAt = isset($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
+                ? Carbon::parse($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
                 : null;
 
-            $statuses = $domainInfo['statuses'] ?? [];
-
-            // Check EPP status codes for non-active states
+            // Check status codes for non-active states
             // pendingDelete or redemptionPeriod indicate domain is being/was deleted
             if ($this->hasAnyStatus($statuses, ['pendingDelete', 'redemptionPeriod'])) {
                 return StatusResult::create()
@@ -626,29 +634,41 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setExpiresAt($expiresAt)
                 ->setRawStatuses($statuses);
 
-        } catch (eppException $e) {
-            // Domain not found in EPP - check registry availability
-            // Note: Unlike OpenSRS which has GET_DELETED_DOMAINS with actual deletion reasons,
-            // EPP only tells us the domain doesn't exist - not WHY (transferred, deleted, etc.)
+        } catch (ProvisionFunctionError $e) {
+            // Domain not found in account - use StatusDomainHistory for authoritative deletion reason
+            // REASON values: DELETE, EXPIRE, TRANSFER (like OpenSRS's GET_DELETED_DOMAINS)
             try {
-                $availability = $this->checkDomainAvailability($domainName);
+                $history = $this->api()->statusDomainHistory($domainName);
 
-                if ($availability['available']) {
-                    // Available at registry = domain was released/cancelled
-                    return StatusResult::create()
+                $reason = $history['PROPERTY']['REASON'][0] ?? null;
+                $deletedDate = isset($history['PROPERTY']['DELETEDDATE'][0])
+                    ? Carbon::parse($history['PROPERTY']['DELETEDDATE'][0])
+                    : null;
+
+                return match ($reason) {
+                    'TRANSFER' => StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                        ->setExpiresAt($deletedDate)
+                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
+                    'EXPIRE' => StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_EXPIRED)
+                        ->setExpiresAt($deletedDate)
+                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
+                    'DELETE' => StatusResult::create()
                         ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt($deletedDate)
+                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
+                    default => StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_UNKNOWN)
                         ->setExpiresAt(null)
-                        ->setExtra(['availability_check' => $availability]);
-                }
-
-                // Domain registered elsewhere but we don't have actual status from EPP
+                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
+                };
+            } catch (ProvisionFunctionError $historyException) {
+                // No history found either - domain never existed or data not available
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_UNKNOWN)
                     ->setExpiresAt(null)
-                    ->setExtra(['availability_check' => $availability]);
-
-            } catch (eppException $checkException) {
-                $this->_eppExceptionHandler($e);
+                    ->setExtra(['error' => $historyException->getMessage()]);
             }
         }
     }
@@ -662,23 +682,5 @@ class Provider extends DomainNames implements ProviderInterface
     protected function hasAnyStatus(array $statuses, array $checkFor): bool
     {
         return !empty(array_intersect($statuses, $checkFor));
-    }
-
-    /**
-     * Check domain availability for status determination.
-     *
-     * @return array{available: bool, raw_result: array}
-     *
-     * @throws eppException
-     */
-    protected function checkDomainAvailability(string $domainName): array
-    {
-        $results = $this->epp()->checkMultipleDomains([$domainName]);
-        $result = $results[0] ?? null;
-
-        return [
-            'available' => $result ? $result->can_register : false,
-            'raw_result' => $result ? $result->toArray() : [],
-        ];
     }
 }

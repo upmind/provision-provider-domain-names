@@ -627,21 +627,23 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setRawStatuses($statuses);
 
         } catch (eppException $e) {
-            // Domain not found in account - check registry availability
+            // Domain not found in EPP - check registry availability
+            // Note: Unlike OpenSRS which has GET_DELETED_DOMAINS with actual deletion reasons,
+            // EPP only tells us the domain doesn't exist - not WHY (transferred, deleted, etc.)
             try {
                 $availability = $this->checkDomainAvailability($domainName);
 
                 if ($availability['available']) {
-                    // Available at registry = was cancelled/deleted
+                    // Available at registry = domain was released/cancelled
                     return StatusResult::create()
                         ->setStatus(StatusResult::STATUS_CANCELLED)
                         ->setExpiresAt(null)
                         ->setExtra(['availability_check' => $availability]);
                 }
 
-                // Not available = registered elsewhere (transferred away)
+                // Domain registered elsewhere but we don't have actual status from EPP
                 return StatusResult::create()
-                    ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                    ->setStatus(StatusResult::STATUS_UNKNOWN)
                     ->setExpiresAt(null)
                     ->setExtra(['availability_check' => $availability]);
 

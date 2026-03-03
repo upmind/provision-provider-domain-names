@@ -67,6 +67,8 @@ class CentralNicResellerApi
 
         // Set Logging and Logger Handler
         $client->setCustomLogger(new CentralNicResellerLogger($logger));
+        // Enable debug logging
+        $client->enableDebugMode();
 
         return $client;
     }

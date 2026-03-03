@@ -496,29 +496,26 @@ class Provider extends DomainNames implements ProviderInterface
                 }
 
                 // Domain not found in account - check registry availability
+                // Note: Unlike OpenSRS which has GET_DELETED_DOMAINS with actual deletion reasons,
+                // GoDaddy only provides status (TRANSFERRED_OUT, CANCELLED, etc.) while the domain
+                // is still in the account. Once removed (404), we can only check availability.
 
                 $availability = $this->checkDomainAvailability($domainName);
 
                 if ($availability->can_register ?? false) {
-                    // Available at registry = was cancelled/deleted
+                    // Available at registry = domain was released/cancelled
                     return StatusResult::create()
                         ->setStatus(StatusResult::STATUS_CANCELLED)
                         ->setExpiresAt(null)
                         ->setExtra(['availability_check' => $availability]);
                 }
 
-                if ($availability->can_transfer ?? false) {
-                    // Registered elsewhere (transferred away)
-                    return StatusResult::create()
-                        ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
-                        ->setExpiresAt(null)
-                        ->setExtra(['availability_check' => $availability]);
-                }
-
+                // Domain registered elsewhere but we don't have actual status from GoDaddy
+                // (TRANSFERRED_OUT would have been caught above while domain was still in account)
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_UNKNOWN)
                     ->setExpiresAt(null)
-                    ->setExtra(['availability_check' => $availability ?? null]);
+                    ->setExtra(['availability_check' => $availability]);
             } catch (Throwable $checkException) {
                 $this->handleException($e, $params);
             }

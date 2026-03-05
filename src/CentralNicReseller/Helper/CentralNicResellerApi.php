@@ -67,6 +67,8 @@ class CentralNicResellerApi
 
         // Set Logging and Logger Handler
         $client->setCustomLogger(new CentralNicResellerLogger($logger));
+        // Enable debug logging
+        $client->enableDebugMode();
 
         return $client;
     }
@@ -263,5 +265,42 @@ class CentralNicResellerApi
         }
 
         return $this->runCommand('ModifyDomain', $params)->getHash();
+    }
+
+    /**
+     * Get domain status via HTTP API.
+     *
+     * @see https://kb.centralnicreseller.com/api/api-command/StatusDomain
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function statusDomain(string $domain): array
+    {
+        return $this->runCommand('StatusDomain', ['domain' => $domain])->getHash();
+    }
+
+    /**
+     * Get deleted domain history info via HTTP API.
+     * Returns deletion reason: DELETE, EXPIRE, or TRANSFER.
+     *
+     * @see https://kb.centralnicreseller.com/api/api-command/StatusDomainHistory
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function statusDomainHistory(string $domain): array
+    {
+        return $this->runCommand('StatusDomainHistory', ['domain' => $domain])->getHash();
+    }
+
+    /**
+     * Check domain availability via HTTP API.
+     *
+     * @see https://kb.centralnicreseller.com/api/api-command/CheckDomain
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function checkDomain(string $domain): array
+    {
+        return $this->runCommand('CheckDomain', ['domain' => $domain])->getHash();
     }
 }

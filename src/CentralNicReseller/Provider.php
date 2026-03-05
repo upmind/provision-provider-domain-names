@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use ErrorException;
 use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppException;
 use Metaregistrar\EPP\eppContactHandle;
@@ -602,10 +603,10 @@ class Provider extends DomainNames implements ProviderInterface
             try {
                 $history = $this->api()->statusDomainHistory($domainName);
 
-                $transferOutDate = collect($history['PROPERTY']['REGISTRARTRANSFERDATE'] ?? [])
+                $transferOutDate = (new Collection($history['PROPERTY']['REGISTRARTRANSFERDATE'] ?? []))
                     ->filter()
                     ->first();
-                $deletedDate = collect($history['PROPERTY']['DELETEDDATE'] ?? [])
+                $deletedDate = (new Collection($history['PROPERTY']['DELETEDDATE'] ?? []))
                     ->filter()
                     ->first();
 

@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppException;
 use Metaregistrar\EPP\eppContactHandle;
+use Throwable;
 use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -598,8 +599,12 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setRawStatuses($statuses);
 
         } catch (ProvisionFunctionError $e) {
+            if (!$this->errorIsDomainNotFound($e)) {
+                // something else went wrong
+                throw $e;
+            }
+
             // Domain not found in account - use StatusDomainHistory for authoritative deletion reason
-            // REASON values: DELETE, EXPIRE, TRANSFER (like OpenSRS's GET_DELETED_DOMAINS)
             try {
                 $history = $this->api()->statusDomainHistory($domainName);
 
@@ -629,6 +634,11 @@ class Provider extends DomainNames implements ProviderInterface
                     ->setExpiresAt(null)
                     ->setExtra(['history' => $history['PROPERTY'] ?? []]);
             } catch (ProvisionFunctionError $historyException) {
+                if (!$this->errorIsDomainNotFound($historyException)) {
+                    // something else went wrong - fail with original domain status exception
+                    throw $e;
+                }
+
                 // No history found either - domain never existed or data not available
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_UNKNOWN)
@@ -636,6 +646,11 @@ class Provider extends DomainNames implements ProviderInterface
                     ->setExtra(['error' => $historyException->getMessage()]);
             }
         }
+    }
+
+    protected function errorIsDomainNotFound(Throwable $e): bool
+    {
+        return Str::contains(strtolower($e->getMessage()), 'entity reference not found');
     }
 
     /**

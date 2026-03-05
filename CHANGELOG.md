@@ -5,6 +5,7 @@ All notable changes to the package will be documented in this file.
 ## UNRELEASED
 
 - Implement GoDaddy getStatus() function
+- Implement CentralnicReseller getStatus() function
 
 ## [v2.27.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.27.0) - 2026-02-27
 

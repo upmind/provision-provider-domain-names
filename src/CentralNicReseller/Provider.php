@@ -602,29 +602,31 @@ class Provider extends DomainNames implements ProviderInterface
             try {
                 $history = $this->api()->statusDomainHistory($domainName);
 
-                $reason = $history['PROPERTY']['REASON'][0] ?? null;
-                $deletedDate = isset($history['PROPERTY']['DELETEDDATE'][0])
-                    ? Carbon::parse($history['PROPERTY']['DELETEDDATE'][0])
-                    : null;
+                $transferOutDate = collect($history['PROPERTY']['REGISTRARTRANSFERDATE'] ?? [])
+                    ->filter()
+                    ->first();
+                $deletedDate = collect($history['PROPERTY']['DELETEDDATE'] ?? [])
+                    ->filter()
+                    ->first();
 
-                return match ($reason) {
-                    'TRANSFER' => StatusResult::create()
+                if ($transferOutDate) {
+                    return StatusResult::create()
                         ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
-                        ->setExpiresAt($deletedDate)
-                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
-                    'EXPIRE' => StatusResult::create()
-                        ->setStatus(StatusResult::STATUS_EXPIRED)
-                        ->setExpiresAt($deletedDate)
-                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
-                    'DELETE' => StatusResult::create()
-                        ->setStatus(StatusResult::STATUS_CANCELLED)
-                        ->setExpiresAt($deletedDate)
-                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
-                    default => StatusResult::create()
-                        ->setStatus(StatusResult::STATUS_UNKNOWN)
                         ->setExpiresAt(null)
-                        ->setExtra(['history' => $history['PROPERTY'] ?? []]),
-                };
+                        ->setExtra(['transfer_date' => $transferOutDate, 'history' => $history['PROPERTY'] ?? []]);
+                }
+
+                if ($deletedDate) {
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['delete_date' => $deletedDate, 'history' => $history['PROPERTY'] ?? []]);
+                }
+
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_UNKNOWN)
+                    ->setExpiresAt(null)
+                    ->setExtra(['history' => $history['PROPERTY'] ?? []]);
             } catch (ProvisionFunctionError $historyException) {
                 // No history found either - domain never existed or data not available
                 return StatusResult::create()

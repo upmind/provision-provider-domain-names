@@ -8,9 +8,11 @@ use Carbon\Carbon;
 use ErrorException;
 use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Metaregistrar\EPP\eppException;
 use Metaregistrar\EPP\eppContactHandle;
+use Throwable;
 use UnexpectedValueException;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -540,13 +542,125 @@ class Provider extends DomainNames implements ProviderInterface
 
 
     /**
+     * Get domain status using HTTP API with StatusDomainHistory fallback.
+     *
+     * Uses StatusDomain for active domains and StatusDomainHistory for deleted domains.
+     * StatusDomainHistory provides authoritative deletion reasons (like OpenSRS's GET_DELETED_DOMAINS).
+     *
+     * @see https://kb.centralnicreseller.com/api/api-command/StatusDomain
+     * @see https://kb.centralnicreseller.com/api/api-command/StatusDomainHistory
+     *
      * @inheritDoc
      */
     public function getStatus(DomainInfoParams $params): StatusResult
     {
-        return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
-            ->setExpiresAt(null)
-            ->setRawStatuses(null);
+        $domainName = Utils::getDomain(
+            Utils::normalizeSld($params->sld),
+            Utils::normalizeTld($params->tld)
+        );
+
+        try {
+            // Use HTTP API StatusDomain command to get domain info
+            $response = $this->api()->statusDomain($domainName);
+
+            $statuses = $response['PROPERTY']['STATUS'] ?? [];
+            $expiresAt = isset($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
+                ? Carbon::parse($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
+                : null;
+
+            // Check status codes for non-active states
+            // pendingDelete = domain queued for deletion, will be released to registry
+            if ($this->hasAnyStatus($statuses, ['pendingDelete'])) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_CANCELLED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($statuses);
+            }
+
+            // redemptionPeriod = domain expired, in grace period (can still be restored)
+            if ($this->hasAnyStatus($statuses, ['redemptionPeriod'])) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($statuses);
+            }
+
+            // Check expiration date
+            if ($expiresAt !== null && $expiresAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_EXPIRED)
+                    ->setExpiresAt($expiresAt)
+                    ->setRawStatuses($statuses);
+            }
+
+            return StatusResult::create()
+                ->setStatus(StatusResult::STATUS_ACTIVE)
+                ->setExpiresAt($expiresAt)
+                ->setRawStatuses($statuses);
+
+        } catch (ProvisionFunctionError $e) {
+            if (!$this->errorIsDomainNotFound($e)) {
+                // something else went wrong
+                throw $e;
+            }
+
+            // Domain not found in account - use StatusDomainHistory for authoritative deletion reason
+            try {
+                $history = $this->api()->statusDomainHistory($domainName);
+
+                $transferOutDate = (new Collection($history['PROPERTY']['REGISTRARTRANSFERDATE'] ?? []))
+                    ->filter()
+                    ->first();
+                $deletedDate = (new Collection($history['PROPERTY']['DELETEDDATE'] ?? []))
+                    ->filter()
+                    ->first();
+
+                if ($transferOutDate) {
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
+                        ->setExpiresAt(null)
+                        ->setExtra(['transfer_date' => $transferOutDate, 'history' => $history['PROPERTY'] ?? []]);
+                }
+
+                if ($deletedDate) {
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_CANCELLED)
+                        ->setExpiresAt(null)
+                        ->setExtra(['delete_date' => $deletedDate, 'history' => $history['PROPERTY'] ?? []]);
+                }
+
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_UNKNOWN)
+                    ->setExpiresAt(null)
+                    ->setExtra(['history' => $history['PROPERTY'] ?? []]);
+            } catch (ProvisionFunctionError $historyException) {
+                if (!$this->errorIsDomainNotFound($historyException)) {
+                    // something else went wrong - fail with original domain status exception
+                    throw $e;
+                }
+
+                // No history found either - domain never existed or data not available
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_UNKNOWN)
+                    ->setExpiresAt(null)
+                    ->setExtra(['error' => $historyException->getMessage()]);
+            }
+        }
+    }
+
+    protected function errorIsDomainNotFound(Throwable $e): bool
+    {
+        return Str::contains(strtolower($e->getMessage()), 'entity reference not found');
+    }
+
+    /**
+     * Check if statuses array contains any of the given status codes.
+     *
+     * @param string[] $statuses
+     * @param string[] $checkFor
+     */
+    protected function hasAnyStatus(array $statuses, array $checkFor): bool
+    {
+        return !empty(array_intersect($statuses, $checkFor));
     }
 }

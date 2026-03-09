@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.28.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.28.1) - 2026-03-09
+
+- Fix Enom getStatus() availability check fallback logic / error handling
+
 ## [v2.28.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.28.0) - 2026-03-05
 
 - Implement GoDaddy getStatus() function

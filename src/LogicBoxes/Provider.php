@@ -1313,7 +1313,12 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setExpiresAt($expiresAt);
 
         } catch (ProvisionFunctionError $e) {
-            // Domain not found - check registry availability (Enom pattern)
+            // Only check registry availability if this is specifically a "domain not found" error
+            if (!$this->errorIsDomainNotFound($e)) {
+                throw $e;
+            }
+
+            // Domain not found in account - check registry availability
             try {
                 $availability = $this->checkDomainAvailableAtRegistry($sld, $tld);
 
@@ -1335,6 +1340,30 @@ class Provider extends DomainNames implements ProviderInterface
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Determine whether the given exception indicates "domain not found in account".
+     *
+     * @see https://manage.logicboxes.com/kb/servlet/KBServlet/cat106.html (domains/details-by-name)
+     */
+    protected function errorIsDomainNotFound(ProvisionFunctionError $e): bool
+    {
+        $message = $e->getMessage();
+
+        // Check for "Domain name not found" (transformed from "Website doesn't exist")
+        if (Str::contains($message, 'Domain name not found')) {
+            return true;
+        }
+
+        // Also check original response for "Website doesn't exist"
+        $data = $e->getData();
+        $originalMessage = $data['response_data']['message'] ?? '';
+        if (Str::startsWith($originalMessage, "Website doesn't exist")) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

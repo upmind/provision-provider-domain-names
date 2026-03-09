@@ -617,28 +617,51 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setExpiresAt($expiresAt)
                 ->setRawStatuses($domainInfo['statuses'] ?? null);
         } catch (ProvisionFunctionError $e) {
+            if (!$this->errorIsDomainNotFound($e)) {
+                // If error is something other than "Domain not found", re-throw it
+                throw $e;
+            }
+
             // Domain not found in account - check registry availability
             try {
                 $availability = $this->api()->checkDomainAvailable($sld, $tld);
+
+                /** @phpstan-ignore-next-line */
+                if (isset($availability['reason']) && $availability['reason'] === 'TLD is not supported') {
+                    // If TLD is not supported, we can't determine the status of the domain
+                    return StatusResult::create()
+                        ->setStatus(StatusResult::STATUS_UNKNOWN)
+                        ->setExpiresAt(null)
+                        ->setExtra(['check_result' => $availability, 'info_error' => $e->getMessage()]);
+                }
 
                 if ($availability['available']) {
                     // RRP 210: Domain is available at registry = was cancelled/deleted
                     return StatusResult::create()
                         ->setStatus(StatusResult::STATUS_CANCELLED)
                         ->setExpiresAt(null)
-                        ->setExtra(['check_result' => $availability]);
+                        ->setExtra(['check_result' => $availability, 'info_error' => $e->getMessage()]);
                 } else {
                     // RRP 211: Domain not available = registered elsewhere (likely transferred)
                     return StatusResult::create()
                         ->setStatus(StatusResult::STATUS_TRANSFERRED_AWAY)
                         ->setExpiresAt(null)
-                        ->setExtra(['check_result' => $availability]);
+                        ->setExtra(['check_result' => $availability, 'info_error' => $e->getMessage()]);
                 }
             } catch (Throwable $checkException) {
                 // If check also fails, re-throw original error
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Determine whether the given error indicates that the domain was not found in the account.
+     */
+    private function errorIsDomainNotFound(Throwable $e): bool
+    {
+        return $e instanceof ProvisionFunctionError
+            && str_contains($e->getMessage(), 'Domain name not found');
     }
 
     /**

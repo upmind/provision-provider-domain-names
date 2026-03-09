@@ -519,7 +519,12 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setRawStatuses($domainInfo['statuses'] ?? null);
 
         } catch (ProvisionFunctionError $e) {
-            // Domain not found - check registry availability
+            // Only check registry availability if this is specifically a "domain not found" error
+            if (!$this->errorIsDomainNotFound($e)) {
+                throw $e;
+            }
+
+            // Domain not found in account - check registry availability
             try {
                 $availability = $this->checkDomainAvailableAtRegistry($domainName);
 
@@ -541,6 +546,25 @@ class Provider extends DomainNames implements ProviderInterface
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Determine whether the given exception indicates "domain not found in account".
+     *
+     * @see https://synergywholesale.com/wp-content/uploads/2025/10/Synergy-Wholesale-API-Documentation-v3-12.pdf (page 12)
+     */
+    protected function errorIsDomainNotFound(ProvisionFunctionError $e): bool
+    {
+        $data = $e->getData();
+        $status = $data['response']['status'] ?? '';
+        $errorMessage = $data['response']['errorMessage'] ?? '';
+
+        // Check for ERR_DOMAININFO_FAILED status with "Domain Does Not Exist" message
+        if ($status === 'ERR_DOMAININFO_FAILED' && Str::contains($errorMessage, 'Domain Does Not Exist')) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

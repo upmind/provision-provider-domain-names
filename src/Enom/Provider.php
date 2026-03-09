@@ -626,6 +626,7 @@ class Provider extends DomainNames implements ProviderInterface
             try {
                 $availability = $this->api()->checkDomainAvailable($sld, $tld);
 
+                /** @phpstan-ignore-next-line */
                 if (isset($availability['reason']) && $availability['reason'] === 'TLD is not supported') {
                     // If TLD is not supported, we can't determine the status of the domain
                     return StatusResult::create()

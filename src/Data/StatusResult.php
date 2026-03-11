@@ -23,11 +23,12 @@ class StatusResult extends ResultData
     public const STATUS_TRANSFERRED_AWAY = 'transferred_away';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_UNKNOWN = 'unknown';
+    public const STATUS_NOT_IMPLEMENTED = 'not_implemented';
 
     public static function rules(): Rules
     {
         return new Rules([
-            'status' => ['required', 'string', 'in:active,expired,transferred_away,cancelled,unknown'],
+            'status' => ['required', 'string', 'in:active,expired,transferred_away,cancelled,unknown,not_implemented'],
             'expires_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'raw_statuses' => ['nullable', 'array'],
             'raw_statuses.*' => ['string'],

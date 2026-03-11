@@ -143,8 +143,14 @@ abstract class Category extends BaseCategory
     /**
      * Get the current status of a domain name.
      *
-     * Returns a normalized status (active, expired, transferred_away, cancelled, unknown)
+     * Returns a normalized status (active, expired, transferred_away, cancelled, unknown, not_implemented)
      * along with the expiry date and raw provider statuses.
      */
-    abstract public function getStatus(DomainInfoParams $params): StatusResult;
+    public function getStatus(DomainInfoParams $params): StatusResult
+    {
+        return StatusResult::create()
+            ->setStatus(StatusResult::STATUS_NOT_IMPLEMENTED)
+            ->setExpiresAt(null)
+            ->setRawStatuses(null);
+    }
 }

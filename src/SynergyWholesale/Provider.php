@@ -564,6 +564,11 @@ class Provider extends DomainNames implements ProviderInterface
             return true;
         }
 
+        // Check for ERR_DOMAIN_NOT_FOUND status with "Domain name does not exist" message
+        if ($status === 'ERR_DOMAIN_NOT_FOUND' && Str::contains($errorMessage, 'Domain name does not exist')) {
+            return true;
+        }
+
         return false;
     }
 

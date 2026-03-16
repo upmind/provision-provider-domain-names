@@ -1240,6 +1240,9 @@ class Provider extends DomainNames implements ProviderInterface
     protected function errorIsDomainNotFound(eppException $e): bool
     {
         // EPP code 2303 = "Object does not exist"
-        return $e->getCode() === 2303;
+        return in_array($e->getCode(), [
+            2303, // EPP code 2303 = "Object does not exist"
+            2201, // V096 Domain name is not registered to your tag
+        ], true);
     }
 }

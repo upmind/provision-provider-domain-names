@@ -2,7 +2,7 @@
 
 All notable changes to the package will be documented in this file.
 
-## UNRELEASED
+## [v2.29.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.29.0) - 2026-03-16
 
 - Add "domain not found" error discrimination during getStatus() fallback logic for:
   - SynergyWholesale

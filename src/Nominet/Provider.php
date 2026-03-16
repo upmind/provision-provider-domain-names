@@ -1211,6 +1211,11 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setExpiresAt($expiresAt)
                 ->setRawStatuses($domainInfo->statuses ?? null);
         } catch (eppException $e) {
+            // Only check registry availability if this is specifically a "domain not found" error
+            if (!$this->errorIsDomainNotFound($e)) {
+                $this->_eppExceptionHandler($e, $params->toArray());
+            }
+
             // Domain not found in account - check registry availability
             try {
                 $checkResults = $this->_checkDomains([$domainName]);
@@ -1239,5 +1244,19 @@ class Provider extends DomainNames implements ProviderInterface
                 $this->_eppExceptionHandler($e, $params->toArray());
             }
         }
+    }
+
+    /**
+     * Determine whether the given EPP exception indicates "domain not found".
+     *
+     * @see https://registrars.nominet.uk/uk-namespace/registration-and-domain-management/response-codes/
+     */
+    protected function errorIsDomainNotFound(eppException $e): bool
+    {
+        // EPP code 2303 = "Object does not exist"
+        return in_array($e->getCode(), [
+            2303, // EPP code 2303 = "Object does not exist"
+            2201, // V096 Domain name is not registered to your tag
+        ], true);
     }
 }

@@ -8,6 +8,7 @@ All notable changes to the package will be documented in this file.
   - SynergyWholesale
   - LogicBoxes
   - Nominet
+- Add "not_implemented" status to StatusResult for providers without an implementation
 
 ## [v2.12.73](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.73) - 2026-03-09
 

@@ -935,7 +935,7 @@ class Provider extends DomainNames implements ProviderInterface
     public function getStatus(DomainInfoParams $params): StatusResult
     {
         return StatusResult::create()
-            ->setStatus(StatusResult::STATUS_UNKNOWN)
+            ->setStatus(StatusResult::STATUS_NOT_IMPLEMENTED)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
     }

@@ -2,6 +2,13 @@
 
 All notable changes to the package will be documented in this file.
 
+## UNRELEASED
+
+- Add "domain not found" error discrimination during getStatus() fallback logic for:
+  - SynergyWholesale
+  - LogicBoxes
+  - Nominet
+
 ## [v2.12.73](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.73) - 2026-03-09
 
 - Fix Enom getStatus() availability check fallback logic / error handling

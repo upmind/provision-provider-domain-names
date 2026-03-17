@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.74](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.74) - 2026-03-17
+
+- Update OpenSRS domainAvailabilityCheck() to pass max_wait_time 10 to avoid timeouts caused by slow tld/registries
+
 ## [v2.12.74](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.74) - 2026-03-16
 
 - Add "domain not found" error discrimination during getStatus() fallback logic for:

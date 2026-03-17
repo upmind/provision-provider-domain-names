@@ -343,11 +343,11 @@ class OpusDnsApiTest extends TestCase
         $registrant = new \Upmind\ProvisionProviders\DomainNames\Data\ContactParams([
             'name' => 'John Doe',
             'email' => 'john@example.com',
-            'phone' => '+15551234567',
+            'phone' => '+447700900123',
             'address1' => '123 Main St',
-            'city' => 'New York',
-            'postcode' => '10001',
-            'country_code' => 'US',
+            'city' => 'London',
+            'postcode' => 'SW1A 1AA',
+            'country_code' => 'GB',
         ]);
 
         $result = $api->transferDomain('example.com', 'ABC123', ['registrant' => $registrant]);
@@ -374,11 +374,11 @@ class OpusDnsApiTest extends TestCase
         $registrant = new \Upmind\ProvisionProviders\DomainNames\Data\ContactParams([
             'name' => 'John Doe',
             'email' => 'john@example.com',
-            'phone' => '+15551234567',
+            'phone' => '+447700900123',
             'address1' => '123 Main St',
-            'city' => 'New York',
-            'postcode' => '10001',
-            'country_code' => 'US',
+            'city' => 'London',
+            'postcode' => 'SW1A 1AA',
+            'country_code' => 'GB',
         ]);
 
         $result = $api->transferDomain('example.com', 'ABC123', ['registrant' => $registrant]);

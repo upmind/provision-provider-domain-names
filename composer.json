@@ -28,6 +28,7 @@
         }
     },
     "require": {
+        "php": "8.1 - 8.3",
         "ext-curl": "*",
         "ext-dom": "*",
         "ext-json": "*",
@@ -35,23 +36,22 @@
         "ext-simplexml": "*",
         "ext-soap": "*",
         "ext-xml": "*",
-        "upmind/provision-provider-base": "^3.7|^4.0",
-        "metaregistrar/php-epp-client": "^1.0.12",
-        "myclabs/php-enum": "^1.8",
-        "propaganistas/laravel-phone": "^4.2|^5.0",
+        "africc/php-epp2": "^2.0",
+        "centralnic-reseller/php-sdk": "^11",
+        "fakerphp/faker": "^1.0",
         "guzzlehttp/guzzle": "^6.3|^7.0",
         "illuminate/support": "5.8.* || ^6.20 || ^10.0 || ^11.0 || 12.0",
-        "pragmarx/countries": "^0.8.2",
-        "africc/php-epp2": "^2.0",
-        "upmind/domainnameapi-sdk": "^1.0",
-        "fakerphp/faker": "^1.0",
-        "centralnic-reseller/php-sdk": "^11",
-        "upmind/hexonet-php-sdk": "^5.8"
+        "metaregistrar/php-epp-client": "^1.0.12",
+        "myclabs/php-enum": "^1.8",
+        "propaganistas/laravel-phone": "^4.2 || ^5.0",
+        "upmind/domainnameapi-sdk": "^1.1",
+        "upmind/pragmarx-countries": "^0.9.0",
+        "upmind/provision-provider-base": "^4.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.0",
+        "orchestra/testbench": "^8.0 || ^9.0",
         "phpstan/phpstan": "^1.10",
-        "phpunit/phpunit": "^9.5 || ^10.5 || ^11.0 || ^12.0"
+        "phpunit/phpunit": "^10.5 || ^11.0 || ^12.0"
     },
     "extra": {
         "laravel": {
@@ -59,6 +59,9 @@
                 "Upmind\\ProvisionProviders\\DomainNames\\LaravelServiceProvider"
             ]
         }
+    },
+    "config": {
+        "sort-packages": true
     },
     "minimum-stability": "dev",
     "prefer-stable": true

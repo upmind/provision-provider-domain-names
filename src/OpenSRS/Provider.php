@@ -125,6 +125,7 @@ class Provider extends DomainNames implements ProviderInterface
                     'services' => ['lookup', 'premium'],
                     'searchstring' => Utils::normalizeSld($params->sld),
                     'tlds' => $tlds,
+                    'max_wait_time' => 10, // Helps avoid entire req timeouts when a particular tld/registry is slow
                 ]
             ], [
                 'timeout' => 15, // Set a reduced timeout for the request

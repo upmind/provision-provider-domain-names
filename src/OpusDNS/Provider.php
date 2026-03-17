@@ -216,10 +216,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         $contacts = [
-            OpusDnsApi::CONTACT_TYPE_REGISTRANT => $params->registrant->register,
-            OpusDnsApi::CONTACT_TYPE_ADMIN => $params->admin->register ?? $params->registrant->register,
-            OpusDnsApi::CONTACT_TYPE_TECH => $params->tech->register ?? $params->registrant->register,
-            OpusDnsApi::CONTACT_TYPE_BILLING => $params->billing->register ?? $params->registrant->register,
+            ContactType::REGISTRANT => $params->registrant->register,
+            ContactType::ADMIN => $params->admin->register ?? $params->registrant->register,
+            ContactType::TECH => $params->tech->register ?? $params->registrant->register,
+            ContactType::BILLING => $params->billing->register ?? $params->registrant->register,
         ];
 
         try {
@@ -253,10 +253,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         $contacts = [
-            OpusDnsApi::CONTACT_TYPE_REGISTRANT => $params->registrant->register,
-            OpusDnsApi::CONTACT_TYPE_ADMIN => $params->admin->register ?? $params->registrant->register,
-            OpusDnsApi::CONTACT_TYPE_TECH => $params->tech->register ?? $params->registrant->register,
-            OpusDnsApi::CONTACT_TYPE_BILLING => $params->billing->register ?? $params->registrant->register,
+            ContactType::REGISTRANT => $params->registrant->register,
+            ContactType::ADMIN => $params->admin->register ?? $params->registrant->register,
+            ContactType::TECH => $params->tech->register ?? $params->registrant->register,
+            ContactType::BILLING => $params->billing->register ?? $params->registrant->register,
         ];
 
         try {

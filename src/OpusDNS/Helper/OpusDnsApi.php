@@ -30,14 +30,6 @@ use Upmind\ProvisionProviders\DomainNames\OpusDNS\Data\Configuration;
 class OpusDnsApi
 {
     /**
-     * Contact type constants.
-     */
-    const CONTACT_TYPE_REGISTRANT = 'registrant';
-    const CONTACT_TYPE_ADMIN = 'admin';
-    const CONTACT_TYPE_TECH = 'tech';
-    const CONTACT_TYPE_BILLING = 'billing';
-
-    /**
      * @var Configuration
      */
     protected $configuration;
@@ -485,10 +477,10 @@ class OpusDnsApi
     {
         $contacts = $domain['contacts'] ?? [];
         $result = [
-            'registrant' => null,
-            'admin' => null,
-            'tech' => null,
-            'billing' => null,
+            ContactType::REGISTRANT => null,
+            ContactType::ADMIN => null,
+            ContactType::TECH => null,
+            ContactType::BILLING => null,
         ];
 
         // Handle array format (API spec): [{contact_id, contact_type}, ...]
@@ -538,10 +530,10 @@ class OpusDnsApi
     {
         $contacts = $domain['contacts'] ?? [];
         $result = [
-            self::CONTACT_TYPE_REGISTRANT => null,
-            self::CONTACT_TYPE_ADMIN => null,
-            self::CONTACT_TYPE_TECH => null,
-            self::CONTACT_TYPE_BILLING => null,
+            ContactType::REGISTRANT => null,
+            ContactType::ADMIN => null,
+            ContactType::TECH => null,
+            ContactType::BILLING => null,
         ];
 
         // Handle array format: [{contact_id, contact_type}, ...]
@@ -936,7 +928,7 @@ class OpusDnsApi
 
         // Merge new contact with existing contacts (preserve all, update registrant)
         $contacts = array_filter(array_merge($existingContacts, [
-            self::CONTACT_TYPE_REGISTRANT => $newContactId,
+            ContactType::REGISTRANT => $newContactId,
         ]));
 
         // Associate all contact IDs with the domain
@@ -989,38 +981,22 @@ class OpusDnsApi
 
     /**
      * Map provider contact type string to the ContactType enum value.
+     *
+     * OpusDNS uses the same contact type strings as ContactType enum values.
      */
     protected function mapContactTypeToCategory(string $type): string
     {
-        $map = [
-            self::CONTACT_TYPE_REGISTRANT => ContactType::REGISTRANT,
-            self::CONTACT_TYPE_ADMIN => ContactType::ADMIN,
-            self::CONTACT_TYPE_TECH => ContactType::TECH,
-            self::CONTACT_TYPE_BILLING => ContactType::BILLING,
-        ];
-
-        return $map[$type] ?? $type;
+        return $type;
     }
 
     /**
      * Map a ContactType enum to our provider contact type string.
+     *
+     * OpusDNS uses the same contact type strings as ContactType enum values.
      */
     public function getProviderContactTypeValue(ContactType $contactType): string
     {
-        if ($contactType->equals(ContactType::REGISTRANT())) {
-            return self::CONTACT_TYPE_REGISTRANT;
-        }
-        if ($contactType->equals(ContactType::ADMIN())) {
-            return self::CONTACT_TYPE_ADMIN;
-        }
-        if ($contactType->equals(ContactType::BILLING())) {
-            return self::CONTACT_TYPE_BILLING;
-        }
-        if ($contactType->equals(ContactType::TECH())) {
-            return self::CONTACT_TYPE_TECH;
-        }
-
-        throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
+        return $contactType->getValue();
     }
 
     // =========================================================================
@@ -1095,7 +1071,7 @@ class OpusDnsApi
 
         // Get the registrant contact ID to check its verification status
         $contactIds = $this->getContactIdsFromDomain($domain);
-        $registrantContactId = $contactIds[self::CONTACT_TYPE_REGISTRANT] ?? null;
+        $registrantContactId = $contactIds[ContactType::REGISTRANT] ?? null;
 
         $icannStatus = 'unknown';
         $verificationDeadline = null;
@@ -1147,7 +1123,7 @@ class OpusDnsApi
 
         // Extract registrant contact ID from the raw contacts array
         $contactIds = $this->getContactIdsFromDomain($domain);
-        $registrantContactId = $contactIds[self::CONTACT_TYPE_REGISTRANT] ?? null;
+        $registrantContactId = $contactIds[ContactType::REGISTRANT] ?? null;
 
         if (!$registrantContactId) {
             throw new ProvisionFunctionError('Unable to find registrant contact for domain');

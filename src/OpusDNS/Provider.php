@@ -240,7 +240,15 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
-        $eppCode = $params->epp_code ?: '0000';
+        if (empty($params->epp_code)) {
+            $this->errorResult('EPP/Auth code is required for domain transfer');
+        }
+
+        if (strlen($params->epp_code) < 6) {
+            $this->errorResult('EPP/Auth code must be at least 6 characters');
+        }
+
+        $eppCode = $params->epp_code;
 
         try {
             return $this->_getInfo($domainName, 'Domain active in registrar account');

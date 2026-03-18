@@ -64,8 +64,8 @@ class OpusDnsApi
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
             ],
-            'timeout' => 120,
-            'connect_timeout' => 30,
+            'timeout' => 60,
+            'connect_timeout' => 10,
         ]);
     }
 
@@ -913,28 +913,20 @@ class OpusDnsApi
     /**
      * Update the registrant contact for a domain.
      *
-     * API requires contact IDs (ContactIdList format), not inline contact data.
-     * API also requires ALL contacts when updating, so we preserve existing ones.
+     * Creates a new contact and associates it with the domain.
+     * PATCH preserves other contacts automatically per API spec.
      */
     public function updateDomainRegistrant(string $domainName, ContactParams $registrant): ContactData
     {
-        // Fetch existing domain to get current contact IDs
-        $response = $this->makeRequest('GET', 'domains/' . urlencode($domainName));
-        $domain = $response['data'] ?? $response;
-        $existingContacts = $this->getContactIdsFromDomain($domain);
-
         // Create a new contact and get the ID
         $newContactId = $this->createContact($registrant);
 
-        // Merge new contact with existing contacts (preserve all, update registrant)
-        $contacts = array_filter(array_merge($existingContacts, [
-            ContactType::REGISTRANT => $newContactId,
-        ]));
-
-        // Associate all contact IDs with the domain
+        // Update only the registrant contact - API preserves other contacts
         $this->makeRequest('PATCH', 'domains/' . urlencode($domainName), [
             'json' => [
-                'contacts' => $contacts,
+                'contacts' => [
+                    ContactType::REGISTRANT => $newContactId,
+                ],
             ],
         ]);
 
@@ -946,31 +938,23 @@ class OpusDnsApi
     /**
      * Update a specific contact type for a domain.
      *
-     * API requires contact IDs (ContactIdList format), not inline contact data.
-     * API also requires ALL contacts when updating, so we preserve existing ones.
+     * Creates a new contact and associates it with the domain.
+     * PATCH preserves other contacts automatically per API spec.
      */
     public function updateDomainContact(
         string $domainName,
         ContactParams $contact,
         string $contactType
     ): ContactData {
-        // Fetch existing domain to get current contact IDs
-        $response = $this->makeRequest('GET', 'domains/' . urlencode($domainName));
-        $domain = $response['data'] ?? $response;
-        $existingContacts = $this->getContactIdsFromDomain($domain);
-
         // Create a new contact and get the ID
         $newContactId = $this->createContact($contact);
 
-        // Merge new contact with existing contacts (preserve all, update target type)
-        $contacts = array_filter(array_merge($existingContacts, [
-            $contactType => $newContactId,
-        ]));
-
-        // Associate all contact IDs with the domain
+        // Update only the specified contact type - API preserves other contacts
         $this->makeRequest('PATCH', 'domains/' . urlencode($domainName), [
             'json' => [
-                'contacts' => $contacts,
+                'contacts' => [
+                    $contactType => $newContactId,
+                ],
             ],
         ]);
 

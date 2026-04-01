@@ -107,7 +107,7 @@ class OpusDnsApi
             $this->tokenExpiry = time() + $expiresIn - 60;
 
             if (!$this->accessToken) {
-                throw ProvisionFunctionError::create('No access token received from OpusDNS')
+                throw ProvisionFunctionError::create('No access token received from Provider')
                     ->withData(['response' => $data]);
             }
 
@@ -115,8 +115,15 @@ class OpusDnsApi
         } catch (ProvisionFunctionError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw ProvisionFunctionError::create('OpusDNS authentication failed: ' . $e->getMessage(), $e)
-                ->withData(['exception' => get_class($e)]);
+            $message = 'Provider authentication failed';
+
+            if ($e instanceof RequestException && $e->getResponse()) {
+                $response = $e->getResponse();
+                $data = json_decode((string) $response->getBody(), true);
+            }
+
+            throw ProvisionFunctionError::create($message, $e)
+                ->withData(['exception' => get_class($e), 'data' => $data ?? null]);
         }
     }
 

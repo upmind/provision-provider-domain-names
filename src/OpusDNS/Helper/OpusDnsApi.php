@@ -35,11 +35,6 @@ class OpusDnsApi
     protected $configuration;
 
     /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    /**
      * @var Client
      */
     protected $httpClient;
@@ -54,10 +49,9 @@ class OpusDnsApi
      */
     protected $tokenExpiry;
 
-    public function __construct(Configuration $configuration, LoggerInterface $logger, ?Client $httpClient = null)
+    public function __construct(Configuration $configuration, ?Client $httpClient = null)
     {
         $this->configuration = $configuration;
-        $this->logger = $logger;
         $this->httpClient = $httpClient ?: new Client([
             'base_uri' => $configuration->getBaseUrl(),
             'headers' => [
@@ -79,8 +73,6 @@ class OpusDnsApi
         if ($this->accessToken !== null && $this->tokenExpiry !== null && time() < $this->tokenExpiry) {
             return $this->accessToken;
         }
-
-        $this->logger->debug('OpusDNS: Authenticating via OAuth2 client_credentials');
 
         try {
             $response = $this->httpClient->post('/v1/auth/token', [
@@ -150,31 +142,26 @@ class OpusDnsApi
      */
     public function makeRequest(string $method, string $path, array $options = [], bool $retry = true): array
     {
-        $token = $this->getAccessToken();
         $fullPath = '/v1/' . ltrim($path, '/');
 
-        $requestOptions = array_merge_recursive($options, [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'Accept' => 'application/json',
-            ],
-        ]);
+        $headers = [
+            'Accept' => 'application/json',
+        ];
 
-        $this->logger->debug('OpusDNS API Request', [
-            'method' => $method,
-            'path' => $fullPath,
-            'options' => $this->redactSensitive($requestOptions),
+        if ($this->configuration->api_key) {
+            $headers['X-API-Key'] = $this->configuration->api_key;
+        } else {
+            $headers['Authorization'] = 'Bearer ' . $this->getAccessToken();
+        }
+
+        $requestOptions = array_merge_recursive($options, [
+            'headers' => $headers,
         ]);
 
         try {
             $response = $this->httpClient->request($method, $fullPath, $requestOptions);
             $body = (string) $response->getBody();
             $responseData = json_decode($body, true);
-
-            $this->logger->debug('OpusDNS API Response', [
-                'status' => $response->getStatusCode(),
-                'body' => $responseData,
-            ]);
 
             if ($responseData === null && $body !== '' && $body !== 'null') {
                 throw ProvisionFunctionError::create('Failed to decode API response')
@@ -361,7 +348,19 @@ class OpusDnsApi
     // =========================================================================
 
     /**
-     * Get full domain information.
+     * Returns raw domain data from the API.
+     *
+     * @link https://developers.opusdns.com/#tag/domain/GET/v1/domains/{domain_reference}
+     */
+    public function getRawDomainData(string $domainName): array
+    {
+        $response = $this->makeRequest('GET', 'domains/' . urlencode($domainName));
+
+        return $response['data'] ?? $response;
+    }
+
+    /**
+     * Get formatted domain information for a DomainResult.
      *
      * @param string $domainName The full domain name (e.g., example.com)
      * @param bool $minimal When true, skip extra API calls
@@ -370,14 +369,12 @@ class OpusDnsApi
      */
     public function getDomainInfo(string $domainName, bool $minimal = false): array
     {
-        $response = $this->makeRequest('GET', 'domains/' . urlencode($domainName));
-
-        $domain = $response['data'] ?? $response;
+        $domain = $this->getRawDomainData($domainName);
 
         $glueRecords = $minimal ? [] : $this->listGlueRecords($domainName);
 
         // Parse contacts from array format (API returns [{contact_id, contact_type}, ...])
-        $contacts = $this->parseContactsFromDomain($domain);
+        $contacts = $minimal ? [] : $this->parseContactsFromDomain($domain);
 
         return [
             'id' => $domain['domain_id'] ?? $domain['id'] ?? $domain['reference'] ?? null,
@@ -404,7 +401,7 @@ class OpusDnsApi
      *
      * @return string[]
      */
-    protected function parseStatuses(array $domain): array
+    public function parseStatuses(array $domain): array
     {
         $statuses = [];
 

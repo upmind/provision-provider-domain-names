@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\OpusDNS;
 
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
 use Throwable;
 use UnexpectedValueException;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Str;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
 use Upmind\ProvisionBase\Provider\DataSet\AboutData;
@@ -251,9 +253,14 @@ class Provider extends DomainNames implements ProviderInterface
         $eppCode = $params->epp_code;
 
         try {
-            return $this->_getInfo($domainName, 'Domain active in registrar account');
+            return $this->_getInfo($domainName, 'Domain active in registrar account', true);
         } catch (Throwable $e) {
             // domain not active - continue below
+            if ($e instanceof ProvisionFunctionError) {
+                if (Str::contains(strtolower($e->getMessage()), 'pending transfer')) {
+                    throw $e;
+                }
+            }
         }
 
         if (!Arr::has($params, 'registrant.register')) {
@@ -304,15 +311,21 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            return $this->_getInfo($domainName, 'Domain data obtained');
+            return $this->_getInfo($domainName, 'Domain data obtained', true);
         } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
 
-    private function _getInfo(string $domainName, string $message): DomainResult
+    private function _getInfo(string $domainName, string $message, bool $assertActive = false): DomainResult
     {
         $domainInfo = $this->api()->getDomainInfo($domainName);
+
+        if ($assertActive) {
+            if (in_array('PENDINGTRANSFER', $domainInfo['statuses'] ?? [])) {
+                $this->errorResult('Domain transfer in progress; status is pending transfer', $domainInfo);
+            }
+        }
 
         return DomainResult::create($domainInfo)->setMessage($message);
     }
@@ -491,7 +504,35 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            $domainInfo = $this->api()->getDomainInfo($domainName, true);
+            $domainInfo = $this->api()->getRawDomainData($domainName);
+            $statuses = $this->api()->parseStatuses($domainInfo);
+            $dates = array_filter($domainInfo, function ($key) {
+                return Str::endsWith($key, ['_on', '_at']);
+            }, ARRAY_FILTER_USE_KEY);
+
+            if (in_array('PENDINGTRANSFER', $statuses)) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_UNKNOWN)
+                    ->setExpiresAt(null)
+                    ->setRawStatuses($statuses)
+                    ->setExtra([
+                        'dates' => $dates,
+                    ]);
+            }
+
+            $deletedAt = isset($domainInfo['deleted_on'])
+                ? Carbon::parse($domainInfo['deleted_on'])
+                : null;
+
+            if ($deletedAt !== null && $deletedAt->isPast()) {
+                return StatusResult::create()
+                    ->setStatus(StatusResult::STATUS_CANCELLED)
+                    ->setExpiresAt(null)
+                    ->setRawStatuses($statuses)
+                    ->setExtra([
+                        'dates' => $dates,
+                    ]);
+            }
 
             $expiresAt = isset($domainInfo['expires_at'])
                 ? Carbon::parse($domainInfo['expires_at'])
@@ -501,14 +542,24 @@ class Provider extends DomainNames implements ProviderInterface
                 return StatusResult::create()
                     ->setStatus(StatusResult::STATUS_EXPIRED)
                     ->setExpiresAt($expiresAt)
-                    ->setRawStatuses($domainInfo['statuses'] ?? null);
+                    ->setRawStatuses($statuses)
+                    ->setExtra([
+                        'dates' => $dates,
+                    ]);
             }
 
             return StatusResult::create()
                 ->setStatus(StatusResult::STATUS_ACTIVE)
                 ->setExpiresAt($expiresAt)
-                ->setRawStatuses($domainInfo['statuses'] ?? null);
+                ->setRawStatuses($statuses)
+                ->setExtra([
+                    'dates' => $dates,
+                ]);
         } catch (ProvisionFunctionError $e) {
+            if (!$this->errorIsDomainNotFound($e)) {
+                throw $e;
+            }
+
             // Domain not found - check registry availability
             try {
                 $availability = $this->checkDomainAvailableAtRegistry($domainName);
@@ -528,6 +579,24 @@ class Provider extends DomainNames implements ProviderInterface
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Determine whether the given exception indicates domain not found.
+     */
+    protected function errorIsDomainNotFound(Throwable $e): bool
+    {
+        do {
+            if ($e instanceof ClientException) {
+                $response = $e->getResponse();
+                if ($response && $response->getStatusCode() === 404) {
+                    $data = json_decode((string) $response->getBody(), true);
+                    return ($data['code'] ?? null) === 'ERROR_DOMAIN_NOT_FOUND';
+                }
+            }
+        } while ($e = $e->getPrevious());
+
+        return false;
     }
 
     /**
@@ -595,6 +664,15 @@ class Provider extends DomainNames implements ProviderInterface
             return $this->api;
         }
 
-        return $this->api = new OpusDnsApi($this->configuration, $this->getLogger());
+        return $this->api = new OpusDnsApi($this->configuration, new Client([
+            'handler' => $this->getGuzzleHandlerStack(),
+            'base_uri' => $this->configuration->getBaseUrl(),
+            'headers' => [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ],
+            'timeout' => 60,
+            'connect_timeout' => 10,
+        ]));
     }
 }

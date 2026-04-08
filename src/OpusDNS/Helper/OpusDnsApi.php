@@ -759,9 +759,13 @@ class OpusDnsApi
      */
     public function setDomainLock(string $domainName, bool $lock): array
     {
+        $statusChangeKey = $lock ? 'add' : 'remove';
+
         return $this->makeRequest('PATCH', 'domains/' . urlencode($domainName), [
             'json' => [
-                'transfer_lock' => $lock,
+                'status_changes' => [
+                    $statusChangeKey => ['clientTransferProhibited'],
+                ],
             ],
         ]);
     }

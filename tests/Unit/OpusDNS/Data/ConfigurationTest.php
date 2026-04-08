@@ -12,31 +12,18 @@ class ConfigurationTest extends TestCase
     public function test_valid_configuration_passes_validation(): void
     {
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
         ]);
 
-        $this->assertEquals('test_client_id', $config->client_id);
-        $this->assertEquals('test_client_secret', $config->client_secret);
+        $this->assertEquals('test_api_key', $config->api_key);
     }
 
-    public function test_requires_client_id(): void
+    public function test_requires_api_key(): void
     {
         $this->expectException(\Throwable::class);
 
         $config = new Configuration([
-            'client_secret' => 'test_client_secret',
-        ]);
-
-        $config->validateIfNotYetValidated();
-    }
-
-    public function test_requires_client_secret(): void
-    {
-        $this->expectException(\Throwable::class);
-
-        $config = new Configuration([
-            'client_id' => 'test_client_id',
+            // No api_key provided
         ]);
 
         $config->validateIfNotYetValidated();
@@ -45,8 +32,7 @@ class ConfigurationTest extends TestCase
     public function test_is_sandbox_returns_true_when_sandbox_is_true(): void
     {
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
             'sandbox' => true,
         ]);
 
@@ -56,8 +42,7 @@ class ConfigurationTest extends TestCase
     public function test_is_sandbox_returns_false_when_sandbox_is_false(): void
     {
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
             'sandbox' => false,
         ]);
 
@@ -67,8 +52,7 @@ class ConfigurationTest extends TestCase
     public function test_is_sandbox_returns_false_when_sandbox_is_null(): void
     {
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
             'sandbox' => null,
         ]);
 
@@ -78,8 +62,7 @@ class ConfigurationTest extends TestCase
     public function test_is_sandbox_returns_false_when_sandbox_is_not_set(): void
     {
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
         ]);
 
         $this->assertFalse($config->isSandbox());
@@ -88,8 +71,7 @@ class ConfigurationTest extends TestCase
     public function test_get_base_url_returns_production_url(): void
     {
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
             'sandbox' => false,
         ]);
 
@@ -99,8 +81,7 @@ class ConfigurationTest extends TestCase
     public function test_get_base_url_returns_sandbox_url(): void
     {
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
             'sandbox' => true,
         ]);
 

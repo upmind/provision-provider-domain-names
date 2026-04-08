@@ -23,18 +23,6 @@ class OpusDnsResponseFactory
     }
 
     /**
-     * OAuth2 token response.
-     */
-    public static function tokenResponse(int $expiresIn = 3600): Response
-    {
-        return new Response(200, ['Content-Type' => 'application/json'], json_encode([
-            'access_token' => 'test_access_token_' . bin2hex(random_bytes(16)),
-            'token_type' => 'Bearer',
-            'expires_in' => $expiresIn,
-        ]));
-    }
-
-    /**
      * Domain response matching DomainResponse schema.
      */
     public static function domainResponse(array $overrides = []): array

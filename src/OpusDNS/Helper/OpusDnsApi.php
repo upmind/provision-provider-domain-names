@@ -39,16 +39,6 @@ class OpusDnsApi
      */
     protected $httpClient;
 
-    /**
-     * @var string|null
-     */
-    protected $accessToken;
-
-    /**
-     * @var int|null
-     */
-    protected $tokenExpiry;
-
     public function __construct(Configuration $configuration, ?Client $httpClient = null)
     {
         $this->configuration = $configuration;
@@ -64,71 +54,6 @@ class OpusDnsApi
     }
 
     /**
-     * Obtain or return a cached OAuth2 access token.
-     *
-     * @throws ProvisionFunctionError
-     */
-    protected function getAccessToken(): string
-    {
-        if ($this->accessToken !== null && $this->tokenExpiry !== null && time() < $this->tokenExpiry) {
-            return $this->accessToken;
-        }
-
-        try {
-            $response = $this->httpClient->post('/v1/auth/token', [
-                'form_params' => [
-                    'grant_type' => 'client_credentials',
-                    'client_id' => $this->configuration->client_id,
-                    'client_secret' => $this->configuration->client_secret,
-                ],
-                'headers' => [
-                    'Content-Type' => 'application/x-www-form-urlencoded',
-                    'Accept' => 'application/json',
-                ],
-            ]);
-
-            $data = json_decode((string) $response->getBody(), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw ProvisionFunctionError::create('Failed to decode auth response: ' . json_last_error_msg());
-            }
-
-            $this->accessToken = $data['access_token'] ?? null;
-            $expiresIn = $data['expires_in'] ?? 3600;
-            // Expire 60 seconds early to avoid edge cases
-            $this->tokenExpiry = time() + $expiresIn - 60;
-
-            if (!$this->accessToken) {
-                throw ProvisionFunctionError::create('No access token received from Provider')
-                    ->withData(['response' => $data]);
-            }
-
-            return $this->accessToken;
-        } catch (ProvisionFunctionError $e) {
-            throw $e;
-        } catch (Throwable $e) {
-            $message = 'Provider authentication failed';
-
-            if ($e instanceof RequestException && $e->getResponse()) {
-                $response = $e->getResponse();
-                $data = json_decode((string) $response->getBody(), true);
-            }
-
-            throw ProvisionFunctionError::create($message, $e)
-                ->withData(['exception' => get_class($e), 'data' => $data ?? null]);
-        }
-    }
-
-    /**
-     * Clear the cached access token.
-     */
-    public function clearAccessToken(): void
-    {
-        $this->accessToken = null;
-        $this->tokenExpiry = null;
-    }
-
-    /**
      * Make an authenticated API request.
      *
      * @param string $method HTTP method (GET, POST, PATCH, PUT, DELETE)
@@ -140,19 +65,14 @@ class OpusDnsApi
      *
      * @throws ProvisionFunctionError
      */
-    public function makeRequest(string $method, string $path, array $options = [], bool $retry = true): array
+    public function makeRequest(string $method, string $path, array $options = []): array
     {
         $fullPath = '/v1/' . ltrim($path, '/');
 
         $headers = [
+            'X-API-Key' => $this->configuration->api_key,
             'Accept' => 'application/json',
         ];
-
-        if ($this->configuration->api_key) {
-            $headers['X-API-Key'] = $this->configuration->api_key;
-        } else {
-            $headers['Authorization'] = 'Bearer ' . $this->getAccessToken();
-        }
 
         $requestOptions = array_merge_recursive($options, [
             'headers' => $headers,
@@ -170,12 +90,6 @@ class OpusDnsApi
 
             return $responseData ?: [];
         } catch (ClientException $e) {
-            // Retry once on 401 with a fresh token
-            if ($e->getResponse()->getStatusCode() === 401 && $retry) {
-                $this->clearAccessToken();
-                return $this->makeRequest($method, $path, $options, false);
-            }
-
             throw $this->handleApiException($e);
         } catch (ServerException $e) {
             throw $this->handleApiException($e);

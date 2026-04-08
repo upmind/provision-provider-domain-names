@@ -150,14 +150,26 @@ class OpusDnsApi
                 return $this->formatValidationError($responseBody);
 
             default:
+                if (!empty($responseBody['detail'])) {
+                    return $this->parseErrorDetail($responseBody['detail']);
+                }
+
                 // Fall back to extracting message from response
-                return $responseBody['detail']
-                    ?? $responseBody['message']
+                return $responseBody['message']
                     ?? $responseBody['title']
                     ?? $responseBody['error']['message']
                     ?? $responseBody['error']
                     ?? 'Provider API Error';
         }
+    }
+
+    private function parseErrorDetail(string $detail): string
+    {
+        if (preg_match("/\breason=(['\"])((?:\\\\.|(?!\\1).)*)\\1/", $detail, $matches)) {
+            return stripcslashes($matches[2]);
+        }
+
+        return $detail; // fall back to full error detail
     }
 
     /**

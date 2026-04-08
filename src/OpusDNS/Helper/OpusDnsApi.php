@@ -184,7 +184,7 @@ class OpusDnsApi
 
         $messages = [];
         foreach ($errors as $error) {
-            $field = implode('.', $error['loc'] ?? []);
+            $field = $error['loc'][1] ?? 'Body';
             $msg = $error['msg'] ?? 'Invalid';
             $messages[] = sprintf('%s: %s', $field, $msg);
         }

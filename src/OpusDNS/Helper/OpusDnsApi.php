@@ -11,6 +11,7 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -876,15 +877,23 @@ class OpusDnsApi
         ContactParams $contact,
         string $contactType
     ): ContactData {
+        $existingContacts = (new Collection($this->getRawDomainData($domainName)['contacts'] ?? []))
+            ->mapWithKeys(function ($contactEntry) {
+                $type = $contactEntry['contact_type'] ?? null;
+                $id = $contactEntry['contact_id'] ?? null;
+                return $type && $id ? [$type => $id] : [];
+            })
+            ->toArray();
+
         // Create a new contact and get the ID
         $newContactId = $this->createContact($contact);
 
         // Update only the specified contact type - API preserves other contacts
         $this->makeRequest('PATCH', 'domains/' . urlencode($domainName), [
             'json' => [
-                'contacts' => [
+                'contacts' => array_merge($existingContacts, [
                     $contactType => $newContactId,
-                ],
+                ]),
             ],
         ]);
 

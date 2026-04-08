@@ -42,12 +42,11 @@ class OpusDnsApiTest extends TestCase
         $httpClient = new Client(['handler' => $handlerStack]);
 
         $config = new Configuration([
-            'client_id' => 'test_client_id',
-            'client_secret' => 'test_client_secret',
+            'api_key' => 'test_api_key',
             'sandbox' => true,
         ]);
 
-        return new OpusDnsApi($config, new NullLogger(), $httpClient);
+        return new OpusDnsApi($config, $httpClient);
     }
 
     /**
@@ -89,14 +88,6 @@ class OpusDnsApiTest extends TestCase
         return json_decode($body, true);
     }
 
-    /**
-     * Create a mock token response.
-     */
-    protected function tokenResponse(): Response
-    {
-        return OpusDnsResponseFactory::tokenResponse();
-    }
-
     // =========================================================================
     // Authentication Tests
     // =========================================================================
@@ -104,7 +95,6 @@ class OpusDnsApiTest extends TestCase
     public function test_authenticate_obtains_bearer_token(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(['data' => ['domain' => 'test.com']]),
         ]);
 
@@ -116,7 +106,6 @@ class OpusDnsApiTest extends TestCase
     public function test_authenticate_caches_token(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(['data' => ['domain' => 'test.com']]),
             OpusDnsResponseFactory::jsonResponse(['data' => ['domain' => 'test2.com']]),
         ]);
@@ -125,24 +114,8 @@ class OpusDnsApiTest extends TestCase
         $result = $api->makeRequest('GET', 'domains/test2.com');
 
         $this->assertIsArray($result);
-        // Should be 3 requests: token + 2 domain requests
-        $this->assertCount(3, $this->requestHistory);
-    }
-
-    public function test_make_request_retries_on_token_expiry(): void
-    {
-        $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
-            new Response(401, ['Content-Type' => 'application/json'], json_encode([
-                'message' => 'Token expired',
-            ])),
-            $this->tokenResponse(),
-            OpusDnsResponseFactory::jsonResponse(['data' => ['domain' => 'test.com']]),
-        ]);
-
-        $result = $api->makeRequest('GET', 'domains/test.com');
-
-        $this->assertIsArray($result);
+        // Should be 2 requests: 2 domain requests
+        $this->assertCount(2, $this->requestHistory);
     }
 
     // =========================================================================
@@ -152,7 +125,6 @@ class OpusDnsApiTest extends TestCase
     public function test_check_domains_returns_dac_domains(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainCheckResponse([
                     'example.com' => true,
@@ -173,7 +145,6 @@ class OpusDnsApiTest extends TestCase
     public function test_check_domains_uses_comma_separated_format(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainCheckResponse([
                     'example.com' => true,
@@ -185,7 +156,7 @@ class OpusDnsApiTest extends TestCase
         $api->checkDomains(['example.com', 'example.net']);
 
         // Verify the query string uses comma-separated format, not array indices
-        $request = $this->getRequestAt(1);
+        $request = $this->getRequestAt(0);
         $query = $request->getUri()->getQuery();
 
         // Should contain comma-separated domains
@@ -214,7 +185,6 @@ class OpusDnsApiTest extends TestCase
         ]);
 
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse($domainResponse),
             // For contact lookups
             OpusDnsResponseFactory::jsonResponse($contactResponse),
@@ -253,7 +223,6 @@ class OpusDnsApiTest extends TestCase
         ]);
 
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse($domainResponse),
             // Each contact_id in the array triggers a GET /contacts/{id} call
             OpusDnsResponseFactory::jsonResponse($contactResponse), // registrant lookup
@@ -274,15 +243,14 @@ class OpusDnsApiTest extends TestCase
         $domainResponse = OpusDnsResponseFactory::domainResponse(['name' => 'example.com']);
 
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse($domainResponse),
         ]);
 
         $result = $api->getDomainInfo('example.com', true);
 
         $this->assertEquals('example.com', $result['domain']);
-        // Should only have 2 requests: token + domain info (no glue record fetch)
-        $this->assertCount(2, $this->requestHistory);
+        // Should only have 1 requests: domain info (no glue record fetch)
+        $this->assertCount(1, $this->requestHistory);
     }
 
     // =========================================================================
@@ -292,7 +260,6 @@ class OpusDnsApiTest extends TestCase
     public function test_renew_domain_sends_period_object(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainRenewResponse('example.com', 2)
             ),
@@ -301,7 +268,7 @@ class OpusDnsApiTest extends TestCase
         $result = $api->renewDomain('example.com', 2);
 
         // Verify the request body contains period as object
-        $requestBody = $this->getRequestBodyAt(1);
+        $requestBody = $this->getRequestBodyAt(0);
         $this->assertArrayHasKey('period', $requestBody);
         $this->assertEquals(['unit' => 'y', 'value' => 2], $requestBody['period']);
     }
@@ -309,7 +276,6 @@ class OpusDnsApiTest extends TestCase
     public function test_renew_domain_includes_current_expiry(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainRenewResponse('example.com', 1)
             ),
@@ -317,7 +283,7 @@ class OpusDnsApiTest extends TestCase
 
         $result = $api->renewDomain('example.com', 1, '2025-01-15T10:30:00Z');
 
-        $requestBody = $this->getRequestBodyAt(1);
+        $requestBody = $this->getRequestBodyAt(0);
         $this->assertArrayHasKey('current_expiry_date', $requestBody);
         $this->assertEquals('2025-01-15T10:30:00Z', $requestBody['current_expiry_date']);
     }
@@ -329,7 +295,6 @@ class OpusDnsApiTest extends TestCase
     public function test_transfer_domain_uses_name_field(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             // Contact creation
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::contactResponse()
@@ -353,7 +318,7 @@ class OpusDnsApiTest extends TestCase
         $result = $api->transferDomain('example.com', 'ABC123', ['registrant' => $registrant]);
 
         // Verify request uses 'name' not 'domain'
-        $requestBody = $this->getRequestBodyAt(2);
+        $requestBody = $this->getRequestBodyAt(1);
         $this->assertArrayHasKey('name', $requestBody);
         $this->assertArrayNotHasKey('domain', $requestBody);
         $this->assertEquals('example.com', $requestBody['name']);
@@ -362,7 +327,6 @@ class OpusDnsApiTest extends TestCase
     public function test_transfer_domain_includes_renewal_mode(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::contactResponse()
             ),
@@ -383,7 +347,7 @@ class OpusDnsApiTest extends TestCase
 
         $result = $api->transferDomain('example.com', 'ABC123', ['registrant' => $registrant]);
 
-        $requestBody = $this->getRequestBodyAt(2);
+        $requestBody = $this->getRequestBodyAt(1);
         $this->assertArrayHasKey('renewal_mode', $requestBody);
         $this->assertEquals('renew', $requestBody['renewal_mode']);
     }
@@ -395,7 +359,6 @@ class OpusDnsApiTest extends TestCase
     public function test_set_auto_renew_uses_renewal_mode_enum(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainResponse(['renewal_mode' => 'renew'])
             ),
@@ -404,7 +367,7 @@ class OpusDnsApiTest extends TestCase
         $result = $api->setDomainAutoRenew('example.com', true);
 
         // Verify request uses 'renewal_mode' not 'auto_renew'
-        $requestBody = $this->getRequestBodyAt(1);
+        $requestBody = $this->getRequestBodyAt(0);
         $this->assertArrayHasKey('renewal_mode', $requestBody);
         $this->assertArrayNotHasKey('auto_renew', $requestBody);
         $this->assertEquals('renew', $requestBody['renewal_mode']);
@@ -413,7 +376,6 @@ class OpusDnsApiTest extends TestCase
     public function test_set_auto_renew_disabled_uses_expire(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainResponse(['renewal_mode' => 'expire'])
             ),
@@ -421,7 +383,7 @@ class OpusDnsApiTest extends TestCase
 
         $result = $api->setDomainAutoRenew('example.com', false);
 
-        $requestBody = $this->getRequestBodyAt(1);
+        $requestBody = $this->getRequestBodyAt(0);
         $this->assertEquals('expire', $requestBody['renewal_mode']);
     }
 
@@ -436,7 +398,6 @@ class OpusDnsApiTest extends TestCase
         ]);
 
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse($domainResponse), // PATCH response
             OpusDnsResponseFactory::jsonResponse($domainResponse), // GET for verification
         ]);
@@ -444,7 +405,7 @@ class OpusDnsApiTest extends TestCase
         $result = $api->updateDomainNameservers('example.com', ['ns1.new.com', 'ns2.new.com']);
 
         // Verify request uses array of objects with 'hostname' key
-        $requestBody = $this->getRequestBodyAt(1);
+        $requestBody = $this->getRequestBodyAt(0);
         $this->assertArrayHasKey('nameservers', $requestBody);
         $this->assertEquals([
             ['hostname' => 'ns1.new.com'],
@@ -459,7 +420,6 @@ class OpusDnsApiTest extends TestCase
     public function test_set_domain_lock(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainResponse(['transfer_lock' => true])
             ),
@@ -467,7 +427,7 @@ class OpusDnsApiTest extends TestCase
 
         $result = $api->setDomainLock('example.com', true);
 
-        $requestBody = $this->getRequestBodyAt(1);
+        $requestBody = $this->getRequestBodyAt(0);
         $this->assertArrayHasKey('transfer_lock', $requestBody);
         $this->assertTrue($requestBody['transfer_lock']);
     }
@@ -479,7 +439,6 @@ class OpusDnsApiTest extends TestCase
     public function test_get_domain_epp_code(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse([
                 'data' => ['auth_code' => 'ABC123XYZ'],
             ]),
@@ -497,7 +456,6 @@ class OpusDnsApiTest extends TestCase
     public function test_make_request_throws_on_error_response(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::domainNotFoundResponse('nonexistent.com'),
                 404
@@ -513,7 +471,6 @@ class OpusDnsApiTest extends TestCase
     public function test_validation_error_includes_field_details(): void
     {
         $api = $this->createApiWithMockedResponses([
-            $this->tokenResponse(),
             OpusDnsResponseFactory::jsonResponse(
                 OpusDnsResponseFactory::validationErrorResponse([
                     'name' => 'field required',

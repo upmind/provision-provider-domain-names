@@ -1012,16 +1012,8 @@ class OpusDnsApi
                 $verification = $verificationResponse['data'] ?? $verificationResponse;
 
                 // Map OpusDNS status to ICANN verification status
-                $emailStatus = $verification['email_verification_status'] ?? null;
-                if ($emailStatus === 'verified') {
-                    $icannStatus = 'verified';
-                } elseif ($emailStatus === 'pending') {
-                    $icannStatus = 'pending';
-                } elseif ($emailStatus === 'unverified') {
-                    $icannStatus = 'unverified';
-                }
-
-                $verificationDeadline = $verification['expires_on'] ?? $verification['deadline'] ?? null;
+                $icannStatus = !empty($verification['status']) ? strtolower($verification['status']) : 'unknown';
+                $verificationDeadline = $verification['expires_on'] ?? $verification['deadline'] ?? $verification['canceled_on'] ?? null;
             } catch (Throwable $e) {
                 // Contact verification not found or not required - this is normal
                 // Many contacts may not have active verification requests
@@ -1033,6 +1025,7 @@ class OpusDnsApi
             'icann_verification_status' => $icannStatus,
             'cctld_verification_status' => null,
             'verification_deadline' => $verificationDeadline,
+            'provider_specific_data' => $verification ?? null,
         ];
     }
 

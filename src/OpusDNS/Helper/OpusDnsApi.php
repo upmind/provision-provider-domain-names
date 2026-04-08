@@ -510,7 +510,7 @@ class OpusDnsApi
             ?: null;
 
         return ContactData::create([
-            'organisation' => $contact['organisation'] ?? $contact['organization'] ?? $contact['company'] ?? null,
+            'organisation' => $contact['org'] ?? $contact['organization'] ?? $contact['company'] ?? null,
             'name' => $name,
             'address1' => $contact['address1'] ?? $contact['address'] ?? $contact['street'] ?? null,
             'city' => $contact['city'] ?? $contact['suburb'] ?? null,

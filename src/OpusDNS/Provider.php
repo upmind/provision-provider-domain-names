@@ -589,7 +589,7 @@ class Provider extends DomainNames implements ProviderInterface
         do {
             if ($e instanceof ClientException) {
                 $response = $e->getResponse();
-                if ($response && $response->getStatusCode() === 404) {
+                if ($response->getStatusCode() === 404) {
                     $data = json_decode((string) $response->getBody(), true);
                     return ($data['code'] ?? null) === 'ERROR_DOMAIN_NOT_FOUND';
                 }

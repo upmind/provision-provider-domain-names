@@ -60,7 +60,6 @@ class OpusDnsApi
      * @param string $method HTTP method (GET, POST, PATCH, PUT, DELETE)
      * @param string $path API path (without /v1 prefix)
      * @param array $options Guzzle request options
-     * @param bool $retry Whether to retry on 401 (token refresh)
      *
      * @return array Decoded JSON response
      *

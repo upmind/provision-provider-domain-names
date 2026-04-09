@@ -67,6 +67,7 @@ The following providers are currently implemented:
   - [Netim](https://support.netim.com/en/docs/api-rest-1-0/get-started)
   - [Moniker](https://support.moniker.com/hc/en-gb/articles/24954146333981-Self-Development-Kit-for-PHP)
   - [BDReseller](https://bdia.btcl.com.bd)
+  - [OpusDNS](https://developers.opusdns.com/#tag/domain)
 
 ## Functions
 

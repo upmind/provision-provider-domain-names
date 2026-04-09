@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.76](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.76) - 2026-04-09
+
+- Add OpusDNS provider
+
 ## [v2.12.75](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.75) - 2026-03-17
 
 - Update OpenSRS domainAvailabilityCheck() to pass max_wait_time 10 to avoid timeouts caused by slow tld/registries

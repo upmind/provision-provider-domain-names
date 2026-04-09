@@ -428,8 +428,10 @@ class OpusDnsApiTest extends TestCase
         $result = $api->setDomainLock('example.com', true);
 
         $requestBody = $this->getRequestBodyAt(0);
-        $this->assertArrayHasKey('transfer_lock', $requestBody);
-        $this->assertTrue($requestBody['transfer_lock']);
+
+        $this->assertArrayHasKey('status_changes', $requestBody);
+        $this->assertArrayHasKey('add', $requestBody['status_changes']);
+        $this->assertEquals('clientTransferProhibited', $requestBody['status_changes']['add'][0] ?? null);
     }
 
     // =========================================================================

@@ -308,7 +308,7 @@ class OpusDnsApiTest extends TestCase
         $registrant = new \Upmind\ProvisionProviders\DomainNames\Data\ContactParams([
             'name' => 'John Doe',
             'email' => 'john@example.com',
-            'phone' => '+447700900123',
+            'phone' => '+447710900123',
             'address1' => '123 Main St',
             'city' => 'London',
             'postcode' => 'SW1A 1AA',
@@ -338,7 +338,7 @@ class OpusDnsApiTest extends TestCase
         $registrant = new \Upmind\ProvisionProviders\DomainNames\Data\ContactParams([
             'name' => 'John Doe',
             'email' => 'john@example.com',
-            'phone' => '+447700900123',
+            'phone' => '+447710900123',
             'address1' => '123 Main St',
             'city' => 'London',
             'postcode' => 'SW1A 1AA',

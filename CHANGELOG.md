@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.30.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.30.1) - 2026-04-16
+
+- Update Synergy Logo
+
 ## [v2.30.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.30.0) - 2026-04-09
 
 - Add OpusDNS provider

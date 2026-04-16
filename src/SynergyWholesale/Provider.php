@@ -75,7 +75,7 @@ class Provider extends DomainNames implements ProviderInterface
         return AboutData::create()
             ->setName('Synergy Wholesale')
             ->setDescription('Register, transfer, renew and manage domains')
-            ->setLogoUrl('https://api.upmind.io/images/logos/provision/synergy-wholesale-logo.png');
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/synergy-wholesale-logo.svg');
     }
 
     public function domainAvailabilityCheck(DacParams $params): DacResult

@@ -616,6 +616,9 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $xmlString = trim($response->getBody()->getContents());
 
+        // Process HTML entities (eg. `&egrave;` is decoded to `è` and appropriately handled by XML)
+        $xmlString = html_entity_decode($xmlString, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
 

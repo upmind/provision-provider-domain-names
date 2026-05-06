@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.78](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.78) - 2026-05-06
+
+- Decode HTML entities before parsing XML from Namesilo API responses
+
 ## [v2.12.77](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.77) - 2026-04-16
 
 - Update Synergy Logo

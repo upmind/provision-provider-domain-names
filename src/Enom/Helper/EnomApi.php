@@ -539,6 +539,10 @@ class EnomApi
             'RegistrantPhone' => $contactParams->phone
         ];
 
+        if ($contactParams->state) {
+            $params['RegistrantStateProvince'] = $contactParams->state;
+        }
+
         // Set NameServers
         if (is_null($nameServers) || count($nameServers) < 1) {
             $params['UseDNS'] = 'default';

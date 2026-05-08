@@ -297,7 +297,11 @@ class EnomApi
             $type . 'Phone' => $contactParams->phone
         ];
 
-        $result = $this->makeRequest($params);
+        if ($contactParams->state) {
+            $params[$type . 'StateProvince'] = $contactParams->state;
+        }
+
+        $this->makeRequest($params);
     }
 
     /**

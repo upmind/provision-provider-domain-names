@@ -297,7 +297,11 @@ class EnomApi
             $type . 'Phone' => $contactParams->phone
         ];
 
-        $result = $this->makeRequest($params);
+        if ($contactParams->state) {
+            $params[$type . 'StateProvince'] = $contactParams->state;
+        }
+
+        $this->makeRequest($params);
     }
 
     /**
@@ -534,6 +538,10 @@ class EnomApi
             'RegistrantEmailAddress' => $contactParams->email,
             'RegistrantPhone' => $contactParams->phone
         ];
+
+        if ($contactParams->state) {
+            $params['RegistrantStateProvince'] = $contactParams->state;
+        }
 
         // Set NameServers
         if (is_null($nameServers) || count($nameServers) < 1) {

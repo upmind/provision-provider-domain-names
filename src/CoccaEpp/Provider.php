@@ -720,7 +720,7 @@ class Provider extends DomainNames implements ProviderInterface
          *
          * A <domain:clID> element that contains the identifier of the sponsoring client.
          * If client ID does not match, throw error.
-         * If comes back as redacted, it won't be in the account, so throw error.
+         * If client ID is `Redacted`, it won't be in the account, so throw error.
          */
         if (isset($domainData['infData']['clID'])
             && trim($domainData['infData']['clID']) !== trim($this->configuration->epp_username)

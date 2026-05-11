@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.30.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.30.3) - 2026-05-11
+
+- Send `state` in Enom create/update requests
+- Detect and throw error for CoCCA domains which have been lost to a different registrar
+
 ## [v2.30.2](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.30.2) - 2026-05-06
 
 - Decode HTML entities before parsing XML from Namesilo API responses

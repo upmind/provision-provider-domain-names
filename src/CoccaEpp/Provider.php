@@ -715,6 +715,19 @@ class Provider extends DomainNames implements ProviderInterface
             );
         }
 
+        /*
+         * @see RFC https://datatracker.ietf.org/doc/html/rfc5731#section-3.1.2
+         *
+         * A <domain:clID> element that contains the identifier of the sponsoring client.
+         * If client ID does not match, throw error.
+         * If client ID is `Redacted`, it won't be in the account, so throw error.
+         */
+        if (isset($domainData['infData']['clID'])
+            && trim($domainData['infData']['clID']) !== trim($this->configuration->epp_username)
+        ) {
+            $this->errorResult('Domain does not belong to account');
+        }
+
         $ns = [];
         foreach ($domainData['infData']['ns']['hostObj'] ?? [] as $i => $nameserver) {
             $ns['ns' . ($i + 1)] = [

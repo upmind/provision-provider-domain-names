@@ -179,7 +179,10 @@ class AscioApi
         return [
             'id' => $response['DomainHandle'],
             'domain' => (string)$response['DomainName'],
-            'statuses' => [$response['Status']],
+            'statuses' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string)($response['Status'] ?? ''))
+            ), 'strlen')),
             'locked' => $response['TransferLock'] == 'Lock' && $response['UpdateLock'] == 'Lock',
             'registrant' => isset($response['Owner'])
                 ? $this->parseContact($response['Owner'])
@@ -353,7 +356,7 @@ class AscioApi
         int    $period,
         array  $contacts,
         array  $nameServers
-    ): void
+    ): array
     {
         $command = 'createOrder';
 
@@ -399,7 +402,7 @@ class AscioApi
             ],
         ];
 
-        $this->makeRequest($command, $params, 'CreateOrderResult');
+        return $this->makeRequest($command, $params, 'CreateOrderResult');
     }
 
 

@@ -118,14 +118,32 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $contactsId = $this->getContactsId($contacts);
 
-            $this->api()->register(
+            $order = $this->api()->register(
                 $domainName,
                 intval($params->renew_years),
                 $contactsId,
                 $params->nameservers->pluckHosts(),
             );
 
-            return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
+            // createOrder is the authoritative success signal - non-200 ResultCodes throw in
+            // makeRequest, so reaching here means the registry accepted the order. Registration is
+            // async (the domain isn't queryable yet), so build the result from the order itself;
+            // syncStatus/getStatus backfills live status, expiry and contacts once it provisions.
+            $orderInfo = $order['OrderInfo'] ?? [];
+
+            return DomainResult::create()
+                ->setId($domainName)
+                ->setDomain($domainName)
+                ->setStatuses([$orderInfo['Status'] ?? 'Pending'])
+                ->setNs($params->nameservers)
+                ->setCreatedAt(null)
+                ->setUpdatedAt(null)
+                ->setExpiresAt(null)
+                ->setMessage(sprintf(
+                    'Domain %s registration submitted (order %s)',
+                    $domainName,
+                    $orderInfo['OrderId'] ?? 'pending'
+                ));
         } catch (\Throwable $e) {
             $this->handleException($e);
         }
@@ -549,14 +567,19 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $domainData = $this->_getInfo($domainName, "");
-            $status = StatusResult::STATUS_UNKNOWN;
-            switch ($domainData->statuses[0]) {
-                case "Active":
-                    $status = StatusResult::STATUS_ACTIVE;
-                    break;
-                case "Deleted":
-                    $status = StatusResult::STATUS_CANCELLED;
 
+            // Ascio returns a combinable set of statuses (split into individual values upstream).
+            // Map conservatively: only Deleted drives a downstream cancellation; Active/Expiring are
+            // live; anything else (Pending_Verification, Parked, Pending, Queue, ...) is not
+            // confirmable as active -> unknown, with the raw values preserved for visibility.
+            $normalized = array_map(static fn ($s) => strtolower(trim((string)$s)), $domainData->statuses);
+
+            if (in_array('deleted', $normalized, true)) {
+                $status = StatusResult::STATUS_CANCELLED;
+            } elseif (array_intersect(['active', 'expiring'], $normalized)) {
+                $status = StatusResult::STATUS_ACTIVE;
+            } else {
+                $status = StatusResult::STATUS_UNKNOWN;
             }
 
             return StatusResult::create()

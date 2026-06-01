@@ -588,6 +588,26 @@ class Provider extends DomainNames implements ProviderInterface
                     ? new \DateTimeImmutable($domainData->expires_at)
                     : null)
                 ->setRawStatuses($domainData->statuses);
+        } catch (ProvisionFunctionError $e) {
+            if (str_contains($e->getMessage(), 'Domain not found')) {
+                // Domain isn't in our account - distinguish "we lost it" (still available at
+                // registry => cancelled/dropped) from "someone else has it" (taken =>
+                // transferred away). Mirrors the Enom/LogicBoxes pattern.
+                try {
+                    $check = $this->api()->checkMultipleDomains([$domainName]);
+
+                    return StatusResult::create()
+                        ->setStatus($check[0]->can_register
+                            ? StatusResult::STATUS_CANCELLED
+                            : StatusResult::STATUS_TRANSFERRED_AWAY)
+                        ->setExpiresAt(null)
+                        ->setExtra(['availability_check' => $check[0]->toArray()]);
+                } catch (\Throwable $checkException) {
+                    // DAC failed too - surface the original "not found" error.
+                    $this->handleException($e);
+                }
+            }
+            $this->handleException($e);
         } catch (\Throwable $e) {
             $this->handleException($e);
         }

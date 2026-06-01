@@ -568,25 +568,36 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $domainData = $this->_getInfo($domainName, "");
 
-            // Ascio returns a combinable set of statuses (split into individual values upstream).
-            // Map conservatively: only Deleted drives a downstream cancellation; Active/Expiring are
-            // live; anything else (Pending_Verification, Parked, Pending, Queue, ...) is not
-            // confirmable as active -> unknown, with the raw values preserved for visibility.
+            // Status mapping: date-dominant for active/expired (the pattern used by the other
+            // "real" implementations in this package - Enom/LogicBoxes/OpenSRS), with raw-status
+            // overrides for terminal (`Deleted`) and "not yet usable" (`Pending_Verification`
+            // without `Active`/`Expiring`) cases. The raw statuses are surfaced via setRawStatuses
+            // so operators see the original Ascio strings.
             $normalized = array_map(static fn ($s) => strtolower(trim((string)$s)), $domainData->statuses);
+            $expiresAt = $domainData->expires_at
+                ? new \DateTimeImmutable($domainData->expires_at)
+                : null;
 
             if (in_array('deleted', $normalized, true)) {
+                // Explicit terminal: registry flagged the domain as gone.
                 $status = StatusResult::STATUS_CANCELLED;
-            } elseif (array_intersect(['active', 'expiring'], $normalized)) {
-                $status = StatusResult::STATUS_ACTIVE;
-            } else {
+            } elseif (
+                in_array('pending_verification', $normalized, true)
+                && !array_intersect(['active', 'expiring'], $normalized)
+            ) {
+                // In our account but not yet resolving (ICANN email verification outstanding).
                 $status = StatusResult::STATUS_UNKNOWN;
+            } elseif ($expiresAt !== null && $expiresAt < new \DateTimeImmutable()) {
+                // Past expiry - catches `Pending_Auction` and any case where Ascio is slow to
+                // flip the status flag away from `Active` after expiration.
+                $status = StatusResult::STATUS_EXPIRED;
+            } else {
+                $status = StatusResult::STATUS_ACTIVE;
             }
 
             return StatusResult::create()
                 ->setStatus($status)
-                ->setExpiresAt($domainData->expires_at
-                    ? new \DateTimeImmutable($domainData->expires_at)
-                    : null)
+                ->setExpiresAt($expiresAt)
                 ->setRawStatuses($domainData->statuses);
         } catch (ProvisionFunctionError $e) {
             if (str_contains($e->getMessage(), 'Domain not found')) {

@@ -1,0 +1,674 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Upmind\ProvisionProviders\DomainNames\Gandi;
+
+use Carbon\Carbon;
+use GuzzleHttp\Client;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
+use Upmind\ProvisionBase\Provider\DataSet\AboutData;
+use Upmind\ProvisionBase\Provider\DataSet\ResultData;
+use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
+use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
+use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
+use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
+use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
+use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
+use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
+use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
+use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
+use Upmind\ProvisionProviders\DomainNames\Data\PollParams;
+use Upmind\ProvisionProviders\DomainNames\Data\PollResult;
+use Upmind\ProvisionProviders\DomainNames\Data\AutoRenewParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
+use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
+use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\Gandi\Data\Configuration;
+use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusParams;
+use Upmind\ProvisionProviders\DomainNames\Data\VerificationStatusResult;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ResendVerificationResult;
+use Upmind\ProvisionProviders\DomainNames\Data\SetGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RemoveGlueRecordParams;
+use Upmind\ProvisionProviders\DomainNames\Data\GlueRecordsResult;
+use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
+use GuzzleHttp\Psr7\Response;
+
+/**
+ * Gandi provider.
+ */
+class Provider extends DomainNames implements ProviderInterface
+{
+    protected Configuration $configuration;
+    protected Client $client;
+
+    public function __construct(Configuration $configuration)
+    {
+        $this->configuration = $configuration;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public static function aboutProvider(): AboutData
+    {
+        // Static provider identity, read once when the registry is built.
+        return AboutData::create()
+            ->setName('Gandi Provider')
+            ->setDescription('Gandi domain registrar provider');
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function poll(PollParams $params): PollResult
+    {
+        $this->errorResult('Not implemented');
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function domainAvailabilityCheck(DacParams $params): DacResult
+    {
+        // Check registerability of the SLD against each TLD using Gandi's API check
+        $sld = Utils::normalizeSld($params->sld);
+        $domains = [];
+        foreach($params->tlds as $tld) {
+            $domain = Utils::getDomain($sld, $tld);
+            $response = $this->_callApi(['name' => $domain, 'processes' => 'create'], 'domain/check');
+            $domains[] = $this->_parseDacDomain($domain, $response);
+        }
+        return DacResult::create(['domains'=>$domains]);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function register(RegisterDomainParams $params): DomainResult
+    {
+        // Register a new domain, then return its details
+        $domain = Utils::getDomain($params->sld, $params->tld);
+        $privacy = $params->whois_privacy === null ? null : (bool) $params->whois_privacy;
+
+        $body = [
+            'fqdn'        => $domain,
+            'duration'    => (int) $params->renew_years,
+            'owner'       => $this->_buildContact($params->registrant->register, $privacy),
+            'admin'       => $this->_buildContact($params->admin->register, $privacy),
+            'tech'        => $this->_buildContact($params->tech->register, $privacy),
+            'bill'        => $this->_buildContact($params->billing->register, $privacy),
+            'nameservers' => $params->nameservers->pluckHosts(),
+        ];
+
+        if (!empty($params->additional_fields)) {
+            $body['extra_parameters'] = $params->additional_fields;
+        }
+
+                $this->_callApi($body, $this->_withSharingId('domain/domains'), 'POST');
+
+        // Gandi creates domains asynchronously so retry the fetch a few times before giving up.
+        $attemptsLeft = 5;
+        while ($attemptsLeft-- > 0) {
+            try {
+                return $this->_getDomain($domain, "Domain {$domain} registered");
+            } catch (ProvisionFunctionError $e) {
+                if ($attemptsLeft > 0) {
+                    sleep(2);
+                }
+            }
+        }
+
+        return DomainResult::create([
+            'id'         => $domain,
+            'domain'     => $domain,
+            'statuses'   => ['pending_create'],
+            'ns'         => $params->nameservers,
+            'created_at' => null,
+            'updated_at' => null,
+            'expires_at' => null,
+        ])->setMessage("Registration accepted for {$domain}; provisioning is still in progress");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function transfer(TransferParams $params): DomainResult
+    {
+        // Return the domain if it's already in the account, otherwise initiate the transfer-in
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            return $this->_getDomain($domain, "Domain {$domain} is active");
+        } catch (ProvisionFunctionError $e) {
+            // domain not in the account yet, fall through to initiate the transfer
+        }
+
+        $eppCode = $params->epp_code;
+        if (empty($eppCode)) {
+            $this->errorResult("EPP code is required for domain transfer of {$domain}");
+        }
+
+        $registrant = $params->registrant?->register;
+        if (!$registrant) {
+            $this->errorResult("Registrant contact details are required for domain transfer of {$domain}");
+        }
+
+        $privacy = $params->whois_privacy === null ? null : (bool) $params->whois_privacy;
+
+        $body = [
+            'fqdn'        => $domain,
+            'authinfo'    => $eppCode,
+            'owner'       => $this->_buildContact($registrant, $privacy),
+        ];
+
+        if (!empty($params->renew_years)) {
+            $body['duration'] = (int) $params->renew_years;
+        }
+
+        foreach(['admin' => $params->admin, 'tech' => $params->tech, 'bill' => $params->billing] as $key => $contact) {
+            if ($contact?->register) {
+                $body[$key] = $this->_buildContact($contact->register, $privacy);
+            }
+        }
+
+        $this->_callApi($body, $this->_withSharingId('domain/transferin'), 'POST');
+
+        $this->errorResult(
+            "Transfer initiated for {$domain}, completion is pending registry or owner confirmation", 
+            
+            ['domain' => $domain]
+        );
+
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function renew(RenewParams $params): DomainResult
+    {
+        // Renew the domain (Gandi caps the term at 9 years), then return its updated details
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $this->_callApi( 
+            ['duration' => (int) $params->renew_years],
+            $this->_withSharingId("domain/domains/{$domain}/renew"),
+            'POST'
+        );
+        return $this->_getDomain($domain, "Domain {$domain} renewed for {$params->renew_years} year(s)");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getInfo(DomainInfoParams $params): DomainResult
+    {
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        return $this->_getDomain($domain, "Domain info for {$domain}");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
+    {
+        // Change the domain's owner, this requires a different endpoint and ICANN contract
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $body = $this->_buildContact($params->contact);
+        unset($body['type'], $body['orgname']);
+        $body['icann_contract_accept'] = true;
+
+        $this->_callApi($body, "domain/domains/{$domain}/contacts/owner", 'PUT');
+        return ContactResult::create([
+            'name' => $params->contact->name,
+            'organisation' => $params->contact->organisation,
+            'email' => $params->contact->email,
+            'phone' => $params->contact->phone,
+            'address1' => $params->contact->address1,
+            'city' => $params->contact->city,
+            'state' => $params->contact->state,
+            'postcode' => $params->contact->postcode,
+            'country_code' => $params->contact->country_code,
+        ]) -> setMessage("Registrant owner contact for domain {$domain} updated");
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function updateContact(UpdateContactParams $params): ContactResult
+    {
+        // Update a contact (admin, tech, or billing)
+        $type = $params->getContactTypeEnum();
+
+        if ($type -> equals(ContactType::REGISTRANT())) {
+            return $this->updateRegistrantContact(UpdateDomainContactParams::create([
+                'sld' => $params->sld,
+                'tld' => $params->tld,
+                'contact' => $params->contact,
+            ]));
+        }
+        $key = match ($type->getValue()) {
+            ContactType::ADMIN()->getValue() => 'admin',
+            ContactType::TECH()->getValue() => 'tech',
+            ContactType::BILLING()->getValue() => 'bill',
+        };
+        
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $this->_callApi(
+            [$key => $this->_buildContact($params->contact)],
+            "domain/domains/{$domain}/contacts",
+            'PATCH'
+        );
+        return ContactResult::create([
+            'name' => $params->contact->name,
+            'organisation' => $params->contact->organisation,
+            'email' => $params->contact->email,
+            'phone' => $params->contact->phone,
+            'address1' => $params->contact->address1,
+            'city' => $params->contact->city,
+            'state' => $params->contact->state,
+            'postcode' => $params->contact->postcode,
+            'country_code' => $params->contact->country_code,
+        ]) -> setMessage($type->getValue() . " contact for domain {$domain} updated");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateNameservers(UpdateNameserversParams $params): NameserversResult
+    {
+        // Replace the domain's nameservers and returns the submitted set, Gandi applies the change asynchronously.
+        $domain = Utils::getDomain($params->sld, $params->tld);
+        $hosts = $params->pluckHosts();
+
+        $this->_callApi(
+            ['nameservers' => $hosts],
+            "domain/domains/{$domain}/nameservers",
+            'PUT'
+        );
+        $ns = [];
+        foreach (array_values($hosts) as $i => $host) {
+            $ns['ns' . ($i + 1)] = Nameserver::create()->setHost($host);
+        }
+        return NameserversResult::create($ns)->setMessage("Nameservers for domain {$domain} updated");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setLock(LockParams $params): DomainResult
+    {
+        // Set or clear the transfer lock (clientTransferProhibited), return the domain's details.
+        $domain = Utils::getDomain($params->sld, $params->tld);
+        
+        $this->_callApi(
+            ['clientTransferProhibited' => (bool) $params->lock],
+            "domain/domains/{$domain}/status",
+            'PATCH'
+        );
+        return $this->_getDomain($domain, $params->lock ? "Domain {$domain} locked" : "Domain {$domain} unlocked");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setAutoRenew(AutoRenewParams $params): DomainResult
+    {
+        // Toggle automatic renewal, then return the domain's refreshed details
+        $domain = Utils::getDomain($params->sld, $params->tld);
+        
+        $this->_callApi(
+            ['enabled' => (bool) $params->auto_renew],
+            "domain/domains/{$domain}/autorenew",
+            'PATCH'
+        );
+        return $this -> _getDomain($domain, $params->auto_renew ? "Domain {$domain} auto-renew enabled" : "Domain {$domain} auto-renew disabled");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getEppCode(EppParams $params): EppCodeResult
+    {
+        // Get the domain's EPP/auth code 
+        $domain = Utils::getDomain($params->sld, $params->tld);
+        $data = $this->_callApi([], "domain/domains/{$domain}");
+
+        $authInfo = $data['authinfo'] ?? null;
+        if (empty($authInfo)) {
+            $this->errorResult("EPP code not available for domain {$domain}", ['domain' => $domain]);
+        }
+        return EppCodeResult::create(['epp_code' => $authInfo])->setMessage("EPP code for domain {$domain}");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateIpsTag(IpsTagParams $params): ResultData
+    {
+        $this->errorResult('Not implemented');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getVerificationStatus(VerificationStatusParams $params): VerificationStatusResult
+    {
+        // Return the registrant's reachability (ICANN) verification status
+        $domain = Utils::getDomain($params->sld, $params->tld);
+        $data = $this->_callApi([], "domain/domains/{$domain}");
+
+        $reachability = $data['reachability'] ?? 'none';
+
+        return VerificationStatusResult::create()
+            ->setIcannVerificationStatus($reachability)
+            ->setProviderSpecificData(['reachability' => $reachability])
+            ->setMessage("Reachability status for {$domain}: {$reachability}");
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function resendVerificationEmail(ResendVerificationParams $params): ResendVerificationResult
+    {
+        // Ask Gandi to resend the registrant's reachability (ICANN) verification email
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $this->_callApi(
+            ['action' => 'resend'],
+            "domain/domains/{$domain}/reachability",
+            'PATCH'
+        );
+
+        return ResendVerificationResult::create()
+            ->setSuccess(true)
+            ->setMessage("Reachability verification email resent for {$domain}");
+    }
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function setGlueRecord(SetGlueRecordParams $params): GlueRecordsResult
+    {
+        // Create a glue record (host + IPs)
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $ips = array_values(array_filter([
+            $params->ip_1,
+            $params->ip_2,
+            $params->ip_3,
+            $params->ip_4,
+        ]));
+        
+        $name = $this->_gandiHostName($params->hostname, $domain);
+
+        $this->_callApi(
+            ['name' => $name, 'ips' =>$ips],
+            "domain/domains/{$domain}/hosts",
+            'POST'
+        );
+
+        return GlueRecordsResult::create([
+            'glue_records' => [
+                GlueRecord::create()
+                    ->setHostname($params->hostname)
+                    ->setIps($ips),
+            ],
+        ])->setMessage("Glue record {$params->hostname} for domain: {$domain}");
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        // Delete a glue host record
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $name = $this->_gandiHostName($params->hostname, $domain);
+
+        $this->_callApi(
+            [],
+            "domain/domains/{$domain}/hosts/{$name}",
+            'DELETE'
+        );
+
+        return GlueRecordsResult::create([
+            'glue_records' => [],
+        ])->setMessage("Glue record {$params->hostname} for domain: {$domain} removed");
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(DomainInfoParams $params): StatusResult
+    {
+        return StatusResult::create()
+            ->setStatus(StatusResult::STATUS_NOT_IMPLEMENTED)
+            ->setExpiresAt(null)
+            ->setRawStatuses(null);
+    }
+
+    protected function _callApi(array $params, string $path, string $method = 'GET') {
+        // Sends an authenticated Gandi request and decodes the JSON
+        $url = $this->configuration->sandbox
+            ? 'https://api.sandbox.gandi.net/v5/'. ltrim($path, '/')
+            : 'https://api.gandi.net/v5/'. ltrim($path, '/');
+
+        $client = new Client([
+            'headers' => [
+                'Accept' => 'application/json',
+                'Authorization' => 'Bearer ' . $this->configuration->api_token,
+            ],
+
+            'http_errors' => false,
+
+            'handler' => $this->getGuzzleHandlerStack(),
+        ]);
+
+        $paramKey = $method === 'GET' ? 'query' : 'json';
+
+        $response = $client -> request($method, $url, [$paramKey => $params]);
+
+        $responseData = json_decode($response -> getBody() -> __toString(), true);
+
+        if ($response->getStatusCode() >= 400) {
+            $this->_handleApiErrorResponse($response, $responseData);
+        }
+
+        return $responseData;
+    }
+    
+    protected function _handleApiErrorResponse(Response $response, $responseData): void {
+        // Turns Gandi errors into ProvisionFunctionErrors
+        $errorData = [
+            'http_code' => $response->getStatusCode(),
+            'response_data' => $responseData,
+        ];
+
+        $message = $responseData['message'] ?? 'Unknown error';
+
+        $this->errorResult('Gandi API error: ' . $message, $errorData);
+    }
+
+    protected function _getDomain(string $domainName, string $msg = 'domain data'): DomainResult {
+        // Fetch a domain and map Gandi's response into a DomainResult
+        $data = $this->_callApi([], "domain/domains/{$domainName}");
+        $ns = [];
+        foreach ($data['nameservers'] ?? [] as $i => $host) {
+            $ns['ns' . ($i + 1)] = Nameserver::create()->setHost($host);
+        }
+        // read $statuses
+        $statuses = $data['status'] ?? [];
+        // derive locked and autorenew
+        $auto_renew = $data['autorenew']['enabled'] ?? false;
+        $locked = in_array('clientTransferProhibited', $statuses) || in_array('serverTransferProhibited', $statuses);
+        // build 4 contacts
+        $owner = $this->_parseContactInfo($data['contacts']['owner'] ?? []);
+        $admin = $this->_parseContactInfo($data['contacts']['admin'] ?? []);
+        $tech = $this->_parseContactInfo($data['contacts']['tech'] ?? []);
+        $bill = $this->_parseContactInfo($data['contacts']['bill'] ?? []);
+        // format dates
+        $dateCreated = isset($data['dates']['registry_created_at'])
+        ? Carbon::parse($data['dates']['registry_created_at']) : null;
+        $dateUpdated = isset($data['dates']['updated_at'])
+        ? Carbon::parse($data['dates']['updated_at']) : null;
+        $dateExpires = isset($data['dates']['registry_ends_at'])
+        ? Carbon::parse($data['dates']['registry_ends_at']) : null;
+        // create and return result
+        return DomainResult::create(['auto_renew' => $auto_renew])
+            ->setId($data['id'] ?? $domainName)
+            ->setDomain($domainName)
+            ->setStatuses($statuses)
+            ->setLocked($locked)
+            ->setNs($ns)
+            ->setRegistrant($owner)
+            ->setAdmin($admin)
+            ->setTech($tech)
+            ->setBilling($bill)
+            ->setCreatedAt($dateCreated)
+            ->setUpdatedAt($dateUpdated)
+            ->setExpiresAt($dateExpires)
+            ->setMessage($msg);
+        }
+
+    protected function _parseContactInfo(array $contact): ?ContactData {
+        // Map a Gandi contact into a ContactData object
+        if (empty($contact)) {
+            return null;
+        }
+        $name = trim(($contact['given'] ?? '') . ' ' . ($contact['family'] ?? ''));
+
+        $state = $contact['state'] ?? null;
+        if ($state !== null && str_contains($state, '-')) {
+            // Gandi returns ISO 3166-2 codes like "FR-IDF"; drop the country prefix.
+            $state = substr($state, strpos($state, '-') + 1);
+        }
+
+        return ContactData::create()
+            ->setName($name !== '' ? $name : null)
+            ->setOrganisation($contact['orgname'] ?? null)
+            ->setEmail($contact['email'] ?? null)
+            ->setPhone(isset($contact['phone'])
+                ? Utils::eppPhoneToInternational($contact['phone'])
+                : null)
+            ->setAddress1($contact['streetaddr'] ?? null)
+            ->setCity($contact['city'] ?? null)
+            ->setState($state)
+            ->setPostcode($contact['zip'] ?? null)
+            ->setCountryCode($contact['country'] ?? null);
+    }
+
+    protected function _parseDacDomain(string $domain, array $response): DacDomain
+    {
+        // Map a Gandi product into a DacDomain object
+        $product = [];
+        foreach ($response['products'] ?? [] as $candidate) {
+            if (($candidate['process'] ?? null) === 'create') {
+                $product = $candidate;
+                break;
+            }
+        }
+        if ($product === [] && isset($response['products'][0])) {
+            $product = $response['products'][0];
+        }
+
+        $status = $product['status'] ?? 'error_unknown';
+
+        $isPremium = $status === 'unavailable_premium';
+        foreach ($product['prices'] ?? [] as $price) {
+            if (($price['type'] ?? null) === 'premium') {
+                $isPremium = true;
+                break;
+            }
+        }
+
+        return DacDomain::create()
+            ->setDomain($domain)
+            ->setTld(Utils::getTld($domain))
+            ->setCanRegister($status === 'available')
+            ->setCanTransfer(in_array($status, ['unavailable', 'unavailable_premium'], true))
+            ->setIsPremium($isPremium)
+            ->setDescription(ucfirst(str_replace('_', ' ', $status)));
+    }
+
+    protected function _buildContact(ContactParams $contact, ?bool $whoisPrivacy = null): array
+    {
+        // Build a Gandi contact from a ContactParams object
+        $name = $contact->name ?? $contact->organisation;
+        $parts = explode(' ', trim((string) $name), 2);
+        $given = $parts[0];
+        $family = $parts[1] ?? $parts[0]; // Gandi requires a non-empty family name
+        $country = $contact->country_code;
+
+        $data = [
+            'given'      => $given,
+            'family'     => $family,
+            'email'      => $contact->email,
+            'phone'      => Utils::internationalPhoneToEpp($contact->phone),
+            'streetaddr' => $contact->address1,
+            'city'       => $contact->city,
+            'zip'        => $contact->postcode,
+            'country'    => $country,
+            'type'       => $contact->organisation ? 'company' : 'individual',
+        ];
+
+        if ($contact->organisation) {
+            $data['orgname'] = $contact->organisation;
+        }
+
+        if (!empty($contact->state)) {
+            // Gandi wants ISO 3166-2, e.g. "US-CA".
+            $code = Utils::stateNameToCode($country, $contact->state);
+            $data['state'] = str_contains((string) $code, '-') ? $code : "{$country}-{$code}";
+        }
+
+        if ($whoisPrivacy !== null) {
+            $data['data_obfuscated'] = $whoisPrivacy;
+        }
+
+        return $data;
+    }
+    
+    protected function _withSharingId(string $path): string
+    {
+        // Adds the sharing_id to a path 
+        $sharingId = $this->configuration->sharing_id ?? null;
+        if (!$sharingId) {
+            return $path;
+        }
+        return $path . (str_contains($path, '?') ? '&' : '?') . 'sharing_id=' . urlencode($sharingId);
+    }
+
+    protected function _gandiHostName(string $hostname, string $domain): string
+    {
+        // Convert a glue hostname to Gandi's required label
+        $hostname = strtolower(trim($hostname, '.'));
+        if ($hostname === $domain) {
+            return '@';
+        }
+
+        $suffix = '.' . $domain;
+        if (str_ends_with($hostname, $suffix)) {
+            return substr($hostname, 0, -strlen($suffix));
+        }
+
+        return $hostname;
+    }
+}

@@ -54,7 +54,7 @@ use GuzzleHttp\Psr7\Response;
 class Provider extends DomainNames implements ProviderInterface
 {
     protected Configuration $configuration;
-    protected Client $client;
+    protected ?Client $client = null;
 
     public function __construct(Configuration $configuration)
     {
@@ -69,7 +69,8 @@ class Provider extends DomainNames implements ProviderInterface
         // Static provider identity, read once when the registry is built.
         return AboutData::create()
             ->setName('Gandi Provider')
-            ->setDescription('Gandi domain registrar provider');
+            ->setDescription('Gandi domain registrar provider')
+            ->setLogoUrl('https://api.upmind.io/images/logos/provision/gandi-logo.svg');
     }
 
     /**
@@ -189,8 +190,8 @@ class Provider extends DomainNames implements ProviderInterface
         $this->_callApi($body, $this->_withSharingId('domain/transferin'), 'POST');
 
         $this->errorResult(
-            "Transfer initiated for {$domain}, completion is pending registry or owner confirmation", 
-            
+            "Transfer initiated for {$domain}, completion is pending registry or owner confirmation",
+
             ['domain' => $domain]
         );
 
@@ -204,7 +205,7 @@ class Provider extends DomainNames implements ProviderInterface
         // Renew the domain (Gandi caps the term at 9 years), then return its updated details
         $domain = Utils::getDomain($params->sld, $params->tld);
 
-        $this->_callApi( 
+        $this->_callApi(
             ['duration' => (int) $params->renew_years],
             $this->_withSharingId("domain/domains/{$domain}/renew"),
             'POST'
@@ -256,19 +257,28 @@ class Provider extends DomainNames implements ProviderInterface
         // Update a contact (admin, tech, or billing)
         $type = $params->getContactTypeEnum();
 
-        if ($type -> equals(ContactType::REGISTRANT())) {
+        if ($type->equals(ContactType::REGISTRANT())) {
             return $this->updateRegistrantContact(UpdateDomainContactParams::create([
                 'sld' => $params->sld,
                 'tld' => $params->tld,
                 'contact' => $params->contact,
             ]));
         }
-        $key = match ($type->getValue()) {
-            ContactType::ADMIN()->getValue() => 'admin',
-            ContactType::TECH()->getValue() => 'tech',
-            ContactType::BILLING()->getValue() => 'bill',
-        };
-        
+
+        switch ($type->getValue()) {
+            case ContactType::ADMIN:
+                $key = 'admin';
+                break;
+            case ContactType::TECH:
+                $key = 'tech';
+                break;
+            case ContactType::BILLING:
+                $key = 'bill';
+                break;
+            default:
+                $this->errorResult("Unsupported contact type: {$type->getValue()}");
+        }
+
         $domain = Utils::getDomain($params->sld, $params->tld);
 
         $this->_callApi(
@@ -317,7 +327,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Set or clear the transfer lock (clientTransferProhibited), return the domain's details.
         $domain = Utils::getDomain($params->sld, $params->tld);
-        
+
         $this->_callApi(
             ['clientTransferProhibited' => (bool) $params->lock],
             "domain/domains/{$domain}/status",
@@ -333,7 +343,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Toggle automatic renewal, then return the domain's refreshed details
         $domain = Utils::getDomain($params->sld, $params->tld);
-        
+
         $this->_callApi(
             ['enabled' => (bool) $params->auto_renew],
             "domain/domains/{$domain}/autorenew",
@@ -347,7 +357,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function getEppCode(EppParams $params): EppCodeResult
     {
-        // Get the domain's EPP/auth code 
+        // Get the domain's EPP/auth code
         $domain = Utils::getDomain($params->sld, $params->tld);
         $data = $this->_callApi([], "domain/domains/{$domain}");
 
@@ -415,7 +425,7 @@ class Provider extends DomainNames implements ProviderInterface
             $params->ip_3,
             $params->ip_4,
         ]));
-        
+
         $name = $this->_gandiHostName($params->hostname, $domain);
 
         $this->_callApi(
@@ -471,20 +481,9 @@ class Provider extends DomainNames implements ProviderInterface
             ? 'https://api.sandbox.gandi.net/v5/'. ltrim($path, '/')
             : 'https://api.gandi.net/v5/'. ltrim($path, '/');
 
-        $client = new Client([
-            'headers' => [
-                'Accept' => 'application/json',
-                'Authorization' => 'Bearer ' . $this->configuration->api_token,
-            ],
-
-            'http_errors' => false,
-
-            'handler' => $this->getGuzzleHandlerStack(),
-        ]);
-
         $paramKey = $method === 'GET' ? 'query' : 'json';
 
-        $response = $client -> request($method, $url, [$paramKey => $params]);
+        $response = $this->getClient()->request($method, $url, [$paramKey => $params]);
 
         $responseData = json_decode($response -> getBody() -> __toString(), true);
 
@@ -494,7 +493,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         return $responseData;
     }
-    
+
     protected function _handleApiErrorResponse(Response $response, $responseData): void {
         // Turns Gandi errors into ProvisionFunctionErrors
         $errorData = [
@@ -645,10 +644,10 @@ class Provider extends DomainNames implements ProviderInterface
 
         return $data;
     }
-    
+
     protected function _withSharingId(string $path): string
     {
-        // Adds the sharing_id to a path 
+        // Adds the sharing_id to a path
         $sharingId = $this->configuration->sharing_id ?? null;
         if (!$sharingId) {
             return $path;
@@ -670,5 +669,23 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         return $hostname;
+    }
+
+    private function getClient(): Client
+    {
+        if ($this->client === null) {
+            $this->client = new Client([
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => 'Bearer ' . $this->configuration->api_token,
+                ],
+
+                'http_errors' => false,
+
+                'handler' => $this->getGuzzleHandlerStack(),
+            ]);
+        }
+
+        return $this->client;
     }
 }

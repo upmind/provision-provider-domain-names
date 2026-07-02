@@ -679,9 +679,7 @@ class Provider extends DomainNames implements ProviderInterface
                     'Accept' => 'application/json',
                     'Authorization' => 'Bearer ' . $this->configuration->api_token,
                 ],
-
-                'http_errors' => false,
-
+                'http_errors' => true,
                 'handler' => $this->getGuzzleHandlerStack(),
             ]);
         }

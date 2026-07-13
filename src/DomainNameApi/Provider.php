@@ -285,6 +285,7 @@ class Provider extends DomainNames implements ProviderInterface
             'timeout' => 60,
             'verify' => !$this->configuration->isSandbox(), // SSL verify only for production.
             'handler' => $this->getGuzzleHandlerStack(),
+            'http_errors' => true, // Ensure Guzzle always throws exceptions on HTTP errors.
         ]);
 
         $this->restApiClient = new DomainNameApiRestApi($client, $this->configuration);

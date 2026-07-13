@@ -276,12 +276,14 @@ class Provider extends DomainNames implements ProviderInterface
                 : DomainNameApiRestApi::PRODUCTION_URL,
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/DomainNameApi',
-                'Authorization' => "sso-key {$this->configuration->api_key}:{$this->configuration->api_secret}",
                 'Content-Type' => 'application/json',
+                // Authorization is header based.
+                '__reseller: ' . $this->configuration->username,
+                'X-API-KEY: ' . $this->configuration->password,
             ],
             'connect_timeout' => 10,
             'timeout' => 60,
-            'verify' => !$this->configuration->isSandbox(),
+            'verify' => !$this->configuration->isSandbox(), // SSL verify only for production.
             'handler' => $this->getGuzzleHandlerStack(),
         ]);
 

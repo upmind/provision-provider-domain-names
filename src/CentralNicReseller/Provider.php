@@ -266,6 +266,13 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainInfo = $this->epp()->getDomainInfo($domain);
 
+        /* Get the date that the domain is paid until, after this date the grace period will start  */
+        $paidUntil = $this->api()->statusDomain($domain)['PROPERTY']['PAIDUNTILDATE'][0] ?? null;
+        
+        if ($paidUntil) {
+            $domainInfo['expires_at'] = Utils::formatDate($paidUntil);
+        }
+
         return DomainResult::create($domainInfo, false)->setMessage($msg);
     }
 
@@ -564,8 +571,8 @@ class Provider extends DomainNames implements ProviderInterface
             $response = $this->api()->statusDomain($domainName);
 
             $statuses = $response['PROPERTY']['STATUS'] ?? [];
-            $expiresAt = isset($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
-                ? Carbon::parse($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
+            $expiresAt = isset($response['PROPERTY']['PAIDUNTILDATE'][0])
+                ? Carbon::parse($response['PROPERTY']['PAIDUNTILDATE'][0])
                 : null;
 
             // Check status codes for non-active states

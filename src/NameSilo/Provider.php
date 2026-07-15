@@ -1114,7 +1114,9 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         return $this->client = new Client([
-            'base_uri' => 'https://www.namesilo.com/api/',
+            'base_uri' => $this->configuration->isSandbox()
+                ? 'https://ote.namesilo.com/api/'
+                : 'https://www.namesilo.com/api/',
             'handler' => $this->getGuzzleHandlerStack(),
         ]);
     }

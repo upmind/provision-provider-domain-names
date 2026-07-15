@@ -947,6 +947,7 @@ class Provider extends DomainNames implements ProviderInterface
             'domain' => $domainName,
             'statuses' => [(string)$domainData->reply->status],
             'locked' => ((string) $domainData->reply->locked) == 'Yes' ? true : false,
+            'whois_privacy' => (string) $domainData->reply->private === 'Yes',
             'renew' => ((string) $domainData->reply->auto_renew) == 'Yes' ? true : false,
             'registrant' => $contacts['registrant'],
             'billing' => $contacts['billing'],

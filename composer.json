@@ -36,7 +36,7 @@
         "ext-soap": "*",
         "ext-xml": "*",
         "upmind/provision-provider-base": "^3.7",
-        "metaregistrar/php-epp-client": "^1.0.12",
+        "metaregistrar/php-epp-client": "1.0.13",
         "myclabs/php-enum": "^1.8",
         "propaganistas/laravel-phone": "^4.2",
         "guzzlehttp/guzzle": "^6.3|^7.0",

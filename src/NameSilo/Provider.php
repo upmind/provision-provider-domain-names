@@ -1136,8 +1136,6 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     *
-     * @phpstan-ignore method.unused
      */
     private function _getRegisteredNameServers(string $domainName): \SimpleXMLElement
     {
@@ -1191,9 +1189,6 @@ class Provider extends DomainNames implements ProviderInterface
         );
     }
 
-    /**
-     * @phpstan-ignore method.unused
-     */
     private function mapType(string $status): ?string
     {
         switch ($status) {

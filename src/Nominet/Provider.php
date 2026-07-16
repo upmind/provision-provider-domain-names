@@ -822,7 +822,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $ips = $nameserver->getIpAddresses();
                 $returnNs['ns' . ($i + 1)] = [
                     "host" => trim($nameserver->getHostname(), '.'),
-                    "ip" => isset($ips) ? array_shift($ips) : null,
+                    "ip" => is_array($ips) ? array_shift($ips) : null,
                 ];
             }
         }

@@ -1134,6 +1134,8 @@ class Provider extends DomainNames implements ProviderInterface
             // No action for empty data, or invalid contact types.
             if (empty($contactId) || !$this->isValidProviderContactType($type)) {
                 unset($contactIds[$type]);
+
+                continue;
             }
 
             $data[$type] = $contactId;

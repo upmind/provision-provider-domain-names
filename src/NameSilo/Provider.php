@@ -1121,6 +1121,8 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @param array<string, string|int>$contactIds
+     *
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */

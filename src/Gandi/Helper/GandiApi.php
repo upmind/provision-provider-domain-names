@@ -34,7 +34,7 @@ class GandiApi
     public const CONTACT_TYPE_ADMIN = 'admin';
     public const CONTACT_TYPE_TECH = 'tech';
     public const CONTACT_TYPE_BILLING = 'bill';
-    
+
     public function __construct(Client $client, Configuration $configuration)
     {
         $this->client = $client;
@@ -63,17 +63,20 @@ class GandiApi
         return $this->client
             ->requestAsync($method, $this->getApiEndpoint() . '/' . ltrim($path, '/'), [$paramKey => $params])
             ->then(function (Response $response) {
-                $result = $response->getBody()->getContents();
+                $result = $response->getBody()->__toString();
+
                 $response->getBody()->close();
+
                 if ($result === '') {
                     return null;
                 }
+
                 return self::parseResponseData($result);
             });
     }
 
   /**
-     * Check availability of one SLD against multiple TLDs 
+     * Check availability of one SLD against multiple TLDs
      *
      * @param string[] $tlds
      *
@@ -120,7 +123,7 @@ class GandiApi
     }
 
     /**
-     * Map a Gandi contact into ContactData 
+     * Map a Gandi contact into ContactData
      */
     public static function parseContact(array $contact): ?ContactData
     {
@@ -151,7 +154,7 @@ class GandiApi
     }
 
     /**
-     * Build a Gandi contact from ContactParams 
+     * Build a Gandi contact from ContactParams
      */
     public static function buildContact(ContactParams $contact, ?bool $whoisPrivacy = null): array
     {
@@ -226,4 +229,4 @@ class GandiApi
             ->setIsPremium($isPremium)
             ->setDescription(ucfirst(str_replace('_', ' ', $status)));
     }
-}    
+}

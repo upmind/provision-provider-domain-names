@@ -692,9 +692,9 @@ class EppHelper
     }
 
     /**
-     * Get the domain renewal date from the EPP response.
+     * Get the domain expiration date from the EPP response.
      *
-     * CentralNic Reseller uses the keysys:renDate as the authoritative date for
+     * CentralNic Reseller uses the keysys:punDate as the authoritative date for
      * automated renewal or deletion. This date must always be present and is the
      * only date that should be used for expiration tracking.
      *
@@ -702,17 +702,17 @@ class EppHelper
      */
     private function getDomainExpirationDateFromResponse(eppResponse $response): string
     {
-        $renewalDate = $response->queryPath(
-            '/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:renDate'
+        $paidUntilDate = $response->queryPath(
+            '/epp:epp/epp:response/epp:extension/keysys:resData/keysys:infData/keysys:punDate'
         );
 
-        if ($renewalDate === null) {
+        if ($paidUntilDate === null) {
             throw new ProvisionFunctionError(
-                'Renewal date (keysys:renDate) not found in EPP response'
+                'Paid Until date (keysys:punDate) not found in EPP response'
             );
         }
 
-        return $renewalDate;
+        return $paidUntilDate;
     }
 
     /**

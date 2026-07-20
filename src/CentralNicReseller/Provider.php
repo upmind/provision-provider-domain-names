@@ -266,13 +266,6 @@ class Provider extends DomainNames implements ProviderInterface
     {
         $domainInfo = $this->epp()->getDomainInfo($domain);
 
-        /* Get the date that the domain is paid until, after this date the grace period will start  */
-        $paidUntil = $this->api()->statusDomain($domain)['PROPERTY']['PAIDUNTILDATE'][0] ?? null;
-        
-        if ($paidUntil) {
-            $domainInfo['expires_at'] = Utils::formatDate($paidUntil);
-        }
-
         return DomainResult::create($domainInfo, false)->setMessage($msg);
     }
 

@@ -89,10 +89,10 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Check registerability of the SLD against each TLD using Gandi's API check
         $sld = Utils::normalizeSld($params->sld);
-            try {
-                $dacDomains = $this->api()->checkMultipleDomains($sld, $params->tlds);
+        try {
+            $dacDomains = $this->api()->checkMultipleDomains($sld, $params->tlds);
 
-                return DacResult::create(['domains'=>$dacDomains]);
+            return DacResult::create(['domains' => $dacDomains]);
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -105,26 +105,26 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Register a new domain, then return its details
         $domain = Utils::getDomain($params->sld, $params->tld);
-        $privacy = $params->whois_privacy === null ? null : (bool) $params->whois_privacy;
+        $privacy = $params->whois_privacy === null ? null : (bool)$params->whois_privacy;
 
         $body = [
-            'fqdn'        => $domain,
-            'duration'    => (int) $params->renew_years,
-            'owner'       => GandiApi::buildContact($params->registrant->register, $privacy),
-            'admin'       => GandiApi::buildContact($params->admin->register, $privacy),
-            'tech'        => GandiApi::buildContact($params->tech->register, $privacy),
-            'bill'        => GandiApi::buildContact($params->billing->register, $privacy),
+            'fqdn' => $domain,
+            'duration' => (int)$params->renew_years,
+            'owner' => GandiApi::buildContact($params->registrant->register, $privacy),
+            'admin' => GandiApi::buildContact($params->admin->register, $privacy),
+            'tech' => GandiApi::buildContact($params->tech->register, $privacy),
+            'bill' => GandiApi::buildContact($params->billing->register, $privacy),
             'nameservers' => $params->nameservers->pluckHosts(),
         ];
 
         if (!empty($params->additional_fields)) {
             $body['extra_parameters'] = $params->additional_fields;
         }
-            try {
-                $this->api()->makeRequest($body, $this->_withSharingId('domain/domains'), 'POST');
-            } catch (RequestException $e) {
-                $this->handleException($e);
-            }
+        try {
+            $this->api()->makeRequest($body, $this->_withSharingId('domain/domains'), 'POST');
+        } catch (RequestException $e) {
+            $this->handleException($e);
+        }
         // Gandi creates domains asynchronously so retry the fetch a few times before giving up
         $attemptsLeft = 5;
         while ($attemptsLeft-- > 0) {
@@ -138,10 +138,10 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         return DomainResult::create([
-            'id'         => $domain,
-            'domain'     => $domain,
-            'statuses'   => ['pending_create'],
-            'ns'         => $params->nameservers,
+            'id' => $domain,
+            'domain' => $domain,
+            'statuses' => ['pending_create'],
+            'ns' => $params->nameservers,
             'created_at' => null,
             'updated_at' => null,
             'expires_at' => null,
@@ -172,20 +172,20 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult("Registrant contact details are required for domain transfer of {$domain}");
         }
 
-        $privacy = $params->whois_privacy === null ? null : (bool) $params->whois_privacy;
+        $privacy = $params->whois_privacy === null ? null : (bool)$params->whois_privacy;
 
         $body = [
-            'fqdn'        => $domain,
-            'authinfo'    => $eppCode,
-            'owner'       => GandiApi::buildContact($registrant, $privacy),
+            'fqdn' => $domain,
+            'authinfo' => $eppCode,
+            'owner' => GandiApi::buildContact($registrant, $privacy),
         ];
 
         if (!empty($params->renew_years)) {
-            $body['duration'] = (int) $params->renew_years;
+            $body['duration'] = (int)$params->renew_years;
         }
 
-        foreach(['admin' => $params->admin, 'tech' => $params->tech, 'bill' => $params->billing] as $key => $contact) {
-            if ($contact &&$contact->register) {
+        foreach (['admin' => $params->admin, 'tech' => $params->tech, 'bill' => $params->billing] as $key => $contact) {
+            if ($contact && $contact->register) {
                 $body[$key] = GandiApi::buildContact($contact->register, $privacy);
             }
         }
@@ -199,7 +199,6 @@ class Provider extends DomainNames implements ProviderInterface
 
             ['domain' => $domain]
         );
-
     }
 
     /**
@@ -212,7 +211,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
             $this->api()->makeRequest(
-                ['duration' => (int) $params->renew_years],
+                ['duration' => (int)$params->renew_years],
                 $this->_withSharingId("domain/domains/{$domain}/renew"),
                 'POST'
             );
@@ -230,7 +229,7 @@ class Provider extends DomainNames implements ProviderInterface
         $domain = Utils::getDomain($params->sld, $params->tld);
 
         try {
-        return $this->_getDomain($domain, "Domain info for {$domain}");
+            return $this->_getDomain($domain, "Domain info for {$domain}");
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -260,8 +259,8 @@ class Provider extends DomainNames implements ProviderInterface
                 'state' => $params->contact->state,
                 'postcode' => $params->contact->postcode,
                 'country_code' => $params->contact->country_code,
-            ]) -> setMessage("Registrant owner contact for domain {$domain} updated");
-        }  catch (Throwable $e) {
+            ])->setMessage("Registrant owner contact for domain {$domain} updated");
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -314,8 +313,8 @@ class Provider extends DomainNames implements ProviderInterface
                 'state' => $params->contact->state,
                 'postcode' => $params->contact->postcode,
                 'country_code' => $params->contact->country_code,
-            ]) -> setMessage($type->getValue() . " contact for domain {$domain} updated");
-        }  catch (Throwable $e) {
+            ])->setMessage($type->getValue()." contact for domain {$domain} updated");
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -337,10 +336,10 @@ class Provider extends DomainNames implements ProviderInterface
             );
             $ns = [];
             foreach (array_values($hosts) as $i => $host) {
-                $ns['ns' . ($i + 1)] = Nameserver::create()->setHost($host);
+                $ns['ns'.($i + 1)] = Nameserver::create()->setHost($host);
             }
             return NameserversResult::create($ns)->setMessage("Nameservers for domain {$domain} updated");
-        }  catch (Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -352,15 +351,15 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Set or clear the transfer lock (clientTransferProhibited), return the domain's details
         $domain = Utils::getDomain($params->sld, $params->tld);
-        
+
         try {
             $this->api()->makeRequest(
-                ['clientTransferProhibited' => (bool) $params->lock],
+                ['clientTransferProhibited' => (bool)$params->lock],
                 "domain/domains/{$domain}/status",
                 'PATCH'
             );
             return $this->_getDomain($domain, $params->lock ? "Domain {$domain} locked" : "Domain {$domain} unlocked");
-        }  catch (Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -373,13 +372,16 @@ class Provider extends DomainNames implements ProviderInterface
         // Toggle automatic renewal, then return the domain's refreshed details
         $domain = Utils::getDomain($params->sld, $params->tld);
 
-        try {  
-            $this->api()->makeRequest( 
-                ['enabled' => (bool) $params->auto_renew],
+        try {
+            $this->api()->makeRequest(
+                ['enabled' => (bool)$params->auto_renew],
                 "domain/domains/{$domain}/autorenew",
                 'PATCH'
             );
-            return $this -> _getDomain($domain, $params->auto_renew ? "Domain {$domain} auto-renew enabled" : "Domain {$domain} auto-renew disabled");
+            return $this->_getDomain(
+                $domain,
+                $params->auto_renew ? "Domain {$domain} auto-renew enabled" : "Domain {$domain} auto-renew disabled"
+            );
         } catch (Throwable $e) {
             $this->handleException($e);
         }
@@ -401,7 +403,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $this->errorResult("EPP code not available for domain {$domain}", ['domain' => $domain]);
             }
             return EppCodeResult::create(['epp_code' => $authInfo])->setMessage("EPP code for domain {$domain}");
-        }  catch (Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -422,7 +424,7 @@ class Provider extends DomainNames implements ProviderInterface
         // Return the registrant's reachability (ICANN) verification status
         $domain = Utils::getDomain($params->sld, $params->tld);
 
-        try{
+        try {
             $data = $this->api()->makeRequest([], "domain/domains/{$domain}");
 
             $reachability = $data['reachability'] ?? 'none';
@@ -431,7 +433,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setIcannVerificationStatus($reachability)
                 ->setProviderSpecificData(['reachability' => $reachability])
                 ->setMessage("Reachability status for {$domain}: {$reachability}");
-        }  catch (Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -443,7 +445,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Ask Gandi to resend the registrant's reachability (ICANN) verification email
         $domain = Utils::getDomain($params->sld, $params->tld);
-        try {  
+        try {
             $this->api()->makeRequest(
                 ['action' => 'resend'],
                 "domain/domains/{$domain}/reachability",
@@ -453,10 +455,11 @@ class Provider extends DomainNames implements ProviderInterface
             return ResendVerificationResult::create()
                 ->setSuccess(true)
                 ->setMessage("Reachability verification email resent for {$domain}");
-        }  catch (Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
+
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -464,7 +467,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Create a glue record (host + IPs)
         $domain = Utils::getDomain($params->sld, $params->tld);
-        
+
         try {
             $ips = array_values(array_filter([
                 $params->ip_1,
@@ -476,7 +479,7 @@ class Provider extends DomainNames implements ProviderInterface
             $name = $this->_gandiHostName($params->hostname, $domain);
 
             $this->api()->makeRequest(
-                ['name' => $name, 'ips' =>$ips],
+                ['name' => $name, 'ips' => $ips],
                 "domain/domains/{$domain}/hosts",
                 'POST'
             );
@@ -488,7 +491,7 @@ class Provider extends DomainNames implements ProviderInterface
                         ->setIps($ips),
                 ],
             ])->setMessage("Glue record {$params->hostname} for domain: {$domain}");
-        }  catch (Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -500,7 +503,7 @@ class Provider extends DomainNames implements ProviderInterface
     {
         // Delete a glue host record
         $domain = Utils::getDomain($params->sld, $params->tld);
-        
+
         try {
             $name = $this->_gandiHostName($params->hostname, $domain);
 
@@ -513,7 +516,7 @@ class Provider extends DomainNames implements ProviderInterface
             return GlueRecordsResult::create([
                 'glue_records' => [],
             ])->setMessage("Glue record {$params->hostname} for domain: {$domain} removed");
-        }  catch (Throwable $e) {
+        } catch (Throwable $e) {
             $this->handleException($e);
         }
     }
@@ -558,14 +561,13 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
 
-
-
-    protected function _getDomain(string $domainName, string $msg = 'domain data'): DomainResult {
+    protected function _getDomain(string $domainName, string $msg = 'domain data'): DomainResult
+    {
         // Fetch a domain and map Gandi's response into a DomainResult
         $data = $this->api()->makeRequest([], "domain/domains/{$domainName}");
         $ns = [];
         foreach ($data['nameservers'] ?? [] as $i => $host) {
-            $ns['ns' . ($i + 1)] = Nameserver::create()->setHost($host);
+            $ns['ns'.($i + 1)] = Nameserver::create()->setHost($host);
         }
         // read $statuses
         $statuses = $data['status'] ?? [];
@@ -579,11 +581,11 @@ class Provider extends DomainNames implements ProviderInterface
         $bill = GandiApi::parseContact($data['contacts']['bill'] ?? []);
         // format dates
         $dateCreated = isset($data['dates']['registry_created_at'])
-        ? Carbon::parse($data['dates']['registry_created_at']) : null;
+            ? Carbon::parse($data['dates']['registry_created_at']) : null;
         $dateUpdated = isset($data['dates']['updated_at'])
-        ? Carbon::parse($data['dates']['updated_at']) : null;
+            ? Carbon::parse($data['dates']['updated_at']) : null;
         $dateExpires = isset($data['dates']['registry_ends_at'])
-        ? Carbon::parse($data['dates']['registry_ends_at']) : null;
+            ? Carbon::parse($data['dates']['registry_ends_at']) : null;
         // create and return result
         return DomainResult::create(['auto_renew' => $auto_renew])
             ->setId($data['id'] ?? $domainName)
@@ -599,9 +601,9 @@ class Provider extends DomainNames implements ProviderInterface
             ->setUpdatedAt($dateUpdated)
             ->setExpiresAt($dateExpires)
             ->setMessage($msg);
-        }
+    }
 
-  
+
     protected function _withSharingId(string $path): string
     {
         // Adds the sharing_id to a path
@@ -609,7 +611,7 @@ class Provider extends DomainNames implements ProviderInterface
         if (!$sharingId) {
             return $path;
         }
-        return $path . (Str::contains($path, '?') ? '&' : '?') . 'sharing_id=' . urlencode($sharingId);
+        return $path.(Str::contains($path, '?') ? '&' : '?').'sharing_id='.urlencode($sharingId);
     }
 
     protected function _gandiHostName(string $hostname, string $domain): string
@@ -620,7 +622,7 @@ class Provider extends DomainNames implements ProviderInterface
             return '@';
         }
 
-        $suffix = '.' . $domain;
+        $suffix = '.'.$domain;
         if (Str::endsWith($hostname, $suffix)) {
             return substr($hostname, 0, -strlen($suffix));
         }
@@ -636,7 +638,7 @@ class Provider extends DomainNames implements ProviderInterface
         $client = new Client([
             'headers' => [
                 'Accept' => 'application/json',
-                'Authorization' => 'Bearer ' . $this->configuration->api_token,
+                'Authorization' => 'Bearer '.$this->configuration->api_token,
             ],
             'connect_timeout' => 10,
             'timeout' => 60,

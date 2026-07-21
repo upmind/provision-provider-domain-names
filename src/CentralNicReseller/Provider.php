@@ -564,8 +564,8 @@ class Provider extends DomainNames implements ProviderInterface
             $response = $this->api()->statusDomain($domainName);
 
             $statuses = $response['PROPERTY']['STATUS'] ?? [];
-            $expiresAt = isset($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
-                ? Carbon::parse($response['PROPERTY']['REGISTRATIONEXPIRATIONDATE'][0])
+            $expiresAt = isset($response['PROPERTY']['PAIDUNTILDATE'][0])
+                ? Carbon::parse($response['PROPERTY']['PAIDUNTILDATE'][0])
                 : null;
 
             // Check status codes for non-active states

@@ -1118,7 +1118,7 @@ class Provider extends DomainNames implements ProviderInterface
             'base_uri' => $this->configuration->isSandbox()
                 ? 'https://ote.namesilo.com/api/'
                 : 'https://www.namesilo.com/api/',
-            'handler' => $this->getGuzzleHandlerStack(),
+            'handler' => $this->getGuzzleHandlerStack(boolval($this->configuration->debug)),
         ]);
     }
 

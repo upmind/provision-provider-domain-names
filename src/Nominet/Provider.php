@@ -819,10 +819,11 @@ class Provider extends DomainNames implements ProviderInterface
         $nameservers = $response->getDomainNameservers();
         if (isset($nameservers)) {
             foreach ($nameservers as $i => $nameserver) {
+                /** @var array<string>|null $ips */
                 $ips = $nameserver->getIpAddresses();
                 $returnNs['ns' . ($i + 1)] = [
                     "host" => trim($nameserver->getHostname(), '.'),
-                    "ip" => isset($ips) ? array_shift($ips) : null,
+                    "ip" => is_array($ips) ? array_shift($ips) : null,
                 ];
             }
         }

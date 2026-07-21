@@ -2,6 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Update NameSilo to associate multiple contacts with a domain in a single API call
+- Update NameSilo Configuration, allow handling sandbox API calls
+- Update NameSilo getInfo() to return the `whois_privacy` status of a domain correctly.
+
 ## [v2.12.79](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.79) - 2026-05-11
 
 - Send `state` in Enom create/update requests

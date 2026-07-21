@@ -17,7 +17,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Gandi\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 
- /**F
+/**
  * Gandi v5 API helper class
  * @package Upmind\ProvisionProviders\DomainNames\Gandi\Helper
  */
@@ -60,6 +60,7 @@ class GandiApi
     public function makeRequestAsync(array $params, string $path, string $method = 'GET'): PromiseInterface
     {
         $paramKey = $method === 'GET' ? 'query' : 'json';
+
         return $this->client
             ->requestAsync($method, $this->getApiEndpoint() . '/' . ltrim($path, '/'), [$paramKey => $params])
             ->then(function (Response $response) {
@@ -75,12 +76,24 @@ class GandiApi
             });
     }
 
-  /**
+    public function isReseller(string $organisationId): bool
+    {
+        try {
+            $result = $this->makeRequest([], 'organizations/organization/'.$organisationId);
+
+            return isset($result['reseller']) && (bool)$result['reseller'] === true;
+        } catch (ProvisionFunctionError $e) {
+            return false;
+        }
+    }
+
+    /**
      * Check availability of one SLD against multiple TLDs
      *
-     * @param string[] $tlds
-     *
+     * @param  string[]  $tlds
      * @return DacDomain[]
+     *
+     * @throws \Throwable
      */
     public function checkMultipleDomains(string $sld, array $tlds): array
     {
@@ -102,7 +115,7 @@ class GandiApi
      */
     protected function getApiEndpoint(): string
     {
-        return $this->configuration->sandbox
+        return $this->configuration->isSandbox()
             ? 'https://api.sandbox.gandi.net/v5'
             : 'https://api.gandi.net/v5';
     }
@@ -145,7 +158,8 @@ class GandiApi
             ->setEmail($contact['email'] ?? null)
             ->setPhone(isset($contact['phone'])
                 ? Utils::eppPhoneToInternational($contact['phone'])
-                : null)
+                : null
+            )
             ->setAddress1($contact['streetaddr'] ?? null)
             ->setCity($contact['city'] ?? null)
             ->setState($state)
@@ -166,15 +180,15 @@ class GandiApi
         $country = $contact->country_code;
 
         $data = [
-            'given'      => $given,
-            'family'     => $family,
-            'email'      => $contact->email,
-            'phone'      => Utils::internationalPhoneToEpp($contact->phone),
+            'given' => $given,
+            'family' => $family,
+            'email' => $contact->email,
+            'phone' => Utils::internationalPhoneToEpp($contact->phone),
             'streetaddr' => $contact->address1,
-            'city'       => $contact->city,
-            'zip'        => $contact->postcode,
-            'country'    => $country,
-            'type'       => $contact->organisation ? 'company' : 'individual',
+            'city' => $contact->city,
+            'zip' => $contact->postcode,
+            'country' => $country,
+            'type' => $contact->organisation ? 'company' : 'individual',
         ];
 
         if ($contact->organisation) {

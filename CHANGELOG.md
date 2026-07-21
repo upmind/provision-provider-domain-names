@@ -2,11 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
-## Unreleased
+## [v2.31.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.31.0) - 2026-07-21
 
-- Update NameSilo to associate multiple contacts with a domain in a single API call
+- Update NameSilo to associate multiple contacts with a domain in a single API call during domain registration
 - Update NameSilo Configuration, allow handling sandbox API calls
 - Update NameSilo getInfo() to return the `whois_privacy` status of a domain correctly.
+- Update CentralNic Reseller provider to use `paidUntil` as the expiry date.
 
 ## [v2.30.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.30.3) - 2026-05-11
 

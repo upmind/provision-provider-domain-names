@@ -155,9 +155,7 @@ class Provider extends DomainNames implements ProviderInterface
 
         $this->_callApi($data, 'registerDomain');
 
-        foreach ($contactIds as $type => $contactId) {
-            $this->_associateContact($domain, (string)$contactId, $type);
-        }
+        $this->associateMultipleContacts($domain, $contactIds);
 
         $this->_addRegisteredNameServer($params);
         return $this->_getDomain($domain, 'Domain registered - ' . $domain);
@@ -947,6 +945,7 @@ class Provider extends DomainNames implements ProviderInterface
             'domain' => $domainName,
             'statuses' => [(string)$domainData->reply->status],
             'locked' => ((string) $domainData->reply->locked) == 'Yes' ? true : false,
+            'whois_privacy' => (string) $domainData->reply->private === 'Yes',
             'renew' => ((string) $domainData->reply->auto_renew) == 'Yes' ? true : false,
             'registrant' => $contacts['registrant'],
             'billing' => $contacts['billing'],
@@ -1114,9 +1113,37 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         return $this->client = new Client([
-            'base_uri' => 'https://www.namesilo.com/api/',
+            'base_uri' => $this->configuration->isSandbox()
+                ? 'https://ote.namesilo.com/api/'
+                : 'https://www.namesilo.com/api/',
             'handler' => $this->getGuzzleHandlerStack(),
         ]);
+    }
+
+    /**
+     * @param array<string, string|int>$contactIds
+     *
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function associateMultipleContacts(string $domain, array $contactIds): void
+    {
+        $data = [
+            'domain' => $domain,
+        ];
+
+        foreach ($contactIds as $type => $contactId) {
+            // No action for empty data, or invalid contact types.
+            if (empty($contactId) || !$this->isValidProviderContactType($type)) {
+                unset($contactIds[$type]);
+
+                continue;
+            }
+
+            $data[$type] = $contactId;
+        }
+
+        $this->_callApi($data, 'contactDomainAssociate');
     }
 
     /**
@@ -1309,5 +1336,15 @@ class Provider extends DomainNames implements ProviderInterface
             default:
                 $this->errorResult('Invalid contact type: ' . $contactType->getValue());
         }
+    }
+
+    private function isValidProviderContactType(string $providerContactType): bool
+    {
+        return in_array($providerContactType, [
+            self::CONTACT_TYPE_REGISTRANT,
+            self::CONTACT_TYPE_ADMIN,
+            self::CONTACT_TYPE_BILLING,
+            self::CONTACT_TYPE_TECH,
+        ], true);
     }
 }

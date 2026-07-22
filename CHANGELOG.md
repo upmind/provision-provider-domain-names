@@ -4,6 +4,10 @@ All notable changes to the package will be documented in this file.
 
 ## Unreleased
 
+## [v2.12.82](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.82) - 2026-07-22
+
+- Fix NameSilo, associating multiple contacts with a domain in single API call was not implemented in release `v2.12.80`.
+
 ## [v2.12.81](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.81) - 2026-07-21
 
 - Fix NameSilo, correctly set `auto_renew` property of `DomainResult` as returned from provider.

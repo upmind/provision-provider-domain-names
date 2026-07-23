@@ -68,6 +68,7 @@ The following providers are currently implemented:
   - [Moniker](https://support.moniker.com/hc/en-gb/articles/24954146333981-Self-Development-Kit-for-PHP)
   - [BDReseller](https://bdia.btcl.com.bd)
   - [OpusDNS](https://developers.opusdns.com/#tag/domain)
+  - [Domains.co.za](https://www.domains.co.za/domain-reseller)
 
 ## Functions
 

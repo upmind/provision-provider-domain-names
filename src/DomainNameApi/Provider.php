@@ -154,6 +154,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {

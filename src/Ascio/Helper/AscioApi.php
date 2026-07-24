@@ -488,7 +488,7 @@ class AscioApi
      * @throws NumberParseException
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      */
-    public function initiateTransfer(string $domainName, string $eppCode, array $contacts, array $nameServers): void
+    public function initiateTransfer(string $domainName, string $eppCode, array $contacts, array $nameServers): array
     {
         $command = 'createOrder';
 
@@ -534,7 +534,7 @@ class AscioApi
             ],
         ];
 
-        $this->makeRequest($command, $params, 'CreateOrderResult');
+        return $this->makeRequest($command, $params, 'CreateOrderResult');
     }
 
     /**

@@ -178,9 +178,14 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         try {
+            // if the domain is already active in our account the transfer has completed
             return $this->_getInfo($domainName, 'Domain active in registrar account');
-        } catch (Throwable $e) {
-            // domain not active - continue below
+        } catch (ProvisionFunctionError $e) {
+            if (!$this->isDomainNotFound($e)) {
+                // a genuine error (network/auth/etc) - don't mistake it for "not transferred yet"
+                $this->handleException($e);
+            }
+            // domain not yet in our account - continue below to initiate the transfer
         }
 
         $contacts = [
@@ -192,15 +197,15 @@ class Provider extends DomainNames implements ProviderInterface
 
         try {
 
-            $this->api()->initiateTransfer(
+            $result = $this->api()->initiateTransfer(
                 $domainName,
                 $eppCode,
                 $contacts,
                 $params['nameservers'],
             );
 
-            $this->errorResult(sprintf('Transfer for %s domain successfully created!', $domainName), [
-                'transaction_id' => null
+            $this->errorResult(sprintf('Transfer for %s initiated', $domainName), [
+                'result' => $result,
             ]);
         } catch (\Throwable $e) {
             $this->handleException($e);
@@ -467,6 +472,19 @@ class Provider extends DomainNames implements ProviderInterface
 
 
     /**
+     * Determine whether the given exception represents a "domain not in our account" result.
+     *
+     * This matches the literal message thrown by AscioApi::getDomains() when the registry
+     * returns a successful response containing no domain data - not any string returned by
+     * Ascio itself - so the two call sites (getStatus + transfer) stay in sync.
+     */
+    private function isDomainNotFound(Throwable $e): bool
+    {
+        return $e instanceof ProvisionFunctionError
+            && Str::contains($e->getMessage(), 'Domain not found');
+    }
+
+    /**
      * @return no-return
      * @return never
      * @throws Throwable
@@ -603,7 +621,7 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setExpiresAt($expiresAt)
                 ->setRawStatuses($domainData->statuses);
         } catch (ProvisionFunctionError $e) {
-            if (str_contains($e->getMessage(), 'Domain not found')) {
+            if ($this->isDomainNotFound($e)) {
                 // Domain isn't in our account - distinguish "we lost it" (still available at
                 // registry => cancelled/dropped) from "someone else has it" (taken =>
                 // transferred away). Mirrors the Enom/LogicBoxes pattern.

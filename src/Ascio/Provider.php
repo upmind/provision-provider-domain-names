@@ -139,6 +139,9 @@ class Provider extends DomainNames implements ProviderInterface
                 ->setCreatedAt(null)
                 ->setUpdatedAt(null)
                 ->setExpiresAt(null)
+                // registration is async - signal to the caller that this result is not yet final so
+                // it can schedule a later info pull to backfill live status, expiry and contacts
+                ->setOperationStatus(DomainResult::OPERATION_IN_PROGRESS)
                 ->setMessage(sprintf(
                     'Domain %s registration submitted (order %s)',
                     $domainName,

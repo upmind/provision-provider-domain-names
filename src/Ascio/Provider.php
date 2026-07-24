@@ -320,8 +320,8 @@ class Provider extends DomainNames implements ProviderInterface
     {
         try {
             $contactType = $params->getContactTypeEnum();
-        } catch (UnexpectedValueException) {
-            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        } catch (UnexpectedValueException $e) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type, [], [], $e);
         }
 
         $domainName = Utils::getDomain($params->sld, $params->tld);

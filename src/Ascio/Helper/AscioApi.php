@@ -125,13 +125,15 @@ class AscioApi
     }
 
 
-    private function getResponseErrorMessage(string $command, array $responseData)
+    private function getResponseErrorMessage(string $command, array $responseData): ?string
     {
-        if ($responseData['ResultCode'] !== 200 && $responseData['ResultCode'] !== 201) {
-            $errorMessage = $responseData['ResultMessage'];
+        $resultCode = $responseData['ResultCode'] ?? null;
+
+        if ($resultCode !== 200 && $resultCode !== 201) {
+            return $responseData['ResultMessage'] ?? 'Unknown Provider API Error';
         }
 
-        return $errorMessage ?? null;
+        return null;
     }
 
 

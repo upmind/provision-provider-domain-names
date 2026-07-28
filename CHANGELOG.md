@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.32.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.32.0) - 2026-07-28
+
+- Implement Ascio provider
+- Add optional `operation_status` to DomainResult to signal pending/async operations such as register()
+
 ## [v2.31.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.31.1) - 2026-07-21
 
 - Fix NameSilo, correctly set `auto_renew` property of `DomainResult` as returned from provider.

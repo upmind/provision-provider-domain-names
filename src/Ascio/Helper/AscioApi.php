@@ -82,7 +82,6 @@ class AscioApi
         $this->logger->debug('Ascio API Request', [
             'command' => $command,
             'params' => $requestParams,
-            'pass' => $this->client->__getLastRequestHeaders(),
         ]);
 
         $response = $this->client->__soapCall($command, array($requestParams));
@@ -90,10 +89,6 @@ class AscioApi
 
         $this->logger->debug('Ascio API Response', [
             'result' => $responseData,
-        ]);
-
-        $this->logger->debug('Ascio API header', [
-            'pass' => $this->client->__getLastRequest(),
         ]);
 
         return $this->parseResponseData($command, $response, $responseField)[$responseField];

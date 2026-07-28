@@ -26,9 +26,21 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string $created_at Date of creation in format - Y-m-d H:i:s
  * @property-read string $updated_at Date of last update in format - Y-m-d H:i:s
  * @property-read string $expires_at Date of domain renewing in format - Y-m-d H:i:s
+ * @property-read string|null $operation_status Status of an async operation, if still resolving; one of the OPERATION_* constants
  */
 class DomainResult extends ResultData
 {
+    /**
+     * The operation was accepted but is still resolving asynchronously; the returned data may be
+     * incomplete and the caller should query again later (e.g. an async register or transfer).
+     */
+    public const OPERATION_IN_PROGRESS = 'in_progress';
+
+    /**
+     * The operation has completed and the returned data reflects the final state.
+     */
+    public const OPERATION_COMPLETE = 'complete';
+
     public static function rules(): Rules
     {
         return new Rules([
@@ -51,6 +63,7 @@ class DomainResult extends ResultData
             'created_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'updated_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'expires_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
+            'operation_status' => ['nullable', 'string', 'in:' . self::OPERATION_IN_PROGRESS . ',' . self::OPERATION_COMPLETE],
         ]);
     }
 
@@ -182,6 +195,19 @@ class DomainResult extends ResultData
     public function setGlueRecords($glueRecords)
     {
         $this->setValue('glue_records', $glueRecords);
+        return $this;
+    }
+
+    /**
+     * Indicate whether an async operation (e.g. register/transfer) is still resolving.
+     *
+     * @param string|null $operationStatus One of the OPERATION_* constants, or null if not applicable
+     *
+     * @return static $this
+     */
+    public function setOperationStatus(?string $operationStatus)
+    {
+        $this->setValue('operation_status', $operationStatus);
         return $this;
     }
 }

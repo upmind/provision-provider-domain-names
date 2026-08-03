@@ -48,7 +48,7 @@ class DomainNameApiRestApi implements DomainNameApiInterface
 
         // Get domain list
         $domains = array_map(
-            fn ($tld) => Utils::getDomain($params->sld, $tld),
+            static fn ($tld) => Utils::getDomain($params->sld, $tld),
             $params->tlds
         );
 
@@ -89,7 +89,10 @@ class DomainNameApiRestApi implements DomainNameApiInterface
                 'can_register' => $isAvailable,
                 'can_transfer' => !$isAvailable,
                 'is_premium' => isset($domain['isPremium']) && (bool) $domain['isPremium'] === true,
-                'description' => $domain['reason'] ?? '', // ToDo: Replace message with availability?
+                'description' => $result['reason'] ?? sprintf(
+                    'Domain is %s to register',
+                    $isAvailable ? 'available' : 'not available'
+                    ),
             ]);
         }
 

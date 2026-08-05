@@ -548,6 +548,7 @@ class DomainNameApiRestApi implements DomainNameApiInterface
             switch ($statusCode) {
                 case 400: $this->handleValidationError($response, $ex);
                 case 403: $this->handleError($response, $ex);
+                case 409: $this->handleError($response, $ex);
                 case 500: $this->handleError($response, $ex);
             }
 

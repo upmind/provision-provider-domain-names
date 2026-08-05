@@ -119,6 +119,7 @@ class DomainNameApiRestApi implements DomainNameApiInterface
 
     /**
      * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function registerWithContactInfo(RegisterDomainParams $params): DomainResult
     {
@@ -272,6 +273,9 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         throw ProvisionFunctionError::create('Domain transfer initiated');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function renew(RenewParams $params): DomainResult
     {
         $domain = Utils::getDomain($params->sld, $params->tld);
@@ -291,6 +295,9 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         ]))->setMessage('Domain renewed successfully');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function getDetails(DomainInfoParams $params): DomainResult
     {
         $domain = Utils::getDomain($params->sld, $params->tld);
@@ -312,6 +319,9 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         return $this->parseDomainInfo($domain, $result)->setMessage('Domain information retrieved');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function modifyNameServer(UpdateNameserversParams $params): NameserversResult
     {
         $domainName = Utils::getDomain($params->sld, $params->tld);
@@ -340,6 +350,9 @@ class DomainNameApiRestApi implements DomainNameApiInterface
             ->setMessage('Nameservers are changed');
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function getEppCode(EppParams $params): EppCodeResult
     {
         $domain = Utils::getDomain($params->sld, $params->tld);
@@ -359,14 +372,186 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         ]);
     }
 
+    /**
+     * @throws \libphonenumber\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function saveContacts(UpdateContactParams $params): ContactResult
     {
-        // TODO: Implement saveContacts() method.
+        try {
+            $contactType = $params->getContactTypeEnum();
+        } catch (UnexpectedValueException $ex) {
+            throw ProvisionFunctionError::create(sprintf(
+                'Invalid contact type:  %s',
+                $params->contact_type
+            ));
+        }
+
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $domainInfo = $this->getDetails(DomainInfoParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+        ]));
+
+        // Get the current registrant details to use as fallback
+        $currentRegistrantDetails = $domainInfo->registrant;
+
+        // Build the contacts array for each contact type, depending on the contact we want to update
+        // Fetch the existing contacts for the contact type we don't want to update, but force sync if missing.
+        // Contact list is always set as registrant, admin, tech, billing
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $contacts = [
+                    $this->mapContactParamsToProviderContact($params->contact, ContactType::REGISTRANT()),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->admin)
+                            ? ContactParams::create($domainInfo->admin->all())
+                            : ContactParams::create($params->contact),
+                        ContactType::ADMIN()
+                    ),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->tech)
+                            ? ContactParams::create($domainInfo->tech->all())
+                            : ContactParams::create($params->contact),
+                        ContactType::TECH()
+                    ),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->billing)
+                            ? ContactParams::create($domainInfo->billing->all())
+                            : ContactParams::create($params->contact),
+                        ContactType::BILLING()
+                    )
+                ];
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $contacts = [
+                    $this->mapContactParamsToProviderContact(
+                        ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::REGISTRANT()
+                    ),
+                    $this->mapContactParamsToProviderContact($params->contact, ContactType::ADMIN()),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->tech)
+                            ? ContactParams::create($domainInfo->tech->all())
+                            : ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::TECH()
+                    ),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->billing)
+                            ? ContactParams::create($domainInfo->billing->all())
+                            : ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::BILLING()
+                    )
+                ];
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $contacts = [
+                    $this->mapContactParamsToProviderContact(
+                        ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::REGISTRANT()
+                    ),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->admin)
+                            ? ContactParams::create($domainInfo->admin->all())
+                            : ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::ADMIN()
+                    ),
+                    $this->mapContactParamsToProviderContact($params->contact, ContactType::TECH()),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->billing)
+                            ? ContactParams::create($domainInfo->billing->all())
+                            : ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::BILLING()
+                    ),
+                ];
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $contacts = [
+                    $this->mapContactParamsToProviderContact(
+                        ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::REGISTRANT()
+                    ),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->admin)
+                            ? ContactParams::create($domainInfo->admin->all())
+                            : ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::ADMIN()
+                    ),
+                    $this->mapContactParamsToProviderContact(
+                        isset($domainInfo->tech)
+                            ? ContactParams::create($domainInfo->tech->all())
+                            : ContactParams::create($currentRegistrantDetails->all()),
+                        ContactType::TECH()
+                    ),
+                    $this->mapContactParamsToProviderContact($params->contact, ContactType::BILLING()),
+                ];
+                break;
+            default:
+                throw ProvisionFunctionError::create(sprintf('Invalid contact type: %s', $params->contact_type));
+        }
+
+        // Returns 204 No Content response.
+        $this->makeRequest('domains/contacts/update', null, [
+            'domainName' => $domain,
+            'contacts' => $contacts,
+        ], 'PUT');
+
+        $updatedDomainInfo = $this->getDetails(DomainInfoParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+        ]));
+
+        switch ($contactType) {
+            case $contactType->equals(ContactType::REGISTRANT()):
+                $updatedContact = $updatedDomainInfo->registrant;
+                break;
+            case $contactType->equals(ContactType::ADMIN()):
+                $updatedContact = $updatedDomainInfo->admin;
+                break;
+            case $contactType->equals(ContactType::TECH()):
+                $updatedContact = $updatedDomainInfo->tech;
+                break;
+            case $contactType->equals(ContactType::BILLING()):
+                $updatedContact = $updatedDomainInfo->billing;
+                break;
+            default:
+                throw ProvisionFunctionError::create(sprintf('Invalid contact type: %s', $params->contact_type));
+        }
+
+        return ContactResult::create($updatedContact->all())
+            ->setMessage(sprintf('%s contact updated successfully', ucfirst($params->contact_type)));
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
     public function toggleTheftProtectionLock(LockParams $params): DomainResult
     {
-        // TODO: Implement toggleTheftProtectionLock() method.
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        $domainInfo = $this->getDetails(DomainInfoParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+        ]));
+
+        if ($params->shouldLock() === $domainInfo->locked) {
+            return $domainInfo
+                ->setMessage(sprintf('Domain already %s', $params->shouldLock() ? 'locked' : 'unlocked'));
+        }
+
+        $bodyParams = [
+            'domainName' => $domainName,
+            'lockStatus' => $params->shouldLock()
+        ];
+
+        // Returns 204 No Content response.
+        $this->makeRequest('domains/lock', null, $bodyParams, 'POST');
+
+        $domainInfo->setLocked($params->shouldLock());
+
+        return $domainInfo
+            ->setMessage(sprintf('Domain successfully %s', $params->shouldLock() ? 'locked' : 'unlocked'));
     }
 
     private function parseDomainInfo(string $domainName, array $data): DomainResult

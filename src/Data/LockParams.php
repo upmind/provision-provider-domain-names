@@ -24,4 +24,9 @@ class LockParams extends DataSet
             'lock' => ['required', 'boolean'],
         ]);
     }
+
+    public function shouldLock(): bool
+    {
+        return (bool) $this->lock;
+    }
 }

@@ -252,7 +252,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $this->configuration->username,
                 $this->configuration->password,
                 $this->configuration->isSandbox() ? ClientFactory::ENV_TEST : ClientFactory::ENV_LIVE,
-                $this->getLogger(),
+                $this->configuration->shouldDebug() ? $this->getLogger() : null,
                 [
                     'keep_alive' => false
                 ]
@@ -287,7 +287,7 @@ class Provider extends DomainNames implements ProviderInterface
             'connect_timeout' => 10,
             'timeout' => 60,
             'verify' => !$this->configuration->isSandbox(), // SSL verify only for production.
-            'handler' => $this->getGuzzleHandlerStack(),
+            'handler' => $this->getGuzzleHandlerStack($this->configuration->shouldDebug()),
             'http_errors' => true, // Ensure Guzzle always throws exceptions on HTTP errors.
         ]);
 

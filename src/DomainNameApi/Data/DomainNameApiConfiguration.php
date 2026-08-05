@@ -31,4 +31,9 @@ class DomainNameApiConfiguration extends DataSet
     {
         return (bool) $this->sandbox;
     }
+
+    public function shouldDebug(): bool
+    {
+        return (bool) $this->debug;
+    }
 }

@@ -633,7 +633,7 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         ];
     }
 
-    private function mapProviderContactToContactData(array $contact): ?ContactData
+    private function mapProviderContactToContactData(array $contact): ContactData
     {
         // Set contact ID
         $contactId = isset($contact['handle']) ? (string) $contact['handle'] : null;

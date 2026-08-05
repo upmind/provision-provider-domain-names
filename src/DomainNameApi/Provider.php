@@ -291,7 +291,7 @@ class Provider extends DomainNames implements ProviderInterface
             'http_errors' => true, // Ensure Guzzle always throws exceptions on HTTP errors.
         ]);
 
-        $this->restApiClient = new DomainNameApiRestApi($client, $this->configuration);
+        $this->restApiClient = new DomainNameApiRestApi($client);
 
         return $this->restApiClient;
     }

@@ -21,6 +21,22 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 
 interface DomainNameApiInterface
 {
+    public const DOMAIN_STATUS_MAP = [
+        0  => 'Active',
+        1  => 'WaitingForRegistration',
+        2  => 'WaitingForDocument',
+        3  => 'WaitingForIncomingTransfer',
+        4  => 'TransferredOut',
+        7  => 'PendingDelete',
+        8  => 'Deleted',
+        9  => 'ConfirmationEmailSend',
+        11 => 'WaitingForOutgoingTransfer',
+        12 => 'PendingHold',
+        15 => 'ModificationPending',
+        18 => 'InCase',
+        19 => 'PendingRestore',
+    ];
+
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */

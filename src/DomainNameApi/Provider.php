@@ -96,6 +96,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @throws \libphonenumber\NumberParseException
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -277,10 +278,11 @@ class Provider extends DomainNames implements ProviderInterface
                 : DomainNameApiRestApi::PRODUCTION_URL,
             'headers' => [
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/DomainNameApi',
+                'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
                 // Authorization is header based.
-                '__reseller: ' . $this->configuration->username,
-                'X-API-KEY: ' . $this->configuration->password,
+                '__reseller' => $this->configuration->username,
+                'X-API-KEY' => $this->configuration->password,
             ],
             'connect_timeout' => 10,
             'timeout' => 60,

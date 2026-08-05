@@ -29,6 +29,6 @@ class DomainNameApiConfiguration extends DataSet
 
     public function isSandbox(): bool
     {
-        return $this->sandbox !== null && $this->sandbox === true;
+        return (bool) $this->sandbox;
     }
 }

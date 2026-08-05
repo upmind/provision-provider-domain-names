@@ -397,6 +397,13 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         // Get the current registrant details to use as fallback
         $currentRegistrantDetails = $domainInfo->registrant;
 
+        if ($currentRegistrantDetails === null) {
+            throw ProvisionFunctionError::create(sprintf(
+                'Please contact the registrant. Could not find registrant for domain: %s',
+                $domain
+            ));
+        }
+
         // Build the contacts array for each contact type, depending on the contact we want to update
         // Fetch the existing contacts for the contact type we don't want to update, but force sync if missing.
         // Contact list is always set as registrant, admin, tech, billing

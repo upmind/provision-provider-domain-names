@@ -584,7 +584,28 @@ class DomainNameApiRestApi implements DomainNameApiInterface
                     $contact['ContactType'] ?? ($contact['contactType'] ?? '')
                 ));
             } catch (UnexpectedValueException $e) {
-                continue;
+                if (!isset($contact['handle'])) {
+                    continue;
+                }
+
+                // Use fallback by checking the contact handle first 3 characters
+                switch (mb_strtolower(mb_substr($contact['handle'], 0, 3))) {
+                    case 'd-r':
+                        $contactType = ContactType::REGISTRANT();
+                        break;
+                    case 'd-a':
+                        $contactType = ContactType::ADMIN();
+                        break;
+                    case 'd-b':
+                        $contactType = ContactType::BILLING();
+                        break;
+                    case 'd-t':
+                        $contactType = ContactType::TECH();
+                        break;
+                    default:
+                        // If no matching prefix found, continue the loop
+                        continue 2;
+                }
             }
 
             $domainInfo[$contactType->getValue()] = $this->mapProviderContactToContactData($contact);
@@ -655,7 +676,7 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         try {
             $phoneNumber = isset($contact['phoneCountryCode'], $contact['phone'])
                 ? Utils::eppPhoneToInternational(sprintf(
-                    '%s.%s',
+                    '+%s.%s',
                     $contact['phoneCountryCode'],
                     $contact['phone']
                 ))

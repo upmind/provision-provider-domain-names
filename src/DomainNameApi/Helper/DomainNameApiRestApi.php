@@ -844,9 +844,11 @@ class DomainNameApiRestApi implements DomainNameApiInterface
             $errorMessages = 'unknown error';
         }
 
-        $errorMessage = !empty($errorMessages)
-            ? sprintf($errorMessagePlaceholder, $response->getStatusCode(), implode('. ', $errorMessages))
-            : sprintf($errorMessagePlaceholder, $response->getStatusCode(), 'unknown error');
+        $errorMessage = sprintf(
+            $errorMessagePlaceholder,
+            $response->getStatusCode(),
+            implode('. ', $errorMessages)
+        );
 
         throw ProvisionFunctionError::create($errorMessage, $requestEx)
             ->withDebug([

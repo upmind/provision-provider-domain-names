@@ -164,35 +164,23 @@ class DomainNameApiRestApi implements DomainNameApiInterface
             ContactType::REGISTRANT()
         );
 
-        $contacts[] = $params->admin->register !== null
-            ? $this->mapContactParamsToProviderContact(
-                $params->admin->register,
-                ContactType::ADMIN()
-            )
-            : $this->mapContactParamsToProviderContact(
-                $params->registrant->register,
-                ContactType::ADMIN()
-            );
+        // Add Admin, fallback to registrant
+        $contacts[] = $this->mapContactParamsToProviderContact(
+            $params->admin->register ?? $params->registrant->register,
+            ContactType::ADMIN()
+        );
 
-        $contacts[] = $params->billing->register !== null
-            ? $contacts[] = $this->mapContactParamsToProviderContact(
-                $params->billing->register,
-                ContactType::BILLING()
-            )
-            : $this->mapContactParamsToProviderContact(
-                $params->registrant->register,
-                ContactType::BILLING()
-            );
+        // Add Billing, fallback to registrant
+        $contacts[] = $this->mapContactParamsToProviderContact(
+            $params->billing->register ?? $params->registrant->register,
+            ContactType::BILLING()
+        );
 
-        $contacts[] = $params->tech->register !== null
-            ? $this->mapContactParamsToProviderContact(
-                $params->tech->register,
-                ContactType::TECH()
-            )
-            : $this->mapContactParamsToProviderContact(
-                $params->registrant->register,
-                ContactType::TECH()
-            );
+        // Add Tech, fallback to registrant
+        $contacts[] = $this->mapContactParamsToProviderContact(
+            $params->tech->register ?? $params->registrant->register,
+            ContactType::TECH()
+        );
 
         $bodyParams['contacts'] = $contacts;
 

@@ -757,23 +757,24 @@ class DomainNameApiRestApi implements DomainNameApiInterface
 
             $statusCode = $response !== null ? $response->getStatusCode() : 0;
 
-            // Cases where status code is set, the response exists in the exception.
+            // Known status code cases, where the response exists in the exception.
             switch ($statusCode) {
-                case 400: $this->handleValidationError($response, $ex);
-                case 403: $this->handleError($response, $ex);
-                case 409: $this->handleError($response, $ex);
-                case 500: $this->handleError($response, $ex);
+                case 400:
+                case 403:
+                case 409:
+                case 500:
+                    $this->handleError($response, $ex);
+                default:
+                    throw ProvisionFunctionError::create(
+                        sprintf(
+                            'DomainNameAPI Provider Rest API Error [%d]: %s',
+                            $statusCode,
+                            'unknown error'
+                        ),
+                        $ex
+                    );
             }
 
-            // All other cases continue
-            throw ProvisionFunctionError::create(
-                sprintf(
-                    'DomainNameAPI Provider Rest API Error [%d]: %s',
-                    $statusCode,
-                    $ex->getMessage()
-                ),
-                $ex
-            );
         } catch (Throwable $ex) {
             if ($ex instanceof ProvisionFunctionError) {
                 throw $ex;
@@ -805,23 +806,31 @@ class DomainNameApiRestApi implements DomainNameApiInterface
     /**
      * @return no-return
      */
-    private function handleValidationError(ResponseInterface $response, RequestException $requestEx): void
+    private function handleError(ResponseInterface $response, RequestException $requestEx): void
     {
         // Reset pointer to start of stream and get content.
         $result = $response->getBody()->__toString();
 
         $response->getBody()->close();
 
+        $errorMessagePlaceholder = 'DomainNameAPI Rest Provider API Error [%d]: %s';
+
         try {
             $error = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            throw ProvisionFunctionError::create('DomainNameAPI Rest API Validation Error', $requestEx)
+            $errorMessage = sprintf ($errorMessagePlaceholder, $response->getStatusCode(), 'Invalid JSON Response');
+
+            throw ProvisionFunctionError::create($errorMessage, $requestEx)
                 ->withDebug([
-                    'result' => $result,
+                    'error_result' => $result
                 ]);
         }
 
         $errorMessages = [];
+
+        if (isset($error['message'])) {
+            $errorMessages[] = $error['message'];
+        }
 
         if (isset($error['error']['validationErrors'])) {
             foreach ($error['error']['validationErrors'] as $validationError) {
@@ -831,46 +840,17 @@ class DomainNameApiRestApi implements DomainNameApiInterface
             }
         }
 
-        $errorMessagePlaceholder = 'DomainNameAPI Provider Rest API Error [%d]: %s';
-
-        $errorMessage = !empty($errorMessages)
-            ? sprintf($errorMessagePlaceholder, $response->getStatusCode(), implode(', ', $errorMessages))
-            : sprintf($errorMessagePlaceholder, $response->getStatusCode(), 'N/A');
-
-        throw ProvisionFunctionError::create($errorMessage, $requestEx)
-            ->withDebug([
-                'result' => $error,
-            ]);
-    }
-
-    /**
-     * @return no-return
-     */
-    private function handleError(ResponseInterface $response, RequestException $requestEx): void
-    {
-        // Reset pointer to start of stream and get content.
-        $result = $response->getBody()->__toString();
-
-        $response->getBody()->close();
-
-        try {
-            $error = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            throw ProvisionFunctionError::create('DomainNameAPI Rest API Error', $requestEx)
-                ->withDebug([
-                    'error' => $response,
-                ]);
+        if (empty($errorMessages)) {
+            $errorMessages = 'unknown error';
         }
 
-        $errorMessagePlaceholder = 'DomainNameAPI Provider Rest API Error [%d]: %s';
-
-        $errorMessage = isset($error['error']['message'])
-            ? sprintf($errorMessagePlaceholder, $response->getStatusCode(), $error['error']['message'])
-            : sprintf($errorMessagePlaceholder, $response->getStatusCode(), 'N/A');
+        $errorMessage = !empty($errorMessages)
+            ? sprintf($errorMessagePlaceholder, $response->getStatusCode(), implode('. ', $errorMessages))
+            : sprintf($errorMessagePlaceholder, $response->getStatusCode(), 'unknown error');
 
         throw ProvisionFunctionError::create($errorMessage, $requestEx)
             ->withDebug([
-                'result' => $error,
+                'error_result' => $result,
             ]);
     }
 }

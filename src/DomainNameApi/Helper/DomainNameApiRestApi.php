@@ -828,8 +828,8 @@ class DomainNameApiRestApi implements DomainNameApiInterface
 
         $errorMessages = [];
 
-        if (isset($error['message'])) {
-            $errorMessages[] = $error['message'];
+        if (isset($error['error']['message'])) {
+            $errorMessages[] = $error['error']['message'];
         }
 
         if (isset($error['error']['validationErrors'])) {

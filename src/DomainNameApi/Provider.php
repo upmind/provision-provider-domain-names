@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Upmind\ProvisionProviders\DomainNames\DomainNameApi;
 
 use GuzzleHttp\Client;
-use Illuminate\Support\Str;
 use Throwable;
 use Upmind\DomainNameApiSdk\ClientFactory;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -192,12 +191,6 @@ class Provider extends DomainNames implements ProviderInterface
         $this->errorResult('Operation not supported');
     }
 
-    protected function api(): DomainNameApiInterface
-    {
-        // If username is a UUID, that's the Reseller ID that points to the Rest API requirement.
-        return Str::isUuid($this->configuration->username) ? $this->getRestApi() : $this->getSoapApi();
-    }
-
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -239,6 +232,21 @@ class Provider extends DomainNames implements ProviderInterface
             ->setStatus(StatusResult::STATUS_NOT_IMPLEMENTED)
             ->setExpiresAt(null)
             ->setRawStatuses(null);
+    }
+
+    protected function api(): DomainNameApiInterface
+    {
+        // If username is a UUID, that's the Reseller ID that points to the Rest API implementation.
+        return $this->isUuid($this->configuration->username) ? $this->getRestApi() : $this->getSoapApi();
+    }
+
+    private function isUuid(?string $value): bool
+    {
+        if (!is_string($value)) {
+            return false;
+        }
+
+        return preg_match('/^[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}$/D', $value) > 0;
     }
 
     private function getSoapApi(): DomainNameApiSoapApi

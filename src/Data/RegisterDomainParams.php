@@ -38,4 +38,9 @@ class RegisterDomainParams extends DataSet
             'additional_fields' => ['nullable', 'array'],
         ]);
     }
+
+    public function shouldWhoisPrivacy(): bool
+    {
+        return (bool) $this->whois_privacy;
+    }
 }

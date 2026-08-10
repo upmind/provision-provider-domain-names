@@ -1,0 +1,609 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Upmind\ProvisionProviders\DomainNames\DomainNameApi\Helper;
+
+use Carbon\Carbon;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Throwable;
+use UnexpectedValueException;
+use Upmind\DomainNameApiSdk\Client;
+use Upmind\DomainNameApiSdk\SDK\ArrayType\ArrayOfstring;
+use Upmind\DomainNameApiSdk\SDK\EnumType\ContactType;
+use Upmind\DomainNameApiSdk\SDK\StructType\BaseMethodResponse;
+use Upmind\DomainNameApiSdk\SDK\StructType\ContactInfo;
+use Upmind\DomainNameApiSdk\SDK\StructType\DisableTheftProtectionLock;
+use Upmind\DomainNameApiSdk\SDK\StructType\DisableTheftProtectionLockRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\DomainInfo;
+use Upmind\DomainNameApiSdk\SDK\StructType\EnableTheftProtectionLock;
+use Upmind\DomainNameApiSdk\SDK\StructType\EnableTheftProtectionLockRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\GetContacts;
+use Upmind\DomainNameApiSdk\SDK\StructType\GetContactsRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\GetDetails;
+use Upmind\DomainNameApiSdk\SDK\StructType\GetDetailsRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\ModifyNameServer;
+use Upmind\DomainNameApiSdk\SDK\StructType\ModifyNameServerRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\RegisterWithContactInfo;
+use Upmind\DomainNameApiSdk\SDK\StructType\RegisterWithContactInfoRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\Renew;
+use Upmind\DomainNameApiSdk\SDK\StructType\RenewRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\SaveContacts;
+use Upmind\DomainNameApiSdk\SDK\StructType\SaveContactsRequest;
+use Upmind\DomainNameApiSdk\SDK\StructType\Transfer;
+use Upmind\DomainNameApiSdk\SDK\StructType\TransferRequest;
+use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
+use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
+use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
+use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
+use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType as DomainContactType;
+use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
+use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
+use Upmind\ProvisionProviders\DomainNames\Data\LockParams;
+use Upmind\ProvisionProviders\DomainNames\Data\NameserversResult;
+use Upmind\ProvisionProviders\DomainNames\Data\RegisterDomainParams;
+use Upmind\ProvisionProviders\DomainNames\Data\RenewParams;
+use Upmind\ProvisionProviders\DomainNames\Data\TransferParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
+use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
+use Upmind\ProvisionProviders\DomainNames\DomainNameApi\Provider;
+use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
+
+class DomainNameApiSoapApi implements DomainNameApiInterface
+{
+    private Client $client;
+
+    public function __construct(Client $client)
+    {
+        $this->client = $client;
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function checkAvailability(DacParams $params): DacResult
+    {
+        $this->errorResult('Operation not supported');
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function registerWithContactInfo(RegisterDomainParams $params): DomainResult
+    {
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $ownNameServers = [];
+        for ($i = 1; $i <= Provider::MAX_CUSTOM_NAMESERVERS; $i++) {
+            if (Arr::has($params, 'nameservers.ns' . $i)) {
+                $ownNameServers[] = Arr::get($params, 'nameservers.ns' . $i)['host'];
+            }
+        }
+
+        $nameServers = $ownNameServers ?: Provider::NAMESERVERS;
+
+        $request = (new RegisterWithContactInfoRequest())
+            ->setDomainName($domain)
+            ->setPeriod(intval($params->renew_years))
+            ->setNameServerList(new ArrayOfstring($nameServers))
+            ->setLockStatus(true)
+            ->setPrivacyProtectionStatus(true)
+            ->setRegistrantContact($this->contactParamsToSoap($params->registrant->register))
+            ->setAdministrativeContact($this->contactParamsToSoap($params->admin->register))
+            ->setBillingContact($this->contactParamsToSoap($params->billing->register))
+            ->setTechnicalContact($this->contactParamsToSoap($params->tech->register));
+
+        $response = $this->client->RegisterWithContactInfo(new RegisterWithContactInfo($request));
+        $result = $response->getRegisterWithContactInfoResult();
+
+        if ($result === null) {
+            $this->errorResult('Domain registration failed');
+        }
+
+        $domainInfo = $result->getDomainInfo();
+
+        if (!$domainInfo) {
+            $this->handleApiErrorResult(
+                $result,
+                $result->getErrorCode() == 2302 ? 'Domain name already exists' : null
+            );
+        }
+
+        return $this->domainInfoToResult($domainInfo)
+            ->setMessage('Domain registered successfully');
+    }
+
+    public function transfer(TransferParams $params): DomainResult
+    {
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            return $this->getDomainResult($domainName, true)
+                ->setMessage('Domain active in registrar account');
+        } catch (ProvisionFunctionError $e) {
+            // initiate transfer ...
+        }
+
+        $request = (new TransferRequest())
+            ->setDomainName($domainName)
+            ->setAuthCode($params->epp_code ?: null);
+        $response = $this->client->Transfer(new Transfer($request));
+        $result = $response->getTransferResult();
+
+        if ($result === null) {
+            $this->errorResult('Domain transfer failed');
+        }
+
+        $this->assertResultSuccess($result);
+
+        $this->errorResult('Domain transfer initiated');
+    }
+
+    public function renew(RenewParams $params): DomainResult
+    {
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        $renewRequest = (new RenewRequest())
+            ->setDomainName($domain)
+            ->setPeriod(intval($params->renew_years));
+        $response = $this->client->Renew(new Renew($renewRequest));
+        $result = $response->getRenewResult();
+
+        if ($result === null) {
+            $this->errorResult('Domain renewal failed');
+        }
+
+        $this->assertResultSuccess($result);
+
+        return $this->getDomainResult($domain)
+            ->setMessage('Domain renewed successfully');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getDetails(DomainInfoParams $params): DomainResult
+    {
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        return $this->getDomainResult($domain);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function modifyNameServer(UpdateNameserversParams $params): NameserversResult
+    {
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        $nameservers = [];
+        for ($i = 1; $i <= Provider::MAX_CUSTOM_NAMESERVERS; $i++) {
+            if (Arr::has($params, 'ns' . $i)) {
+                $nameservers[] = Arr::get($params, 'ns' . $i)['host'];
+            }
+        }
+
+        $request = (new ModifyNameServerRequest())
+            ->setDomainName($domainName)
+            ->setNameServerList(new ArrayOfstring($nameservers));
+        $response = $this->client->ModifyNameServer(new ModifyNameServer($request));
+        $result = $response->getModifyNameServerResult();
+
+        if ($result === null) {
+            $this->errorResult('Nameservers update failed');
+        }
+
+        $this->assertResultSuccess($result);
+
+        /** @var \Illuminate\Support\Collection $returnNameserversCollection */
+        $returnNameserversCollection = collect($nameservers);
+
+        $returnNameservers = $returnNameserversCollection
+            ->mapWithKeys(fn ($ns, $i) => ['ns' . ($i + 1) => $ns])
+            ->toArray();
+
+        return NameserversResult::create($returnNameservers)
+            ->setMessage('Nameservers are changed');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function getEppCode(EppParams $params): EppCodeResult
+    {
+        $domainInfo = $this->getDomainInfo(Utils::getDomain($params->sld, $params->tld));
+
+        return EppCodeResult::create(['epp_code' => $domainInfo->getAuth()]);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function saveContacts(UpdateContactParams $params): ContactResult
+    {
+        try {
+            $contactType = $params->getContactTypeEnum();
+
+            $isUpdatingRegistrant = $contactType->equals(DomainContactType::REGISTRANT());
+        } catch (UnexpectedValueException $ex) {
+            $this->errorResult('Invalid contact type: ' . $params->contact_type);
+        }
+
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            $contactResults = $this->getContactResults($domain);
+        } catch (ProvisionFunctionError $e) {
+            if ($e->getMessage() !== Provider::ERR_REGISTRANT_NOT_SET) {
+                throw $e;
+            }
+
+            $contactResults = [];
+        }
+
+        // Get the current registrant details to use as fallback
+        $currentRegistrantDetails = $contactResults[DomainContactType::REGISTRANT()->getValue()];
+
+        /**
+         * Due to some instances of domains having no contacts whatsoever, and DomainNameApi requiring all to be passed,
+         * and if we are not updating a specific contact type,
+         * we will fall back to the registrant contact for all contact types if they are not present.
+         */
+        $request = (new SaveContactsRequest())->setDomainName($domain);
+
+        switch ($contactType) {
+            case $contactType->equals(DomainContactType::REGISTRANT()):
+                $contactSoapParams = $this->contactParamsToSoap($params->contact);
+
+                $request
+                    ->setRegistrantContact($contactSoapParams)
+                    ->setAdministrativeContact(isset($contactResults['admin'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['admin'], false))
+                        : $contactSoapParams
+                    )->setTechnicalContact(isset($contactResults['tech'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['tech'], false))
+                        : $contactSoapParams
+                    )->setBillingContact(isset($contactResults['billing'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['billing'], false))
+                        : $contactSoapParams
+                    );
+                break;
+            case $contactType->equals(DomainContactType::ADMIN()):
+                $registrantSoapParams = $this->contactParamsToSoap($currentRegistrantDetails);
+
+                $request
+                    ->setRegistrantContact($registrantSoapParams)
+                    ->setAdministrativeContact($this->contactParamsToSoap($params->contact))
+                    ->setTechnicalContact(isset($contactResults['tech'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['tech'], false))
+                        : $registrantSoapParams
+                    )->setBillingContact(isset($contactResults['billing'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['billing'], false))
+                        : $registrantSoapParams
+                    );
+                break;
+            case $contactType->equals(DomainContactType::TECH()):
+                $registrantSoapParams = $this->contactParamsToSoap($currentRegistrantDetails);
+
+                $request
+                    ->setRegistrantContact($registrantSoapParams)
+                    ->setAdministrativeContact(isset($contactResults['admin'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['admin'], false))
+                        : $registrantSoapParams
+                    )->setTechnicalContact($this->contactParamsToSoap($params->contact))
+                    ->setBillingContact(isset($contactResults['billing'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['billing'], false))
+                        : $registrantSoapParams
+                    );
+                break;
+            case $contactType->equals(DomainContactType::BILLING()):
+                $registrantSoapParams = $this->contactParamsToSoap($currentRegistrantDetails);
+
+                $request
+                    ->setRegistrantContact($registrantSoapParams)
+                    ->setAdministrativeContact(isset($contactResults['admin'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['admin'], false))
+                        : $registrantSoapParams
+                    )->setTechnicalContact(isset($contactResults['tech'])
+                        ? $this->contactParamsToSoap(new ContactParams($contactResults['tech'], false))
+                        : $registrantSoapParams
+                    )
+                    ->setBillingContact($this->contactParamsToSoap($params->contact));
+                break;
+        }
+
+        $response = $this->client->SaveContacts(new SaveContacts($request));
+        $result = $response->getSaveContactsResult();
+
+        if ($result === null) {
+            $this->errorResult(ucfirst($contactType->getValue()) . ' contact update failed');
+        }
+
+        $this->assertResultSuccess($result);
+
+        return $this->getContactResults($domain)[$contactType->getValue()]->setMessage(
+            ucfirst($contactType->getValue()) . ' contact updated'
+        );
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function toggleTheftProtectionLock(LockParams $params): DomainResult
+    {
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+        $domainResult = $this->getDomainResult($domainName);
+
+        if ($domainResult->locked == $params->lock) {
+            return $domainResult
+                ->setMessage(sprintf('Domain already %s', $params->lock ? 'locked' : 'unlocked'));
+        }
+
+        if ($params->lock) {
+            $request = (new EnableTheftProtectionLockRequest())
+                ->setDomainName($domainName);
+            $response = $this->client->EnableTheftProtectionLock(new EnableTheftProtectionLock($request));
+            $result = $response->getEnableTheftProtectionLockResult();
+        } else {
+            $request = (new DisableTheftProtectionLockRequest())
+                ->setDomainName($domainName);
+            $response = $this->client->DisableTheftProtectionLock(new DisableTheftProtectionLock($request));
+            $result = $response->getDisableTheftProtectionLockResult();
+        }
+
+        if ($result === null) {
+            $this->errorResult('Domain lock operation failed');
+        }
+
+        $this->assertResultSuccess($result);
+
+        return $domainResult
+            ->setMessage(sprintf('Domain successfully %s', $params->lock ? 'locked' : 'unlocked'))
+            ->setLocked(!!$params->lock);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getDomainResult(string $domain, bool $assertActive = false): DomainResult
+    {
+        return $this->domainInfoToResult($this->getDomainInfo($domain, $assertActive))
+            ->setMessage('Domain info retrieved');
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getDomainInfo(string $domain, bool $assertActive = false): DomainInfo
+    {
+        $getDetailsRequest = (new GetDetailsRequest())
+            ->setDomainName($domain);
+        $response = $this->client->GetDetails(new GetDetails($getDetailsRequest));
+        $result = $response->getGetDetailsResult();
+
+        if ($result === null) {
+            $this->errorResult('Domain not found');
+        }
+
+        if (!$domainInfo = $result->getDomainInfo()) {
+            $this->handleApiErrorResult($result);
+        }
+
+        if ($assertActive && $domainInfo->getStatus() !== 'Active') {
+            $this->errorResult(sprintf('Domain is %s', $domainInfo->getStatus()), [
+                'domain' => $domain,
+                'statuses' => [
+                    $domainInfo->getStatus(),
+                    $domainInfo->getStatusCode(),
+                ]
+            ]);
+        }
+
+        return $domainInfo;
+    }
+
+    /**
+     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     */
+    private function contactParamsToSoap(ContactParams $params): ContactInfo
+    {
+        @[$firstName, $lastName] = explode(' ', $params->name ?: $params->organisation, 2);
+
+        $eppPhone = Utils::internationalPhoneToEpp($params->phone);
+        $phoneDiallingCode = trim(Str::before($eppPhone, '.'), '+');
+        $phoneNumber = Str::after($eppPhone, '.');
+
+        $contactInfo = new ContactInfo();
+
+        $contactInfo->setType(ContactType::VALUE_CONTACT);
+        $contactInfo->setFirstName($firstName);
+        $contactInfo->setLastName(empty($lastName) ? $firstName : $lastName);
+        $contactInfo->setCompany($params->organisation);
+        $contactInfo->setAddressLine1(trim((string)$params->address1) ?: 'N/A');
+        $contactInfo->setCity(trim((string)$params->city) ?: 'N/A');
+        $contactInfo->setState(strtoupper($params->country_code ?? '') === 'US' ? $params->state : null);
+        $contactInfo->setZipCode(trim((string)$params->postcode) ?: 'N/A');
+        $contactInfo->setCountry($params->country_code);
+        $contactInfo->setEMail($params->email);
+        $contactInfo->setPhoneCountryCode($phoneDiallingCode);
+        $contactInfo->setPhone($phoneNumber);
+        $contactInfo->setStatus('');
+
+        return $contactInfo;
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function domainInfoToResult(DomainInfo $domainInfo): DomainResult
+    {
+        $contacts = $this->getContactResults($domainInfo->getDomainName(), false);
+
+        $nameServersList = $domainInfo->getNameServerList();
+
+        // Empty array if nameServersList is null.
+        /** @var \Illuminate\Support\Collection $nameServersCollection */
+        $nameServersCollection = collect($nameServersList !== null ? $nameServersList->getString() : []);
+        $nameservers = $nameServersCollection
+            ->mapWithKeys(fn ($host, $i) => ['ns' . ($i + 1) => ['host' => $host]]);
+
+        /** @var \Illuminate\Support\Collection $statusesCollection */
+        $statusesCollection = collect([$domainInfo->getStatus() ?? 'Unknown', $domainInfo->getStatusCode()]);
+        $statuses = $statusesCollection
+            ->filter()
+            ->map(fn($status) => ucfirst(strtolower((string)$status)))
+            ->unique()
+            ->values()
+            ->toArray();
+
+        return DomainResult::create([
+            'id' => (string)$domainInfo->getId(),
+            'domain' => $domainInfo->getDomainName(),
+            'statuses' => $statuses,
+            'locked' => $domainInfo->getLockStatus(),
+            'registrant' => $contacts['registrant'] ?? null,
+            'billing' => $contacts['billing'] ?? null,
+            'tech' => $contacts['tech'] ?? null,
+            'admin' => $contacts['admin'] ?? null,
+            'ns' => $nameservers,
+            'created_at' => $this->formatDate($domainInfo->getTransferDate() ?? $domainInfo->getStartDate()),
+            'updated_at' => $this->formatDate($domainInfo->getUpdatedDate()),
+            'expires_at' => $this->formatDate($domainInfo->getExpirationDate()),
+        ]);
+    }
+
+    /**
+     * @return ContactResult[]|array<string,ContactResult>
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function getContactResults(string $domainName, bool $throwIfMissing = true): array
+    {
+        $request = (new GetContactsRequest())
+            ->setDomainName($domainName);
+        $response = $this->client->GetContacts(new GetContacts($request));
+        $result = $response->getGetContactsResult();
+
+        if ($result === null) {
+            if ($throwIfMissing) {
+                $this->errorResult('Domain Contact details not found');
+            }
+
+            return [];
+        }
+
+        if (!$result->getRegistrantContact()) {
+            if ($throwIfMissing) {
+                $this->handleApiErrorResult($result, Provider::ERR_REGISTRANT_NOT_SET);
+            }
+
+            return [];
+        }
+
+        return [
+            'registrant' => $this->contactInfoToResult($result->getRegistrantContact()),
+            'billing' => $this->contactInfoToResult($result->getBillingContact()),
+            'tech' => $this->contactInfoToResult($result->getTechnicalContact()),
+            'admin' => $this->contactInfoToResult($result->getAdministrativeContact()),
+        ];
+    }
+
+    private function contactInfoToResult(?ContactInfo $contactInfo): ?ContactResult
+    {
+        if (empty($contactInfo)) {
+            return null;
+        }
+
+        if ($contactInfo->getPhone()) {
+            $phone = '+' . $contactInfo->getPhoneCountryCode() . $contactInfo->getPhone();
+        }
+
+        $country = $contactInfo->getCountry();
+        if (!preg_match('/^[A-Z]{2}$/', strtoupper($country))) {
+            $country = Utils::countryToCode($country);
+        }
+
+        return ContactResult::create($this->emptyContactValuesToNull([
+            'id' => (string)$contactInfo->getId(),
+            'name' => trim($contactInfo->getFirstName() . ' ' . $contactInfo->getLastName()),
+            'organisation' => $contactInfo->getCompany(),
+            'email' => $contactInfo->getEmail(),
+            'phone' => $phone ?? null,
+            'address1' => $contactInfo->getAddressLine1(),
+            'city' => $contactInfo->getCity(),
+            'state' => $contactInfo->getState(),
+            'postcode' => $contactInfo->getZipCode(),
+            'country_code' => Utils::normalizeCountryCode($country),
+        ]));
+    }
+
+    private function emptyContactValuesToNull($data): array
+    {
+        $empty = [
+            '',
+            'n/a',
+        ];
+
+        return array_map(fn ($value) => in_array($value, $empty, true) ? null : $value, $data);
+    }
+
+    private function formatDate(?string $date): ?string
+    {
+        if (!isset($date)) {
+            return $date;
+        }
+        return Carbon::parse($date)->toDateTimeString();
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function assertResultSuccess(BaseMethodResponse $result, ?string $errorMessage = null): void
+    {
+        if ($result->getOperationResult() !== 'SUCCESS') {
+            $this->handleApiErrorResult($result, $errorMessage);
+        }
+    }
+
+    /**
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function handleApiErrorResult(BaseMethodResponse $result, ?string $errorMessage = null): void
+    {
+        $errorMessage = $errorMessage ?: sprintf('Provider error: %s', $this->getApiErrorResultMessage($result));
+
+        $this->errorResult($errorMessage, [
+            'error_code' => $result->getErrorCode(),
+            'operation_result' => $result->getOperationResult(),
+            'operation_message' => $result->getOperationMessage(),
+        ]);
+    }
+
+    private function getApiErrorResultMessage(BaseMethodResponse $result): string
+    {
+        $message = $result->getOperationMessage() ?? 'Unknown error';
+
+        return str_replace('Invalid api request for filed', 'Invalid api request for field', $message);
+    }
+
+    /**
+     * Throw an error to fail this provision function execution.
+     *
+     * @return no-return
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    public function errorResult($message, array $data = [], array $debug = [], ?Throwable $previous = null): void
+    {
+        throw (new ProvisionFunctionError($message, 0, $previous))
+            ->withData($data)
+            ->withDebug($debug);
+    }
+}

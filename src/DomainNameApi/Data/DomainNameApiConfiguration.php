@@ -8,7 +8,7 @@ use Upmind\ProvisionBase\Provider\DataSet\DataSet;
 use Upmind\ProvisionBase\Provider\DataSet\Rules;
 
 /**
- * DomainNamemApi configuration
+ * DomainNameApi configuration
  *
  * @property-read string $username Username
  * @property-read string $password Password
@@ -25,5 +25,15 @@ class DomainNameApiConfiguration extends DataSet
             'sandbox' => ['boolean'],
             'debug' => ['boolean'],
         ]);
+    }
+
+    public function isSandbox(): bool
+    {
+        return (bool) $this->sandbox;
+    }
+
+    public function shouldDebug(): bool
+    {
+        return (bool) $this->debug;
     }
 }

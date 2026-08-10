@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.33.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.0) - 2026-08-10
+
+- Implement DomainNameAPI provider REST API
+- DomainNameAPI provider auto-handles implementation based on Reseller ID format. UUID uses REST, all other use SOAP. 
+
 ## [v2.32.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.32.0) - 2026-07-28
 
 - Implement Ascio provider

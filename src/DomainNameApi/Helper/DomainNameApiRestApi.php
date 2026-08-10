@@ -815,7 +815,7 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         try {
             $error = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            $errorMessage = sprintf ($errorMessagePlaceholder, $response->getStatusCode(), 'Invalid JSON Response');
+            $errorMessage = sprintf ($errorMessagePlaceholder, $response->getStatusCode(), 'Invalid JSON Response.');
 
             throw ProvisionFunctionError::create($errorMessage, $requestEx)
                 ->withDebug([
@@ -838,13 +838,13 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         }
 
         if (empty($errorMessages)) {
-            $errorMessages = 'unknown error';
+            $errorMessages[] = 'unknown error.';
         }
 
         $errorMessage = sprintf(
             $errorMessagePlaceholder,
             $response->getStatusCode(),
-            implode('. ', $errorMessages)
+            implode(' ', $errorMessages)
         );
 
         throw ProvisionFunctionError::create($errorMessage, $requestEx)

@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.33.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.1) - 2026-08-10
+
+- Fix DomainNameAPI provider, assert Reseller ID is a valid UUID.
+
 ## [v2.33.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.0) - 2026-08-10
 
 - Implement DomainNameAPI provider REST API

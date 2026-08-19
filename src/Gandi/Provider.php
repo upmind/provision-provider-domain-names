@@ -237,51 +237,53 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \Throwable
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
     {
-        // Change the domain's owner, this requires a different endpoint and ICANN contract
-        $domain = Utils::getDomain($params->sld, $params->tld);
-
-        try {
-            $body = GandiApi::buildContact($params->contact);
-            unset($body['type'], $body['orgname']);
-            $body['icann_contract_accept'] = true;
-
-            $this->api()->makeRequest($body, "domain/domains/{$domain}/contacts/owner", 'PUT');
-            return ContactResult::create([
-                'name' => $params->contact->name,
-                'organisation' => $params->contact->organisation,
-                'email' => $params->contact->email,
-                'phone' => $params->contact->phone,
-                'address1' => $params->contact->address1,
-                'city' => $params->contact->city,
-                'state' => $params->contact->state,
-                'postcode' => $params->contact->postcode,
-                'country_code' => $params->contact->country_code,
-            ])->setMessage("Registrant owner contact for domain {$domain} updated");
-        } catch (Throwable $e) {
-            $this->handleException($e);
-        }
+        return $this->updateContact(UpdateContactParams::create([
+            'sld' => $params->sld,
+            'tld' => $params->tld,
+            'contact' => $params->contact,
+            'contact_type' => ContactType::REGISTRANT()->getValue(),
+        ]));
     }
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function updateContact(UpdateContactParams $params): ContactResult
     {
+        $domain = Utils::getDomain($params->sld, $params->tld);
+
         // Update a contact (admin, tech, or billing)
         $type = $params->getContactTypeEnum();
 
-        if ($type->equals(ContactType::REGISTRANT())) {
-            return $this->updateRegistrantContact(UpdateDomainContactParams::create([
-                'sld' => $params->sld,
-                'tld' => $params->tld,
-                'contact' => $params->contact,
-            ]));
-        }
-
         switch ($type->getValue()) {
+            case ContactType::REGISTRANT:
+                // Change the domain's owner, this requires a different endpoint and ICANN contract
+                try {
+                    $body = GandiApi::buildContact($params->contact);
+                    unset($body['type'], $body['orgname']);
+                    $body['icann_contract_accept'] = true;
+
+                    $this->api()->makeRequest($body, "domain/domains/{$domain}/contacts/owner", 'PUT');
+                    return ContactResult::create([
+                        'name' => $params->contact->name,
+                        'organisation' => $params->contact->organisation,
+                        'email' => $params->contact->email,
+                        'phone' => $params->contact->phone,
+                        'address1' => $params->contact->address1,
+                        'city' => $params->contact->city,
+                        'state' => $params->contact->state,
+                        'postcode' => $params->contact->postcode,
+                        'country_code' => $params->contact->country_code,
+                    ])->setMessage("Registrant owner contact for domain {$domain} updated");
+                } catch (Throwable $e) {
+                    $this->handleException($e);
+                }
             case ContactType::ADMIN:
                 $key = GandiApi::CONTACT_TYPE_ADMIN;
                 break;
@@ -294,8 +296,6 @@ class Provider extends DomainNames implements ProviderInterface
             default:
                 $this->errorResult("Unsupported contact type: {$type->getValue()}");
         }
-
-        $domain = Utils::getDomain($params->sld, $params->tld);
 
         try {
             $this->api()->makeRequest(
@@ -635,6 +635,7 @@ class Provider extends DomainNames implements ProviderInterface
         if ($this->api !== null) {
             return $this->api;
         }
+
         $client = new Client([
             'headers' => [
                 'Accept' => 'application/json',

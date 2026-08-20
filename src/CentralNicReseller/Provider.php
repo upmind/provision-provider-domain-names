@@ -114,11 +114,13 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
-        $sld = Utils::normalizeSld($params->sld);
-        $domains = array_map(
-            fn ($tld) => $sld . "." . Utils::normalizeTld($tld),
-            $params->tlds
-        );
+        $tlds = $this->filterCheckableTlds($params->tlds);
+
+        if (empty($tlds)) {
+            return DacResult::create(['domains' => []]);
+        }
+
+        $domains = array_map(fn($tld) => Utils::getDomain($params->sld, $tld), $tlds);
 
         try {
             $dacDomains = $this->epp()->checkMultipleDomains($domains);
@@ -129,6 +131,27 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (eppException $e) {
             $this->_eppExceptionHandler($e);
         }
+    }
+
+    /**
+     * @param string[] $tlds
+     *
+     * @return string[] Only TLDs which CNR can check for availability
+     */
+    private function filterCheckableTlds(array $tlds): array
+    {
+        /**
+         * Without leading dot, to align with Utils::getRootTld().
+         */
+        $uncheckableRootTlds = [
+            'ke', // CNR mistakenly reports registered .co.ke domains as available - 2026-08
+        ];
+
+        return array_values(
+            array_filter($tlds, function ($tld) use ($uncheckableRootTlds) {
+                return !in_array(Utils::getRootTld($tld), $uncheckableRootTlds);
+            })
+        );
     }
 
     /**

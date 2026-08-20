@@ -549,7 +549,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'User-Agent' => 'Upmind/ProvisionProviders/DomainNames/Enom'
             ],
             'connect_timeout' => 10,
-            'timeout' => 60,
+            'timeout' => 120,
             'verify' => !$this->configuration->sandbox,
             'handler' => $this->getGuzzleHandlerStack(),
         ]);

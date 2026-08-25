@@ -12,6 +12,8 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DisableDnssecParams;
+use Upmind\ProvisionProviders\DomainNames\Data\EnableDnssecParams;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -74,6 +76,16 @@ abstract class Category extends BaseCategory
      * Get information about a domain name including status, expiry date, nameservers, contacts etc.
      */
     abstract public function getInfo(DomainInfoParams $params): DomainResult;
+
+    /**
+     * Create or update a domain's DNSSEC Delegation Signer record.
+     */
+    abstract public function enableDnssec(EnableDnssecParams $params): DomainResult;
+
+    /**
+     * Remove a domain's DNSSEC Delegation Signer record.
+     */
+    abstract public function disableDnssec(DisableDnssecParams $params): DomainResult;
 
     /**
      * Update the registrant contact details of a domain name.

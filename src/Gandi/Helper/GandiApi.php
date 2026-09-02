@@ -79,9 +79,18 @@ class GandiApi
     public function isReseller(string $organisationId): bool
     {
         try {
-            $result = $this->makeRequest([], 'organizations/organization/'.$organisationId);
+            $result = $this->makeRequest([], 'organizations/organization/' . $organisationId);
 
-            return isset($result['reseller']) && (bool)$result['reseller'] === true;
+            if (!is_array($result)) {
+                return false;
+            }
+
+            if (!isset($result['id']) || $result['id'] !== $organisationId) {
+                return false;
+            }
+
+            // Check if organisation is flagged as reseller.
+            return isset($result['reseller']) && (bool) $result['reseller'] === true;
         } catch (ProvisionFunctionError $e) {
             return false;
         }

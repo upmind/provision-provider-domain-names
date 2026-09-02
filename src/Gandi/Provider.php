@@ -97,10 +97,15 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
     {
+        if ($this->configuration->isReseller()) {
+            $this->validateReseller();
+        }
+
         // Register a new domain, then return its details
         $domain = Utils::getDomain($params->sld, $params->tld);
         $privacy = $params->whois_privacy === null ? null : (bool)$params->whois_privacy;
@@ -147,10 +152,15 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
     {
+        if ($this->configuration->isReseller()) {
+            $this->validateReseller();
+        }
+
         // Return the domain if it's already in the account, otherwise initiate the transfer-in
         $domain = Utils::getDomain($params->sld, $params->tld);
 
@@ -205,6 +215,10 @@ class Provider extends DomainNames implements ProviderInterface
      */
     public function renew(RenewParams $params): DomainResult
     {
+        if ($this->configuration->isReseller()) {
+            $this->validateReseller();
+        }
+
         $domain = Utils::getDomain($params->sld, $params->tld);
 
         try {
@@ -645,5 +659,23 @@ class Provider extends DomainNames implements ProviderInterface
         ]);
 
         return $this->api = new GandiApi($client, $this->configuration);
+    }
+
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     */
+    private function validateReseller(): void
+    {
+        if (!$this->configuration->isReseller()) {
+            $this->errorResult('Reseller configuration is not enabled');
+        }
+
+        if ($this->configuration->sharing_id === null) {
+            $this->errorResult('Reseller configuration requires a sharing_id');
+        }
+
+        if (!$this->api()->isReseller((string) $this->configuration->sharing_id)) {
+            $this->errorResult('Account is not a reseller');
+        }
     }
 }

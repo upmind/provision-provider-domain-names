@@ -88,7 +88,7 @@ class GandiApi
     public function isReseller(string $organisationId): bool
     {
         try {
-            $result = $this->makeRequest([], 'organizations/organization/' . $organisationId);
+            $result = $this->makeRequest([], 'organization/organizations/' . $organisationId);
 
             if (!is_array($result)) {
                 return false;

@@ -10,6 +10,7 @@ use GuzzleHttp\Promise\Utils as PromiseUtils;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Str;
 use JsonException;
+use Throwable;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
@@ -45,6 +46,7 @@ class GandiApi
      * Send request and return the response
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     public function makeRequest(array $params, string $path, string $method = 'GET'): ?array
     {
@@ -73,9 +75,16 @@ class GandiApi
                 }
 
                 return self::parseResponseData($result);
+            })
+            ->otherwise(function (Throwable $ex) {
+                throw $ex;
             });
     }
 
+    /**
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
+     */
     public function isReseller(string $organisationId): bool
     {
         try {

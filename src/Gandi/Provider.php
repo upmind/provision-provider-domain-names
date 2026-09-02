@@ -651,7 +651,7 @@ class Provider extends DomainNames implements ProviderInterface
         $client = new Client([
             'headers' => [
                 'Accept' => 'application/json',
-                'Authorization' => 'Bearer '.$this->configuration->api_token,
+                'Authorization' => 'Bearer ' . $this->configuration->api_token,
             ],
             'connect_timeout' => 10,
             'timeout' => 60,
@@ -663,6 +663,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \Throwable
      */
     private function validateReseller(): void
     {
@@ -674,8 +675,20 @@ class Provider extends DomainNames implements ProviderInterface
             $this->errorResult('Reseller configuration requires a sharing_id');
         }
 
-        if (!$this->api()->isReseller((string) $this->configuration->sharing_id)) {
-            $this->errorResult('Account is not a reseller');
+        try {
+            if (!$this->api()->isReseller((string) $this->configuration->sharing_id)) {
+                $this->errorResult('Account is not a reseller');
+            }
+        } catch (Throwable $ex) {
+            if (!$ex instanceof RequestException || !$ex->hasResponse()) {
+                $this->handleException($ex);
+            }
+
+            if ($ex->getResponse()->getStatusCode() === 404) {
+                $this->errorResult('Account is not a reseller');
+            }
+
+            $this->handleException($ex);
         }
     }
 }

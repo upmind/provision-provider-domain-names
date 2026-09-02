@@ -81,7 +81,8 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @inheritDoc
+     * @throws \Throwable
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {

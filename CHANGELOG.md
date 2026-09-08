@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.87](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.87) - 2026-09-08
+
+- Update OpenProvider base URL for sandbox/testing
+
 ## [v2.12.86](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.86) - 2026-08-20
 
 - Increase Enom request timeout to 120 seconds to avoid slow renew() timeouts

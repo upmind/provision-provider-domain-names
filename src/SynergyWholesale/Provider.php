@@ -22,6 +22,9 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DisableDnssecParams;
+use Upmind\ProvisionProviders\DomainNames\Data\Dnssec;
+use Upmind\ProvisionProviders\DomainNames\Data\EnableDnssecParams;
 use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
@@ -489,6 +492,88 @@ class Provider extends DomainNames implements ProviderInterface
         } catch (Throwable $e) {
             $this->handleException($e);
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function enableDnssec(EnableDnssecParams $params): DomainResult
+    {
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            $records = $this->api()->listDnssecRecords($domainName);
+            $matchingRecordId = null;
+            foreach ($records as $record) {
+                if ($this->dnssecRecordMatches($record['record'], $params)) {
+                    $matchingRecordId = $record['uuid'];
+                    break;
+                }
+            }
+
+            if ($matchingRecordId !== null) {
+                foreach ($records as $record) {
+                    if ($record['uuid'] !== $matchingRecordId) {
+                        $this->api()->removeDnssecRecord($domainName, $record['uuid']);
+                    }
+                }
+
+                return $this->_getInfo(
+                    $domainName,
+                    count($records) === 1 ? 'DNSSEC record already exists' : 'DNSSEC record updated successfully'
+                );
+            }
+
+            $this->api()->addDnssecRecord(
+                $domainName,
+                $params->ds_key_tag,
+                $params->ds_algorithm,
+                $params->ds_digest_type,
+                $params->ds_digest
+            );
+
+            foreach ($records as $record) {
+                $this->api()->removeDnssecRecord($domainName, $record['uuid']);
+            }
+
+            return $this->_getInfo(
+                $domainName,
+                $records ? 'DNSSEC record updated successfully' : 'DNSSEC record added successfully'
+            );
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function disableDnssec(DisableDnssecParams $params): DomainResult
+    {
+        $domainName = Utils::getDomain($params->sld, $params->tld);
+
+        try {
+            foreach ($this->api()->listDnssecRecords($domainName) as $record) {
+                $this->api()->removeDnssecRecord($domainName, $record['uuid']);
+            }
+
+            return $this->_getInfo($domainName, 'DNSSEC disabled successfully');
+        } catch (Throwable $e) {
+            $this->handleException($e);
+        }
+    }
+
+    private function dnssecRecordMatches(Dnssec $record, EnableDnssecParams $params): bool
+    {
+        return $record->ds_key_tag === $params->ds_key_tag
+            && $record->ds_algorithm === $params->ds_algorithm
+            && $record->ds_digest_type === $params->ds_digest_type
+            && $this->normalizeDnssecDigest($record->ds_digest) === $this->normalizeDnssecDigest($params->ds_digest);
+    }
+
+    private function normalizeDnssecDigest(string $digest): string
+    {
+        return strtoupper((string)preg_replace('/\s+/', '', $digest));
     }
 
     /**

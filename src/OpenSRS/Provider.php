@@ -245,7 +245,7 @@ class Provider extends DomainNames implements ProviderInterface
 
                 $contacts[$type] = array_filter([
                     'country' => Utils::normalizeCountryCode($contactParams->country_code),
-                    'org_name' => $contactParams->organisation ?: $contactParams->name,
+                    'org_name' => $contactParams->organisation,
                     'phone' => Utils::internationalPhoneToEpp($contactParams->phone),
                     'postal_code' => $contactParams->postcode,
                     'city' => $contactParams->city,
@@ -377,7 +377,7 @@ class Provider extends DomainNames implements ProviderInterface
             $contacts[$type] = [
                 'country' => Utils::normalizeCountryCode($contactParams->country_code),
                 'state' => Utils::stateNameToCode($contactParams->country_code, $contactParams->state),
-                'org_name' => $contactParams->organisation ?: $contactParams->name,
+                'org_name' => $contactParams->organisation,
                 'phone' => Utils::internationalPhoneToEpp($contactParams->phone),
                 'postal_code' => $contactParams->postcode,
                 'city' => $contactParams->city,

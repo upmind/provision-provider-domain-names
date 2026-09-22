@@ -629,7 +629,9 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         @[$firstName, $lastName] = explode(' ', $name, 2);
 
         $firstName = trim($firstName);
-        $lastName = trim($lastName);
+        // If the attribute used (name or organisation) is 1 word, `lastname` result will be null.
+        // Hence, cast to string to avoid type error when trimming.
+        $lastName = trim((string) $lastName);
 
         $eppPhone = Utils::internationalPhoneToEpp($params->phone);
         $phoneDiallingCode = trim(Str::before($eppPhone, '.'), '+');

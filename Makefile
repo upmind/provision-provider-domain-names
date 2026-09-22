@@ -6,6 +6,7 @@ help:
 	@echo "   make help                  : List all available Makefile commands"
 	@echo "   make setup-php74           : Start the dev environment with PHP 7.4"
 	@echo "   make shell                 : Get an interactive shell on the PHP container"
+	@echo "   make test                  : Run Tests (PHPUnit)"
 	@echo "   make static-analysis       : Run Static Analysis (PHPStan)"
 	@echo "   make coding-standards      : Run Coding Standards (PHP-CS-Fixer)"
 	@echo "   make start-containers      : Start the dev environment"
@@ -20,12 +21,16 @@ setup-php74: --prep-dockerfile-php74 stop-containers start-containers --remove-p
 shell:
 	docker compose exec -it provision-provider-domain-names /bin/bash
 
+# Run Tests (PHPUnit)
+test:
+	docker compose exec provision-provider-domain-names ./vendor/bin/phpunit
+
 # Run Static Analysis (PHPStan)
 static-analysis:
 	docker compose exec provision-provider-domain-names ./vendor/bin/phpstan analyse --memory-limit=1G
 
 coding-standards:
-	docker compose exec provision-provider-domain-names php ./bin/php-cs-fixer-v3.phar fix --config=./.php-cs-fixer.dist.php
+	docker compose exec provision-provider-domain-names php ./bin/php-cs-fixer fix --config=./.php-cs-fixer.dist.php
 
 # Start the dev environment
 start-containers:

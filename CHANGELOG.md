@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.33.4](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.4) - 2026-09-22
+
+- Fix DomainNameAPI provider, correctly set contact lastname set via params.
+
 ## [v2.33.3](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.3) - 2026-09-08
 
 - Update OpenProvider base URL for sandbox/testing

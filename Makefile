@@ -8,6 +8,7 @@ help:
 	@echo "   make setup-php82           : Start the dev environment with PHP 8.2"
 	@echo "   make setup-php83           : Start the dev environment with PHP 8.3"
 	@echo "   make shell                 : Get an interactive shell on the PHP container"
+	@echo "   make test                  : Run Test (PHPUnit)"
 	@echo "   make static-analysis       : Run Static Analysis (PHPStan)"
 	@echo "   make coding-standards      : Run Coding Standards (PHP-CS-Fixer)"
 	@echo "   make start-containers      : Start the dev environment"
@@ -27,6 +28,10 @@ setup-php83: stop-containers --prep-dockerfile-php83 start-containers --remove-p
 # Get a shell on the PHP container
 shell:
 	docker compose exec -it provision-provider-domain-names /bin/bash
+
+# Run Test (PHPUnit)
+test:
+	docker compose exec provision-provider-domain-names ./vendor/bin/phpunit
 
 # Run Static Analysis (PHPStan)
 static-analysis:

@@ -290,11 +290,43 @@ class Provider extends DomainNames implements ProviderInterface
         }
     }
 
-    private function _getInfo(string $domainName, string $message): DomainResult
+    /**
+     * @param bool $assertNotDeleted If true, throw an error result if Ascio reports the domain as `Deleted`.
+     *
+     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
+     * @throws \SoapFault
+     */
+    private function _getInfo(string $domainName, string $message, bool $assertNotDeleted = true): DomainResult
     {
         $domainInfo = $this->api()->getDomainInfo($domainName);
 
-        return DomainResult::create($domainInfo)->setMessage($message);
+        $domainResult = DomainResult::create($domainInfo)->setMessage($message);
+
+        // Status blacklist rather than whitelist (as LogicBoxes et al. do) since only `Deleted` is
+        // known to be terminal for now - other Ascio statuses may still represent a usable domain.
+        if ($assertNotDeleted && $this->hasStatus($domainInfo['statuses'], 'deleted')) {
+            $this->errorResult(
+                sprintf('Domain %s is deleted', $domainName),
+                $domainResult->toArray(),
+                ['response_data' => $domainInfo]
+            );
+        }
+
+        return $domainResult;
+    }
+
+    /**
+     * Case-insensitively check whether the given raw Ascio statuses contain the given status.
+     *
+     * @param array<string> $statuses
+     */
+    private function hasStatus(array $statuses, string $status): bool
+    {
+        return in_array(
+            strtolower($status),
+            array_map(static fn ($s) => strtolower(trim((string)$s)), $statuses),
+            true
+        );
     }
 
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
@@ -587,7 +619,8 @@ class Provider extends DomainNames implements ProviderInterface
         $domainName = Utils::getDomain($params->sld, $params->tld);
 
         try {
-            $domainData = $this->_getInfo($domainName, "");
+            // Don't assert here - a `Deleted` domain is a valid input which maps to STATUS_CANCELLED below.
+            $domainData = $this->_getInfo($domainName, '', false);
 
             // Status mapping: date-dominant for active/expired (the pattern used by the other
             // "real" implementations in this package - Enom/LogicBoxes/OpenSRS), with raw-status

@@ -162,7 +162,9 @@ class AscioApi
         return $domainInfo;
     }
 
-
+    /**
+     * @throws \SoapFault
+     */
     public function getDomainInfo(string $domainName): array
     {
         $response = $this->getDomains($domainName);
@@ -180,7 +182,7 @@ class AscioApi
                 'trim',
                 explode(',', (string)($response['Status'] ?? ''))
             ), 'strlen')),
-            'locked' => $response['TransferLock'] == 'Lock' && $response['UpdateLock'] == 'Lock',
+            'locked' => $response['TransferLock'] === 'Lock' && $response['UpdateLock'] === 'Lock',
             'registrant' => isset($response['Owner'])
                 ? $this->parseContact($response['Owner'])
                 : null,

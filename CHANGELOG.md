@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.89](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.89) - 2026-10-08
+
+- Update Ascio provider `getInfo` to throw error if domain is deleted from account
+
 ## [v2.12.88](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.88) - 2026-09-22
 
 - Fix DomainNameAPI provider, correctly set contact lastname set via params.

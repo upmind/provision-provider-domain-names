@@ -129,7 +129,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $domainName,
                 $contacts,
                 $params->nameservers->pluckHosts(),
-                (int) ($params->renew_years * 12), // convert years to months
+                !empty($params->renew_years) ? (int) $params->renew_years : 12 // default to 12 months if not specified or 0.
             );
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
@@ -252,7 +252,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $domainName,
                 $eppCode,
                 $contacts,
-                isset($params->renew_years) ? (int) ($params->renew_years * 12) : null
+                !empty($params->renew_years) ? (int) ($params->renew_years) : null
             );
 
             try {

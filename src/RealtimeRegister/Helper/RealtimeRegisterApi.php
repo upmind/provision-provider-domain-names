@@ -106,6 +106,7 @@ class RealtimeRegisterApi
     /**
      * @param array<string,int>|string[] $contacts
      * @param string[] $nameservers
+     * @param int $period Registration period in years
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -127,7 +128,7 @@ class RealtimeRegisterApi
 
         $body = [
             'customer' => $this->configuration->customer,
-            'period' => $period,
+            'period' => $period * 12, // convert years to months
             'registrant' => $contacts[self::CONTACT_TYPE_REGISTRANT],
             'contacts' => $queryContacts,
             'ns' => $nameservers,
@@ -384,6 +385,8 @@ class RealtimeRegisterApi
     }
 
     /**
+     * @param int $period Renewal period in years
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(string $domainName, int $period): void
@@ -561,6 +564,8 @@ class RealtimeRegisterApi
     }
 
     /**
+     * @param int|null $period Transfer period in years; defaults to 1 year if null
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function initiateTransfer(string $domainName, string $eppCode, array $contacts, ?int $period = null): string
@@ -582,7 +587,7 @@ class RealtimeRegisterApi
         $body = [
             'customer' => $this->configuration->customer,
             'registrant' => $contacts[self::CONTACT_TYPE_REGISTRANT],
-            'period' => $period ?? 12,
+            'period' => $period === null ? 12 : $period * 12, // convert years to months
             'contacts' => $queryContacts,
             'authcode' => $eppCode,
         ];

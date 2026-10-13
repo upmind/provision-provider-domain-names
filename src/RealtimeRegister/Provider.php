@@ -76,7 +76,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function poll(PollParams $params): PollResult
     {
-        throw $this->errorResult('Polling is not supported by this provider');
+        $this->errorResult('Polling is not supported by this provider');
 
         $since = $params->after_date ? Carbon::parse($params->after_date) : null;
         try {
@@ -467,7 +467,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $responseData = json_decode($responseBody, true);
                 $errorMessage = $responseData['message'] ?? null;
 
-                throw $this->errorResult(
+                $this->errorResult(
                     sprintf('Provider API error: %s', $errorMessage ?? $reason ?? null),
                     [],
                     ['response_data' => $responseData ?? null],

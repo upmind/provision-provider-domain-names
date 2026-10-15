@@ -27,6 +27,7 @@ use Upmind\ProvisionProviders\DomainNames\Helper\Tlds\NoEppCodeTransfer;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\RealtimeRegister\Data\Configuration;
 use Upmind\ProvisionBase\Helper;
+use Upmind\ProvisionProviders\DomainNames\RealtimeRegister\Helper\Tlds\AllowsOrganisationTechnicalContact;
 
 /**
  * Class RealtimeRegisterApi
@@ -443,9 +444,15 @@ class RealtimeRegisterApi
                 ];
                 break;
             case $contactType->equals(ContactType::TECH()):
+                // Check against TLD.
+                $tld = Utils::getTld($domainName);
+
                 $body['contacts'][] = [
                     'role' => self::CONTACT_TYPE_TECH,
-                    'handle' => $this->createContact($contactParams),
+                    'handle' => $this->createContact(
+                        $contactParams,
+                        AllowsOrganisationTechnicalContact::tldIsSupported($tld) === false
+                    ),
                 ];
                 break;
             case $contactType->equals(ContactType::BILLING()):
@@ -478,20 +485,20 @@ class RealtimeRegisterApi
      * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function createContact(ContactParams $params): string
+    public function createContact(ContactParams $params, bool $removeOrganisationField = false): string
     {
         $handle = uniqid();
         $command = "v2/customers/{$this->configuration->customer}/contacts/{$handle}";
 
-        $body = $this->setContactParams($params);
+        $body = $this->setContactParams($params, $removeOrganisationField);
         $this->makeRequest($command, null, $body, "POST");
 
         return $handle;
     }
 
-    private function setContactParams(ContactParams $contactParams): array
+    private function setContactParams(ContactParams $contactParams, bool $removeOrganisationField = false): array
     {
-        return [
+        $contactData = [
             'addressLine' => [$contactParams->address1],
             'city' => $contactParams->city,
             'country' => Utils::normalizeCountryCode($contactParams->country_code),
@@ -502,6 +509,12 @@ class RealtimeRegisterApi
             'email' => $contactParams->email,
             'voice' => Utils::internationalPhoneToEpp($contactParams->phone),
         ];
+
+        if ($removeOrganisationField) {
+            unset($contactData['organization']);
+        }
+
+        return $contactData;
     }
 
     public function initiateTransfer(string $domainName, string $eppCode, array $contacts): string

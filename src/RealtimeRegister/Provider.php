@@ -76,7 +76,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     public function poll(PollParams $params): PollResult
     {
-        throw $this->errorResult('Polling is not supported by this provider');
+        $this->errorResult('Polling is not supported by this provider');
 
         $since = $params->after_date ? Carbon::parse($params->after_date) : null;
         try {
@@ -114,11 +114,11 @@ class Provider extends DomainNames implements ProviderInterface
         $checkResult = $this->api()->checkMultipleDomains([$domainName]);
 
         if (count($checkResult) < 1) {
-            throw $this->errorResult('Empty domain availability check result');
+            $this->errorResult('Empty domain availability check result');
         }
 
         if (!$checkResult[0]->can_register) {
-            throw $this->errorResult('This domain is not available to register');
+            $this->errorResult('This domain is not available to register');
         }
 
         $contactParams = [
@@ -131,7 +131,12 @@ class Provider extends DomainNames implements ProviderInterface
         $contacts = $this->getRegisterParams($contactParams);
 
         try {
-            $this->api()->register($domainName, $contacts, $params->nameservers->pluckHosts());
+            $this->api()->register(
+                $domainName,
+                $contacts,
+                $params->nameservers->pluckHosts(),
+                !empty($params->renew_years) ? (int) $params->renew_years : 1
+            );
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
         } catch (\Throwable $e) {
@@ -148,11 +153,11 @@ class Provider extends DomainNames implements ProviderInterface
             $registrantID = $params['registrant']['id'];
 
             if (!$this->api()->getContact($registrantID)) {
-                throw $this->errorResult("Invalid registrant ID provided!", $params);
+                $this->errorResult("Invalid registrant ID provided!", $params);
             }
         } else {
             if (!Arr::has($params, 'registrant.register')) {
-                throw $this->errorResult('Registrant contact data is required!');
+                $this->errorResult('Registrant contact data is required!');
             }
 
             $registrantID = $this->api()->createContact(
@@ -164,11 +169,11 @@ class Provider extends DomainNames implements ProviderInterface
             $adminID = $params['admin']['id'];
 
             if (!$this->api()->getContact($adminID)) {
-                throw $this->errorResult("Invalid registrant ID provided!", $params);
+                $this->errorResult("Invalid registrant ID provided!", $params);
             }
         } else {
             if (!Arr::has($params, 'admin.register')) {
-                throw $this->errorResult('Admin contact data is required!');
+                $this->errorResult('Admin contact data is required!');
             }
 
             $adminID = $this->api()->createContact(
@@ -180,11 +185,11 @@ class Provider extends DomainNames implements ProviderInterface
             $techID = $params['tech']['id'];
 
             if (!$this->api()->getContact($techID)) {
-                throw $this->errorResult("Invalid registrant ID provided!", $params);
+                $this->errorResult("Invalid registrant ID provided!", $params);
             }
         } else {
             if (!Arr::has($params, 'tech.register')) {
-                throw $this->errorResult('Tech contact data is required!');
+                $this->errorResult('Tech contact data is required!');
             }
 
             $techID = $this->api()->createContact(
@@ -196,11 +201,11 @@ class Provider extends DomainNames implements ProviderInterface
             $billingID = $params['billing']['id'];
 
             if (!$this->api()->getContact($billingID)) {
-                throw $this->errorResult("Invalid registrant ID provided!", $params);
+                $this->errorResult("Invalid registrant ID provided!", $params);
             }
         } else {
             if (!Arr::has($params, 'billing.register')) {
-                throw $this->errorResult('Billing contact data is required!');
+                $this->errorResult('Billing contact data is required!');
             }
 
             $billingID = $this->api()->createContact(
@@ -245,12 +250,17 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $contacts = $this->getRegisterParams($contactParams);
 
-            $transferId = $this->api()->initiateTransfer($domainName, $eppCode, $contacts);
+            $transferId = $this->api()->initiateTransfer(
+                $domainName,
+                $eppCode,
+                $contacts,
+                !empty($params->renew_years) ? (int) ($params->renew_years) : null
+            );
 
             try {
                 return $this->_getInfo($domainName, 'Domain active in registrar account');
             } catch (\Throwable $e) {
-                throw $this->errorResult(
+                $this->errorResult(
                     sprintf('Domain `%s` transfer initiated and now in progress', $domainName),
                     ['transfer_id' => $transferId],
                     [],
@@ -467,7 +477,7 @@ class Provider extends DomainNames implements ProviderInterface
                 $responseData = json_decode($responseBody, true);
                 $errorMessage = $responseData['message'] ?? null;
 
-                throw $this->errorResult(
+                $this->errorResult(
                     sprintf('Provider API error: %s', $errorMessage ?? $reason ?? null),
                     [],
                     ['response_data' => $responseData ?? null],

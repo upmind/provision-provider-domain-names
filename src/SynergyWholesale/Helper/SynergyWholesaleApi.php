@@ -15,6 +15,7 @@ use Upmind\ProvisionBase\Provider\DataSet\SystemInfo;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactData;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
+use Upmind\ProvisionProviders\DomainNames\Data\Dnssec;
 use Upmind\ProvisionProviders\DomainNames\Data\Enums\ContactType;
 use Upmind\ProvisionProviders\DomainNames\Data\GlueRecord;
 use Upmind\ProvisionProviders\DomainNames\Data\Nameserver;
@@ -34,6 +35,27 @@ class SynergyWholesaleApi
     public const CONTACT_TYPE_TECH = 'technical';
     public const CONTACT_TYPE_ADMIN = 'admin';
     public const CONTACT_TYPE_BILLING = 'billing';
+
+    public const DNSSEC_ALGORITHMS = [
+        1,
+        2,
+        3,
+        5,
+        6,
+        7,
+        8,
+        10,
+        12,
+        13,
+        14,
+    ];
+
+    public const DNSSEC_DIGEST_TYPES = [
+        1,
+        2,
+        3,
+        4,
+    ];
 
     protected SoapClient $client;
 
@@ -145,6 +167,7 @@ class SynergyWholesaleApi
         $statusesCollection = collect([$response['status'], $response['domain_status']]);
 
         $glueRecords = $minimal ? [] : $this->listGlueRecords($domainName);
+        $dnssecRecords = $minimal ? [] : $this->parseDnssecRecords($response['DSData'] ?? []);
 
         return [
             'id' => $response['domainRoid'],
@@ -172,7 +195,141 @@ class SynergyWholesaleApi
             'updated_at' => null,
             'expires_at' => isset($response['domain_expiry']) ? Utils::formatDate($response['domain_expiry']) : null,
             'glue_records' => $glueRecords,
+            'dnssec' => $dnssecRecords[0]['record'] ?? null,
         ];
+    }
+
+    public function addDnssecRecord(
+        string $domainName,
+        int $keyTag,
+        int $algorithm,
+        int $digestType,
+        string $digest
+    ): string {
+        if (!in_array($algorithm, self::DNSSEC_ALGORITHMS, true)) {
+            throw ProvisionFunctionError::create(sprintf(
+                'Synergy Wholesale does not support DNSSEC algorithm %s',
+                $this->dnssecValueLabel($algorithm, Dnssec::ALGORITHM_NAMES)
+            ));
+        }
+
+        if (!in_array($digestType, self::DNSSEC_DIGEST_TYPES, true)) {
+            throw ProvisionFunctionError::create(sprintf(
+                'Synergy Wholesale does not support DNSSEC digest type %s',
+                $this->dnssecValueLabel($digestType, Dnssec::DIGEST_TYPE_NAMES)
+            ));
+        }
+
+        $response = $this->makeRequest('DNSSECAddDS', [
+            'domainName' => $domainName,
+            'algorithm' => $algorithm,
+            'digestType' => $digestType,
+            'digest' => $digest,
+            'keyTag' => $keyTag,
+        ]);
+
+        if (empty($response['UUID'])) {
+            throw ProvisionFunctionError::create('Provider API Error: DNSSEC record UUID missing')
+                ->withData([
+                    'response' => $response,
+                ]);
+        }
+
+        return (string)$response['UUID'];
+    }
+
+    public function removeDnssecRecord(string $domainName, string $uuid): void
+    {
+        $this->makeRequest('DNSSECRemoveDS', [
+            'domainName' => $domainName,
+            'UUID' => $uuid,
+        ]);
+    }
+
+    /**
+     * @return array<int,array{uuid:string,record:Dnssec}>
+     */
+    public function listDnssecRecords(string $domainName): array
+    {
+        $response = $this->makeRequest('DNSSECListDS', [
+            'domainName' => $domainName,
+        ]);
+
+        $records = $this->parseDnssecRecords($response['DSData'] ?? []);
+        $result = [];
+
+        foreach ($records as $record) {
+            if ($record['uuid'] === null) {
+                throw ProvisionFunctionError::create('Provider API Error: DNSSEC record UUID missing')
+                    ->withData([
+                        'record' => $record['record']->toArray(),
+                    ]);
+            }
+
+            $result[] = [
+                'uuid' => $record['uuid'],
+                'record' => $record['record'],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<int,array{uuid:string|null,record:Dnssec}>
+     */
+    private function parseDnssecRecords(array $records): array
+    {
+        if ($this->isDnssecRecord($records)) {
+            $records = [$records];
+        }
+
+        $result = [];
+        $recordsAreList = array_is_list($records);
+
+        foreach ($records as $recordId => $record) {
+            if (!is_array($record) || !$this->isDnssecRecord($record)) {
+                continue;
+            }
+
+            $normalizedRecord = array_change_key_case($record, CASE_LOWER);
+            $values = [
+                'ds_key_tag' => (int)$normalizedRecord['keytag'],
+                'ds_algorithm' => (int)($normalizedRecord['algorithm'] ?? $normalizedRecord['algoirthm']),
+                'ds_digest_type' => (int)$normalizedRecord['digesttype'],
+                'ds_digest' => (string)$normalizedRecord['digest'],
+            ];
+
+            $providerRecordId = $normalizedRecord['uuid'] ?? (!$recordsAreList ? $recordId : null);
+            $result[] = [
+                'uuid' => $providerRecordId !== null && $providerRecordId !== ''
+                    ? (string)$providerRecordId
+                    : null,
+                'record' => Dnssec::create($values),
+            ];
+        }
+
+        return $result;
+    }
+
+    private function isDnssecRecord(array $values): bool
+    {
+        $normalizedValues = array_change_key_case($values, CASE_LOWER);
+
+        return array_key_exists('keytag', $normalizedValues)
+            && (array_key_exists('algorithm', $normalizedValues) || array_key_exists('algoirthm', $normalizedValues))
+            && array_key_exists('digesttype', $normalizedValues)
+            && array_key_exists('digest', $normalizedValues);
+    }
+
+    /**
+     * @param array<int,string> $names
+     */
+    private function dnssecValueLabel(int $value, array $names): string
+    {
+        return isset($names[$value])
+            ? sprintf('%d (%s)', $value, $names[$value])
+            : (string)$value;
     }
 
     /**

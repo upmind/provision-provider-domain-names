@@ -125,7 +125,12 @@ class Provider extends DomainNames implements ProviderInterface
         $contacts = $this->getRegisterParams($contactParams);
 
         try {
-            $this->api()->register($domainName, $contacts, $params->nameservers->pluckHosts());
+            $this->api()->register(
+                $domainName,
+                $contacts,
+                $params->nameservers->pluckHosts(),
+                !empty($params->renew_years) ? (int) $params->renew_years : 12 // default to 12 months if not specified or 0.
+            );
 
             return $this->_getInfo($domainName, sprintf('Domain %s was registered successfully!', $domainName));
         } catch (\Throwable $e) {
@@ -243,7 +248,12 @@ class Provider extends DomainNames implements ProviderInterface
         try {
             $contacts = $this->getRegisterParams($contactParams);
 
-            $transferId = $this->api()->initiateTransfer($domainName, $eppCode, $contacts);
+            $transferId = $this->api()->initiateTransfer(
+                $domainName,
+                $eppCode,
+                $contacts,
+                !empty($params->renew_years) ? (int) ($params->renew_years) : null
+            );
 
             try {
                 return $this->_getInfo($domainName, 'Domain active in registrar account');

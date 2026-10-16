@@ -106,10 +106,11 @@ class RealtimeRegisterApi
     /**
      * @param array<string,int>|string[] $contacts
      * @param string[] $nameservers
+     * @param int $period Registration period in years
      *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function register(string $domainName, array $contacts, array $nameservers): void
+    public function register(string $domainName, array $contacts, array $nameservers, int $period): void
     {
         $command = "/v2/domains/{$domainName}";
 
@@ -127,7 +128,7 @@ class RealtimeRegisterApi
 
         $body = [
             'customer' => $this->configuration->customer,
-            'period' => 12,
+            'period' => $period * 12, // convert years to months
             'registrant' => $contacts[self::CONTACT_TYPE_REGISTRANT],
             'contacts' => $queryContacts,
             'ns' => $nameservers,
@@ -384,6 +385,8 @@ class RealtimeRegisterApi
     }
 
     /**
+     * @param int $period Renewal period in years
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function renew(string $domainName, int $period): void
@@ -561,9 +564,11 @@ class RealtimeRegisterApi
     }
 
     /**
+     * @param int|null $period Transfer period in years; defaults to 1 year if null
+     *
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    public function initiateTransfer(string $domainName, string $eppCode, array $contacts): string
+    public function initiateTransfer(string $domainName, string $eppCode, array $contacts, ?int $period = null): string
     {
         $command = "/v2/domains/{$domainName}/transfer";
 
@@ -582,7 +587,7 @@ class RealtimeRegisterApi
         $body = [
             'customer' => $this->configuration->customer,
             'registrant' => $contacts[self::CONTACT_TYPE_REGISTRANT],
-            'period' => 12,
+            'period' => $period === null ? 12 : $period * 12, // convert years to months
             'contacts' => $queryContacts,
             'authcode' => $eppCode,
         ];

@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.33.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.6) - 2026-10-16
+
+- Update Realtime Register provider to remove `organization` field from the technical contact in `.si` tld related operations.
+- Fix Realtime Register provider to correctly use `period` parameter for `register` & `transfer` operations.
+
 ## [v2.33.5](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.5) - 2026-10-08
 
 - Update Ascio provider `getInfo` to throw error if domain is deleted from account

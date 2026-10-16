@@ -37,6 +37,7 @@ use Upmind\ProvisionProviders\DomainNames\Data\UpdateContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateDomainContactParams;
 use Upmind\ProvisionProviders\DomainNames\Data\UpdateNameserversParams;
 use Upmind\ProvisionProviders\DomainNames\Data\StatusResult;
+use Upmind\ProvisionProviders\DomainNames\RealtimeRegister\Helper\Tlds\AllowsOrganisationTechnicalContact;
 use Upmind\ProvisionProviders\DomainNames\RealtimeRegister\Data\Configuration;
 use Upmind\ProvisionProviders\DomainNames\Helper\Utils;
 use Upmind\ProvisionProviders\DomainNames\RealtimeRegister\Helper\RealtimeRegisterApi;
@@ -128,7 +129,7 @@ class Provider extends DomainNames implements ProviderInterface
             'billing' => $params->billing,
         ];
 
-        $contacts = $this->getRegisterParams($contactParams);
+        $contacts = $this->getRegisterParams($contactParams, $tld);
 
         try {
             $this->api()->register(
@@ -147,7 +148,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @return array<string,int>|string[]
      */
-    private function getRegisterParams(array $params): array
+    private function getRegisterParams(array $params, string $tld): array
     {
         if (Arr::has($params, 'registrant.id')) {
             $registrantID = $params['registrant']['id'];
@@ -161,7 +162,7 @@ class Provider extends DomainNames implements ProviderInterface
             }
 
             $registrantID = $this->api()->createContact(
-                $params['registrant']['register'],
+                $params['registrant']['register']
             );
         }
 
@@ -191,9 +192,9 @@ class Provider extends DomainNames implements ProviderInterface
             if (!Arr::has($params, 'tech.register')) {
                 $this->errorResult('Tech contact data is required!');
             }
-
             $techID = $this->api()->createContact(
                 $params['tech']['register'],
+                AllowsOrganisationTechnicalContact::tldIsSupported($tld) === false
             );
         }
 
@@ -248,7 +249,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         try {
-            $contacts = $this->getRegisterParams($contactParams);
+            $contacts = $this->getRegisterParams($contactParams, $tld);
 
             $transferId = $this->api()->initiateTransfer(
                 $domainName,

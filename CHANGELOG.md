@@ -2,6 +2,12 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.34.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.34.0) - 2026-10-20
+
+- Add DNSSEC DS record management with Synergy Wholesale support.
+- Add `enableDnssec()` and `disableDnssec()` category functions; unsupported providers return "Operation not supported".
+- Add nullable `dnssec` DS record data to `DomainResult`.
+
 ## [v2.33.6](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.33.6) - 2026-10-16
 
 - Update Realtime Register provider to remove `organization` field from the technical contact in `.si` tld related operations.

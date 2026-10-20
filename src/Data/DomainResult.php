@@ -23,6 +23,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read ContactData|null $admin Admin contact
  * @property-read NameserversParams $ns Nameservers
  * @property-read GlueRecord[]|null $glue_records Glue records
+ * @property-read Dnssec|null $dnssec DNSSEC Delegation Signer record
  * @property-read string $created_at Date of creation in format - Y-m-d H:i:s
  * @property-read string $updated_at Date of last update in format - Y-m-d H:i:s
  * @property-read string $expires_at Date of domain renewing in format - Y-m-d H:i:s
@@ -40,6 +41,15 @@ class DomainResult extends ResultData
      * The operation has completed and the returned data reflects the final state.
      */
     public const OPERATION_COMPLETE = 'complete';
+
+    public function __construct($values = [], bool $autoValidation = true)
+    {
+        parent::__construct($values, $autoValidation);
+
+        if (!$this->has('dnssec')) {
+            $this->setDnssec(null);
+        }
+    }
 
     public static function rules(): Rules
     {
@@ -60,6 +70,7 @@ class DomainResult extends ResultData
             'ns' => ['present', NameserversParams::class],
             'glue_records' => ['nullable', 'array'],
             'glue_records.*' => [GlueRecord::class],
+            'dnssec' => ['present', 'nullable', Dnssec::class],
             'created_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'updated_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
             'expires_at' => ['present', 'nullable', 'date_format:Y-m-d H:i:s'],
@@ -195,6 +206,17 @@ class DomainResult extends ResultData
     public function setGlueRecords($glueRecords)
     {
         $this->setValue('glue_records', $glueRecords);
+        return $this;
+    }
+
+    /**
+     * @param Dnssec|array|null $dnssec
+     *
+     * @return static $this
+     */
+    public function setDnssec($dnssec)
+    {
+        $this->setValue('dnssec', $dnssec);
         return $this;
     }
 

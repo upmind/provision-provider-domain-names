@@ -16,6 +16,8 @@ use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DisableDnssecParams;
+use Upmind\ProvisionProviders\DomainNames\Data\EnableDnssecParams;
 use Upmind\ProvisionProviders\DomainNames\Data\EppCodeResult;
 use Upmind\ProvisionProviders\DomainNames\Data\EppParams;
 use Upmind\ProvisionProviders\DomainNames\Data\IpsTagParams;
@@ -339,6 +341,22 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function removeGlueRecord(RemoveGlueRecordParams $params): GlueRecordsResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function enableDnssec(EnableDnssecParams $params): DomainResult
+    {
+        $this->errorResult('Operation not supported', $params);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function disableDnssec(DisableDnssecParams $params): DomainResult
     {
         $this->errorResult('Operation not supported', $params);
     }

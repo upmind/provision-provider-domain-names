@@ -89,6 +89,8 @@ The following providers are currently implemented:
 | resendVerificationEmail() | [_ResendVerificationParams_](src/Data/ResendVerificationParams.php)   | [_ResendVerificationResult_](src/Data/ResendVerificationResult.php) | Resend the verification email for a domain name                                                           |
 | setGlueRecord()           | [_SetGlueRecordParams_](src/Data/SetGlueRecordParams.php)             | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Set a glue record for a domain name                                                                       |
 | removeGlueRecord()        | [_RemoveGlueRecordParams_](src/Data/RemoveGlueRecordParams.php)       | [_GlueRecordsResult_](src/Data/GlueRecordsResult.php) | Remove a glue record from a domain name                                                                   |
+| enableDnssec()            | [_EnableDnssecParams_](src/Data/EnableDnssecParams.php)               | [_DomainResult_](src/Data/DomainResult.php) | Enable or update DNSSEC for a domain name by setting its DS record                                        |
+| disableDnssec()           | [_DisableDnssecParams_](src/Data/DisableDnssecParams.php)             | [_DomainResult_](src/Data/DomainResult.php) | Disable DNSSEC for a domain name by removing its DS record(s)                                             |
 | getStatus()               | [_DomainInfoParams_](src/Data/DomainInfoParams.php)                   | [_StatusResult_](src/Data/StatusResult.php) | Get the current normalized status of a domain name along with the expiry date and raw provider statuses   |
 
 ## Changelog

@@ -64,7 +64,14 @@
         "sort-packages": true,
         "policy": {
             "advisories": {
-                "ignore": ["laravel/framework"]
+                "ignore": [
+                    "laravel/framework",
+                    "league/commonmark",
+                    "league/flysystem",
+                    "symfony/http-foundation",
+                    "symfony/process",
+                    "symfony/routing"
+                ]
             }
         }
     },

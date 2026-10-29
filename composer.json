@@ -60,6 +60,14 @@
             ]
         }
     },
+    "config": {
+        "sort-packages": true,
+        "policy": {
+            "advisories": {
+                "ignore": ["laravel/framework"]
+            }
+        }
+    },
     "minimum-stability": "dev",
     "prefer-stable": true
 }

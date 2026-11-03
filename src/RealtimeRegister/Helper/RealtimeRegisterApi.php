@@ -573,6 +573,10 @@ class RealtimeRegisterApi
             unset($contactData['organization']);
         }
 
+        if (!empty($this->configuration->brand)) {
+            $contactData['brand'] = $this->configuration->brand;
+        }
+
         return $contactData;
     }
 

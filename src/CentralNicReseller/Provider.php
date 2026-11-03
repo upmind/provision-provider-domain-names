@@ -159,7 +159,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @throws \Exception
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
@@ -216,7 +216,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Exception
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
@@ -319,7 +319,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
@@ -333,7 +333,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateContact(UpdateContactParams $params): ContactResult

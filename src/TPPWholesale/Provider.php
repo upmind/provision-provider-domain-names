@@ -8,7 +8,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Exception\TransferException;
 use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -104,7 +104,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -210,7 +210,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @return array<string,int>|string[]
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private function getContactsId(array $params): array
@@ -261,7 +261,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -385,7 +385,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -571,7 +571,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function handleException(Throwable $e): void
     {
-        if (($e instanceof RequestException) && $e->hasResponse()) {
+        if ($e instanceof ResponseException) {
             /** @var \Psr\Http\Message\ResponseInterface $response */
             $response = $e->getResponse();
 

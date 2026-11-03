@@ -9,7 +9,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Exception;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Psr7\Response;
 use UnexpectedValueException;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -104,7 +104,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -152,7 +152,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -211,7 +211,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -250,7 +250,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -274,7 +274,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -356,7 +356,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -440,7 +440,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -455,7 +455,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -529,7 +529,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * Used for profile data changes.
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -577,7 +577,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * Creates contact and returns its ID or `null` for error
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -585,7 +585,7 @@ class Provider extends DomainNames implements ProviderInterface
         string $email,
         string $telephone,
         string $name,
-        string $organization = null,
+        ?string $organization,
         string $address,
         string $postcode,
         string $city,
@@ -597,8 +597,8 @@ class Provider extends DomainNames implements ProviderInterface
         if ($telephone) {
             $telephone = Utils::internationalPhoneToEpp($telephone);
             $phone = phone($telephone);
-            $phoneCode = $phone->getPhoneNumberInstance()->getCountryCode();
-            $phone = $phone->getPhoneNumberInstance()->getNationalNumber();
+            $phoneCode = $phone->toLibPhoneObject()->getCountryCode();
+            $phone = $phone->toLibPhoneObject()->getNationalNumber();
         } else {
             $phoneCode = '';
             $phone = '';
@@ -671,7 +671,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -680,7 +680,7 @@ class Provider extends DomainNames implements ProviderInterface
         string $email,
         string $telephone,
         string $name,
-        string $organization = null,
+        ?string $organization,
         string $address,
         string $postcode,
         string $city,
@@ -689,8 +689,8 @@ class Provider extends DomainNames implements ProviderInterface
         if ($telephone) {
             $telephone = Utils::internationalPhoneToEpp($telephone);
             $phone = phone($telephone);
-            $phoneCode = $phone->getPhoneNumberInstance()->getCountryCode();
-            $phone = $phone->getPhoneNumberInstance()->getNationalNumber();
+            $phoneCode = $phone->toLibPhoneObject()->getCountryCode();
+            $phone = $phone->toLibPhoneObject()->getNationalNumber();
         } else {
             $phoneCode = '';
             $phone = '';
@@ -761,7 +761,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * Creates contact and returns its ID or `null` for error
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -769,7 +769,7 @@ class Provider extends DomainNames implements ProviderInterface
         string $email,
         string $telephone,
         string $name,
-        string $organization = null,
+        ?string $organization,
         string $address,
         string $postcode,
         string $city,
@@ -778,8 +778,8 @@ class Provider extends DomainNames implements ProviderInterface
         if ($telephone) {
             $telephone = Utils::internationalPhoneToEpp($telephone);
             $phone = phone($telephone);
-            $phoneCode = $phone->getPhoneNumberInstance()->getCountryCode();
-            $phone = $phone->getPhoneNumberInstance()->getNationalNumber();
+            $phoneCode = $phone->toLibPhoneObject()->getCountryCode();
+            $phone = $phone->toLibPhoneObject()->getNationalNumber();
         } else {
             $phoneCode = '';
             $phone = '';
@@ -945,7 +945,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function handleException(Throwable $e): void
     {
-        if (($e instanceof RequestException) && $e->hasResponse()) {
+        if ($e instanceof ResponseException) {
             /** @var \Psr\Http\Message\ResponseInterface&\GuzzleHttp\Psr7\Response $response */
             $response = $e->getResponse();
 
@@ -1150,7 +1150,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -1168,8 +1168,8 @@ class Provider extends DomainNames implements ProviderInterface
         if ($telephone) {
             $telephone = Utils::internationalPhoneToEpp($telephone);
             $phone = phone($telephone);
-            $phoneCode = $phone->getPhoneNumberInstance()->getCountryCode();
-            $phone = $phone->getPhoneNumberInstance()->getNationalNumber();
+            $phoneCode = $phone->toLibPhoneObject()->getCountryCode();
+            $phone = $phone->toLibPhoneObject()->getNationalNumber();
         } else {
             $phoneCode = '';
             $phone = '';
@@ -1205,7 +1205,7 @@ class Provider extends DomainNames implements ProviderInterface
      *
      * @return DateTimeInterface New expiry date
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */

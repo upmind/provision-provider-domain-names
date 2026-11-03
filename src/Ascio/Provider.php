@@ -218,7 +218,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @return array<string,int>|string[]
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private function getContactsId(array $params): array
@@ -346,7 +346,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */

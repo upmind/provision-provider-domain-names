@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\Utils as PromiseUtils;
@@ -120,7 +121,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Throwable
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
@@ -171,7 +172,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @return string Contact id
      *
      * @throws \Throwable
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function _handleContact(RegisterContactParams $params): string
@@ -195,7 +196,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Throwable
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
@@ -345,7 +346,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Throwable
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
@@ -785,14 +786,14 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Throwable
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function _createContact(
         string $email,
         string $telephone,
         string $name,
-        string $organization = null,
+        ?string $organization,
         string $address,
         string $postcode,
         string $city,
@@ -829,7 +830,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Throwable
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function _updateContact(
@@ -837,7 +838,7 @@ class Provider extends DomainNames implements ProviderInterface
         string $email,
         string $telephone,
         string $name,
-        string $organization = null,
+        ?string $organization,
         string $address,
         string $postcode,
         string $city,
@@ -882,7 +883,7 @@ class Provider extends DomainNames implements ProviderInterface
     protected function handleException(Throwable $e): void
     {
         if ($e instanceof RequestException) {
-            if ($e->hasResponse()) {
+            if ($e instanceof ResponseException) {
                 /** @var \Psr\Http\Message\ResponseInterface $response */
                 $response = $e->getResponse();
 

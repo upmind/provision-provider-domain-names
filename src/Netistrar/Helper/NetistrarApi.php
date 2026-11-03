@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Upmind\ProvisionProviders\DomainNames\Netistrar\Helper;
 
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\NetworkException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Response;
@@ -674,14 +674,15 @@ class NetistrarApi
                 $errorData = [];
 
                 // If request exception
-                if ($t instanceof RequestException && ($response = $t->getResponse())) {
+                if ($t instanceof ResponseException) {
+                    $response = $t->getResponse();
                     $errorMessage = 'Provider API Response Error: ' . $response->getReasonPhrase();
                     $errorData['http_code'] = $response->getStatusCode();
                     $errorData['response_body'] = $response->getBody()->__toString();
                 }
 
                 // If Connection error, set simple error message
-                if ($t instanceof ConnectException && Str::contains($t->getMessage(), ['timeout', 'timed out'])) {
+                if ($t instanceof NetworkException && Str::contains($t->getMessage(), ['timeout', 'timed out'])) {
                     $errorMessage = 'Provider API request timeout';
                 }
 

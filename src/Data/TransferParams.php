@@ -14,7 +14,7 @@ use Upmind\ProvisionBase\Provider\DataSet\Rules;
  * @property-read string $tld Domain TLD
  * @property-read int $renew_years For how long to be renewed upon transfer
  * @property-read bool|null $whois_privacy Enable WHOIS privacy (should default to true)
- * @property-read string $epp_code EPP code for domain transfer
+ * @property-read string|null $epp_code EPP code for domain transfer
  * @property-read RegisterContactParams|null $registrant Registrant contact data
  * @property-read RegisterContactParams|null $billing Billing contact data
  * @property-read RegisterContactParams|null $tech Tech contact data

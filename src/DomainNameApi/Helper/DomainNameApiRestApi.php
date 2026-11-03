@@ -6,6 +6,7 @@ namespace Upmind\ProvisionProviders\DomainNames\DomainNameApi\Helper;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -752,7 +753,7 @@ class DomainNameApiRestApi implements DomainNameApiInterface
         try {
             $response = $this->client->request($method, $path, $params);
         } catch (RequestException $ex) {
-            $response = $ex->getResponse();
+            $response = $ex instanceof ResponseException ? $ex->getResponse() : null;
 
             $statusCode = $response !== null ? $response->getStatusCode() : 0;
 

@@ -122,7 +122,7 @@ class HexonetApi
     /**
      * @link https://github.com/centralnicgroup-public/hexonet-api-documentation/blob/master/API/DOMAIN/TRANSFERDOMAIN.md
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function initiateTransfer(
@@ -264,7 +264,7 @@ class HexonetApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrant(
@@ -396,7 +396,7 @@ class HexonetApi
      * Transform the given contact params to a params array in the correct format
      * for the Hexonet API.
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function transformContactParams(ContactParams $contact): array
     {

@@ -219,7 +219,7 @@ class TPPWholesaleApi
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function createContact(ContactParams $contactParams): ?string
     {
@@ -327,7 +327,7 @@ class TPPWholesaleApi
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     private function setContactParams(ContactParams $contactParams): array
     {
@@ -436,7 +436,7 @@ class TPPWholesaleApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(string $domainName, ContactParams $contactParams): void
@@ -456,7 +456,7 @@ class TPPWholesaleApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateAdministrationContact(string $domainName, ContactParams $contactParams): void
@@ -476,7 +476,7 @@ class TPPWholesaleApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateTechnicalContact(string $domainName, ContactParams $contactParams): void
@@ -496,7 +496,7 @@ class TPPWholesaleApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateBillingContact(string $domainName, ContactParams $contactParams): void

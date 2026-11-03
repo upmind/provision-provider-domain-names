@@ -126,7 +126,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
@@ -172,7 +172,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function transfer(TransferParams $params): DomainResult
@@ -218,7 +218,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
 //    /**
-//     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+//     * @throws \libphonenumber\NumberParseException
 //     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
 //     */
 //    public function initiateTransfer(TransferParams $params): InitiateTransferResult
@@ -272,7 +272,7 @@ class Provider extends DomainNames implements ProviderInterface
 //    }
 //
 //    /**
-//     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+//     * @throws \libphonenumber\NumberParseException
 //     * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
 //     */
 //    public function finishTransfer(FinishTransferParams $params): DomainResult
@@ -349,7 +349,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -364,7 +364,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */

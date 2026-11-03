@@ -86,7 +86,7 @@ class GoDaddyApi
      * @param string[] $nameServers
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(string $domainName, int $years, array $contacts, array $nameServers): void
@@ -119,7 +119,7 @@ class GoDaddyApi
      * @param array<string,ContactParams|null> $contacts
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function initiateTransfer(string $domainName, string $eppCode, array $contacts, int $period): string
@@ -238,7 +238,7 @@ class GoDaddyApi
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      *
      * @deprecated Use updateContact with ContactType::REGISTRANT() instead.
@@ -257,7 +257,7 @@ class GoDaddyApi
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \libphonenumber\NumberParseException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateContact(
@@ -304,7 +304,7 @@ class GoDaddyApi
 
     /**
      * @throws \libphonenumber\NumberParseException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     private function setContactParams(ContactParams $contactParams, string $type): array
     {

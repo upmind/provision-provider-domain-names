@@ -139,7 +139,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -200,7 +200,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -266,7 +266,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -350,7 +350,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -600,9 +600,9 @@ class Provider extends DomainNames implements ProviderInterface
 
         if ($telephone) {
             $phone = phone($telephone);
-            $phoneCode = '+' . $phone->getPhoneNumberInstance()->getCountryCode();
-            $phoneArea = substr($phone->getPhoneNumberInstance()->getNationalNumber(), 0, 3);
-            $phone = substr($phone->getPhoneNumberInstance()->getNationalNumber(), 3);
+            $phoneCode = '+' . $phone->toLibPhoneObject()->getCountryCode();
+            $phoneArea = substr($phone->toLibPhoneObject()->getNationalNumber(), 0, 3);
+            $phone = substr($phone->toLibPhoneObject()->getNationalNumber(), 3);
         } else {
             $phoneCode = '';
             $phone = '';
@@ -830,7 +830,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -857,7 +857,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -884,9 +884,9 @@ class Provider extends DomainNames implements ProviderInterface
         if ($telephone) {
             $telephone = Utils::internationalPhoneToEpp($telephone);
             $phone = phone($telephone);
-            $phoneCode = '+' . (string)$phone->getPhoneNumberInstance()->getCountryCode();
-            $phoneArea = substr($phone->getPhoneNumberInstance()->getNationalNumber(), 0, 3);
-            $phone = substr($phone->getPhoneNumberInstance()->getNationalNumber(), 3);
+            $phoneCode = '+' . (string)$phone->toLibPhoneObject()->getCountryCode();
+            $phoneArea = substr($phone->toLibPhoneObject()->getNationalNumber(), 0, 3);
+            $phone = substr($phone->toLibPhoneObject()->getNationalNumber(), 3);
         } else {
             $phoneCode = '';
             $phone = '';

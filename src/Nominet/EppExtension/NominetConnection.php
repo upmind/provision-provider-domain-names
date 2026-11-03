@@ -17,7 +17,7 @@ class NominetConnection extends eppConnection
      */
     protected $logger;
 
-    public function __construct(bool $logging = false, string $settingsFile = null)
+    public function __construct(bool $logging = false, ?string $settingsFile = null)
     {
         parent::__construct($logging, $settingsFile);
 

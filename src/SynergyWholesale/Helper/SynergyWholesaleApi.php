@@ -285,7 +285,8 @@ class SynergyWholesaleApi
         }
 
         $result = [];
-        $recordsAreList = array_is_list($records);
+        // Check if the records array is a list (numeric keys, instead of associated keys).
+        $recordsAreList = $records === array_values($records);
 
         foreach ($records as $recordId => $record) {
             if (!is_array($record) || !$this->isDnssecRecord($record)) {

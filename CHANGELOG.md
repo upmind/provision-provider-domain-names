@@ -2,6 +2,10 @@
 
 All notable changes to the package will be documented in this file.
 
+## [v2.12.92](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.92) - 2026-11-03
+
+- Fix DNSSec functions using PHP function incompatible with PHP 7.4
+
 ## [v2.12.91](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.91) - 2026-10-20
 
 - Add DNSSEC DS record management with Synergy Wholesale support.

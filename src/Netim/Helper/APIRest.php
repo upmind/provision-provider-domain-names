@@ -995,7 +995,7 @@ class APIRest
         string $ns4,
         string $ns5,
         int $duration,
-        int $templateDNS = null
+        ?int $templateDNS = null
     ): stdClass {
         $domain = strtolower($domain);
 

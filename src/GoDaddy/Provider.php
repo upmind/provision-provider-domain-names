@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
@@ -270,7 +271,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -395,7 +396,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function handleException(Throwable $e, $params = null): void
     {
-        if (($e instanceof RequestException) && $e->hasResponse()) {
+        if ($e instanceof ResponseException) {
             /** @var \Psr\Http\Message\ResponseInterface $response */
             $response = $e->getResponse();
 
@@ -586,7 +587,7 @@ class Provider extends DomainNames implements ProviderInterface
     protected function isDomainNotFoundException(Throwable $e): bool
     {
         do {
-            if ($e instanceof RequestException && $e->hasResponse()) {
+            if ($e instanceof ResponseException) {
                 $response = $e->getResponse();
                 $data = json_decode($response->getBody()->__toString(), true);
                 if ($response->getStatusCode() === 404 && Str::contains(strtolower($data['message'] ?? ''), 'domain')) {

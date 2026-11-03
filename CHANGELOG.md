@@ -2,6 +2,20 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Require PHP 8.3; support PHP 8.3, 8.4 and 8.5.
+- Require Laravel 13 (`illuminate/support` ^13.0).
+- Require `guzzlehttp/guzzle` ^8.0 and `upmind/provision-provider-base` ^5.0.
+- Require `propaganistas/laravel-phone` ^6.0 and a Laravel 13 compatible `upmind/pragmarx-countries` release.
+- Update dev dependencies to `orchestra/testbench` ^11.0, `phpstan/phpstan` ^2.0 and `phpunit/phpunit` ^12.0 || ^13.0.
+- Read Guzzle error responses from `ResponseException` only. Guzzle 8 removed `RequestException::getResponse()`.
+- Catch Guzzle `NetworkException` instead of `ConnectException` in OpusDNS and Netistrar, so read timeouts keep the same handling.
+- Send the InternetX `X-Domainrobot-Context` header as a string.
+- Use `PhoneNumber::toLibPhoneObject()` in LogicBoxes and OpenProvider. laravel-phone 6 removed `getPhoneNumberInstance()`.
+- Remove the `getGuzzleHandlerStack()` argument in Hexonet. Base v5 removed it.
+- Declare nullable parameters explicitly (PHP 8.4 deprecation).
+
 ## [v2.34.0](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.34.0) - 2026-10-20
 
 - Add DNSSEC DS record management with Synergy Wholesale support.

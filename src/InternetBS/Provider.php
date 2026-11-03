@@ -163,7 +163,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -247,7 +247,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -262,7 +262,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */

@@ -35,7 +35,7 @@ class EppConnection extends BaseEppConnection
      */
     protected $logger;
 
-    public function __construct(bool $logging = false, string $settingsFile = null)
+    public function __construct(bool $logging = false, ?string $settingsFile = null)
     {
         // Call parent's constructor
         parent::__construct($logging, $settingsFile);

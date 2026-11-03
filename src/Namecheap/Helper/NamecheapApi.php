@@ -103,7 +103,7 @@ class NamecheapApi
      * @return void
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -232,7 +232,7 @@ class NamecheapApi
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \InvalidArgumentException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -262,7 +262,7 @@ class NamecheapApi
     /**
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \InvalidArgumentException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -687,7 +687,7 @@ class NamecheapApi
      *
      * @return array
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     private function setContactParams(ContactParams $contactParams, string $type): array
     {

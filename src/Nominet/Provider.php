@@ -199,7 +199,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
@@ -345,7 +345,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(UpdateDomainContactParams $params): ContactResult
@@ -359,7 +359,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateContact(UpdateContactParams $params): ContactResult
@@ -631,7 +631,7 @@ class Provider extends DomainNames implements ProviderInterface
      * Creates contact and returns its ID
      *
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function _createContact(
@@ -643,9 +643,9 @@ class Provider extends DomainNames implements ProviderInterface
         string $postcode,
         string $city,
         string $countryCode,
-        string $nominetContactType = null,
-        string $tradingName = null,
-        string $companyNumber = null
+        ?string $nominetContactType = null,
+        ?string $tradingName = null,
+        ?string $companyNumber = null
     ): string {
         $telephone = Utils::internationalPhoneToEpp($telephone);
         $countryCode = $this->normalizeCountryCode($countryCode);
@@ -935,7 +935,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function _updateContact(
@@ -1020,7 +1020,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Metaregistrar\EPP\eppException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
-    protected function createHost(string $host, string $ip = null): void
+    protected function createHost(string $host, ?string $ip = null): void
     {
         $create = new eppCreateHostRequest(new eppHost($host, $ip));
 

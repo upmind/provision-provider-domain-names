@@ -62,7 +62,7 @@ class EuroDNSApi
      */
     private $request;
 
-    public function __construct(Configuration $configuration, LoggerInterface $logger = null)
+    public function __construct(Configuration $configuration, ?LoggerInterface $logger = null)
     {
         $this->configuration = $configuration;
         $this->logger = $logger;

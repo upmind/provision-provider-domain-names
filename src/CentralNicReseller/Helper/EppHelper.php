@@ -424,7 +424,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function updateRegistrantContact(string $domainName, ContactParams $params): ContactData
     {
@@ -451,7 +451,7 @@ class EppHelper
      * - Admin, Tech, Billing contacts are Added (you can have multiple contacts, don't forget to remove the old ones)
      *
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function updateContact(string $domainName, ContactParams $params, ContactType $contactType): ContactData
     {
@@ -510,7 +510,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function createContact(ContactParams $params): string
     {
@@ -658,7 +658,7 @@ class EppHelper
     /**
      * @throws \Metaregistrar\EPP\eppException
      */
-    private function createHost(string $host, string $ip = null): void
+    private function createHost(string $host, ?string $ip = null): void
     {
         $create = new eppCreateHostRequest(new eppHost($host, $ip));
 

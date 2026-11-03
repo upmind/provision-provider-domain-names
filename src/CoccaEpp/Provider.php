@@ -227,7 +227,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Exception
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult
@@ -425,7 +425,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \libphonenumber\NumberParseException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Exception
      */
@@ -878,7 +878,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @return string Contact id
      *
      * @throws \libphonenumber\NumberParseException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     private function createContact(ContactParams $contact): string
     {

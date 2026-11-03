@@ -73,7 +73,7 @@ class OpusDnsResponseFactory
     /**
      * Nameservers array matching Nameserver schema.
      */
-    public static function nameserversArray(array $hostnames = null): array
+    public static function nameserversArray(?array $hostnames = null): array
     {
         $hostnames = $hostnames ?? ['ns1.example.com', 'ns2.example.com'];
 

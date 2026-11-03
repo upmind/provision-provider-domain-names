@@ -459,7 +459,7 @@ class RealtimeRegisterApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(string $domainName, ContactParams $contactParams): ContactData
@@ -476,7 +476,7 @@ class RealtimeRegisterApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateDomainContact(
@@ -537,7 +537,7 @@ class RealtimeRegisterApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function createContact(ContactParams $params, bool $removeOrganisationField = false): string
@@ -552,7 +552,7 @@ class RealtimeRegisterApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private function setContactParams(ContactParams $contactParams, bool $removeOrganisationField = false): array

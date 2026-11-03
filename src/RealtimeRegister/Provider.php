@@ -6,6 +6,7 @@ namespace Upmind\ProvisionProviders\DomainNames\RealtimeRegister;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use Throwable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -98,7 +99,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -144,7 +145,7 @@ class Provider extends DomainNames implements ProviderInterface
     /**
      * @return array<string,int>|string[]
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private function getRegisterParams(array $params, string $tld): array
@@ -222,7 +223,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -321,7 +322,7 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \Throwable
      */
@@ -482,7 +483,7 @@ class Provider extends DomainNames implements ProviderInterface
      */
     protected function handleException(Throwable $e, $params = null): void
     {
-        if (($e instanceof RequestException) && $e->hasResponse()) {
+        if ($e instanceof ResponseException) {
             /** @var \Psr\Http\Message\ResponseInterface $response */
             $response = $e->getResponse();
             $reason = $response->getReasonPhrase();
@@ -504,7 +505,7 @@ class Provider extends DomainNames implements ProviderInterface
     public function getRequestExceptionMessage($e): ?string
     {
         $message = null;
-        if (($e instanceof RequestException) && $e->hasResponse()) {
+        if ($e instanceof ResponseException) {
             /** @var \Psr\Http\Message\ResponseInterface $response */
             $response = $e->getResponse();
             $responseBody = $response->getBody()->__toString();

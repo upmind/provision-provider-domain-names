@@ -7,8 +7,9 @@ namespace Upmind\ProvisionProviders\DomainNames\OpusDNS\Helper;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\NetworkException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Exception\ServerException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -93,7 +94,7 @@ class OpusDnsApi
             throw $this->handleApiException($e);
         } catch (ServerException $e) {
             throw $this->handleApiException($e);
-        } catch (ConnectException $e) {
+        } catch (NetworkException $e) {
             throw ProvisionFunctionError::create('OpusDNS API connection failed: ' . $e->getMessage(), $e)
                 ->withData(['exception' => get_class($e)]);
         } catch (RequestException $e) {
@@ -111,7 +112,7 @@ class OpusDnsApi
      */
     protected function handleApiException(RequestException $e): ProvisionFunctionError
     {
-        $response = $e->getResponse();
+        $response = $e instanceof ResponseException ? $e->getResponse() : null;
         $statusCode = $response ? $response->getStatusCode() : 0;
         $responseBody = $response ? json_decode((string) $response->getBody(), true) : null;
 
@@ -666,7 +667,7 @@ class OpusDnsApi
     /**
      * Initiate a domain transfer.
      *
-     * @param array<string, ContactParams> $contacts Keyed by contact type
+     * @param array<string, ContactParams|null> $contacts Keyed by contact type
      * @return array API response
      */
     public function transferDomain(

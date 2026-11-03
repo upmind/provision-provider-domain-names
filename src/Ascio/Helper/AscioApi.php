@@ -56,7 +56,7 @@ class AscioApi
     /**
      * @throws \SoapFault
      */
-    public function makeRequest(string $command, ?array $params = null, string $responseField = null): ?array
+    public function makeRequest(string $command, ?array $params = null, ?string $responseField = null): ?array
     {
         if ($params) {
             if ($command === 'createOrder') {
@@ -348,7 +348,7 @@ class AscioApi
 
     /**
      * @throws \SoapFault
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function register(
         string $domainName,
@@ -421,7 +421,7 @@ class AscioApi
 
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws NumberParseException|\SoapFault
      */
     public function updateRegistrantContact(string $domainName, ContactParams $registrantParams): ContactData
@@ -445,7 +445,7 @@ class AscioApi
 
     /**
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws NumberParseException
      */
     private function setContactParams(ContactParams $contactParams): array
@@ -485,7 +485,7 @@ class AscioApi
     /**
      * @throws \SoapFault
      * @throws NumberParseException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function initiateTransfer(string $domainName, string $eppCode, array $contacts, array $nameServers): array
     {
@@ -663,7 +663,7 @@ class AscioApi
 
     /**
      * @throws \SoapFault
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws NumberParseException
      */
     public function createContact(ContactParams $contactParams): ?string
@@ -680,7 +680,7 @@ class AscioApi
 
     /**
      * @throws \SoapFault
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws NumberParseException
      */
     public function createRegistrant(ContactParams $contactParams): ?string
@@ -696,7 +696,7 @@ class AscioApi
 
     /**
      * @throws \SoapFault
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws NumberParseException
      */
     public function updateContact(

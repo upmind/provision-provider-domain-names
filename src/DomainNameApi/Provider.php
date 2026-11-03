@@ -98,7 +98,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \libphonenumber\NumberParseException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(RegisterDomainParams $params): DomainResult

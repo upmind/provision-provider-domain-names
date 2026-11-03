@@ -107,7 +107,7 @@ class CentralNicResellerApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function initiateTransfer(
@@ -172,7 +172,7 @@ class CentralNicResellerApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     private function transformContactParams(ContactParams $contact): array
     {
@@ -196,7 +196,7 @@ class CentralNicResellerApi
     /**
      * @return string Contact ID
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function createContact(ContactParams $contact): string
@@ -207,7 +207,7 @@ class CentralNicResellerApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(

@@ -371,7 +371,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function updateRegistrantContact(string $domainName, ContactParams $params): ContactData
     {
@@ -395,7 +395,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function updateContact(string $domainName, ContactParams $params, ContactType $contactType): ContactData
     {
@@ -453,7 +453,7 @@ class EppHelper
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     private function setUpdateContactParams(ContactParams $params): eppContact
     {
@@ -535,7 +535,7 @@ class EppHelper
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     public function createContact(ContactParams $params, string $type): string
     {

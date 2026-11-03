@@ -20,7 +20,7 @@ class EppHelperTest extends TestCase
         $contactId = 'TEST123';
 
         // Mock the EPP response
-        $mockResponse = $this->createMock(eppInfoContactResponse::class);
+        $mockResponse = $this->createStub(eppInfoContactResponse::class);
         $mockResponse->method('getContactName')->willReturn('John Doe');
         $mockResponse->method('getContactEmail')->willReturn('john@example.com');
         $mockResponse->method('getContactVoice')->willReturn('+1.1234567890');
@@ -31,16 +31,16 @@ class EppHelperTest extends TestCase
         $mockResponse->method('getContactZipcode')->willReturn('12345');
         $mockResponse->method('getContactCountrycode')->willReturn(null);
 
-        $mockContact = $this->createMock(eppContact::class);
+        $mockContact = $this->createStub(eppContact::class);
         $mockContact->method('getType')->willReturn('loc');
         $mockResponse->method('getContact')->willReturn($mockContact);
 
         // Mock the connection
-        $mockConnection = $this->createMock(EppConnection::class);
+        $mockConnection = $this->createStub(EppConnection::class);
         $mockConnection->method('request')->willReturn($mockResponse);
 
         // Mock the configuration
-        $mockConfiguration = $this->createMock(Configuration::class);
+        $mockConfiguration = $this->createStub(Configuration::class);
 
         // Create EppHelper instance with mocked dependencies
         $eppHelper = new EppHelper($mockConnection, $mockConfiguration);
@@ -57,7 +57,7 @@ class EppHelperTest extends TestCase
         $contactId = 'TEST123';
 
         // Mock the EPP response
-        $mockResponse = $this->createMock(eppInfoContactResponse::class);
+        $mockResponse = $this->createStub(eppInfoContactResponse::class);
         $mockResponse->method('getContactName')->willReturn('John Doe');
         $mockResponse->method('getContactEmail')->willReturn('john@example.com');
         $mockResponse->method('getContactVoice')->willReturn('+1.1234567890');
@@ -68,16 +68,16 @@ class EppHelperTest extends TestCase
         $mockResponse->method('getContactZipcode')->willReturn('12345');
         $mockResponse->method('getContactCountrycode')->willReturn('XX');
 
-        $mockContact = $this->createMock(eppContact::class);
+        $mockContact = $this->createStub(eppContact::class);
         $mockContact->method('getType')->willReturn('loc');
         $mockResponse->method('getContact')->willReturn($mockContact);
 
         // Mock the connection
-        $mockConnection = $this->createMock(EppConnection::class);
+        $mockConnection = $this->createStub(EppConnection::class);
         $mockConnection->method('request')->willReturn($mockResponse);
 
         // Mock the configuration
-        $mockConfiguration = $this->createMock(Configuration::class);
+        $mockConfiguration = $this->createStub(Configuration::class);
 
         // Create EppHelper instance with mocked dependencies
         $eppHelper = new EppHelper($mockConnection, $mockConfiguration);
@@ -94,7 +94,7 @@ class EppHelperTest extends TestCase
         $contactId = 'TEST123';
 
         // Mock the EPP response
-        $mockResponse = $this->createMock(eppInfoContactResponse::class);
+        $mockResponse = $this->createStub(eppInfoContactResponse::class);
         $mockResponse->method('getContactName')->willReturn('John Doe');
         $mockResponse->method('getContactEmail')->willReturn('john@example.com');
         $mockResponse->method('getContactVoice')->willReturn('+52.1234567890');
@@ -105,16 +105,16 @@ class EppHelperTest extends TestCase
         $mockResponse->method('getContactZipcode')->willReturn('01000');
         $mockResponse->method('getContactCountrycode')->willReturn('MX');
 
-        $mockContact = $this->createMock(eppContact::class);
+        $mockContact = $this->createStub(eppContact::class);
         $mockContact->method('getType')->willReturn('loc');
         $mockResponse->method('getContact')->willReturn($mockContact);
 
         // Mock the connection
-        $mockConnection = $this->createMock(EppConnection::class);
+        $mockConnection = $this->createStub(EppConnection::class);
         $mockConnection->method('request')->willReturn($mockResponse);
 
         // Mock the configuration
-        $mockConfiguration = $this->createMock(Configuration::class);
+        $mockConfiguration = $this->createStub(Configuration::class);
 
         // Create EppHelper instance with mocked dependencies
         $eppHelper = new EppHelper($mockConnection, $mockConfiguration);
@@ -131,11 +131,11 @@ class EppHelperTest extends TestCase
         $contactId = 'NONEXISTENT';
 
         // Mock the connection to throw 2303 error (Object does not exist)
-        $mockConnection = $this->createMock(EppConnection::class);
+        $mockConnection = $this->createStub(EppConnection::class);
         $mockConnection->method('request')->willThrowException(new eppException('Object does not exist', 2303));
 
         // Mock the configuration
-        $mockConfiguration = $this->createMock(Configuration::class);
+        $mockConfiguration = $this->createStub(Configuration::class);
 
         // Create EppHelper instance with mocked dependencies
         $eppHelper = new EppHelper($mockConnection, $mockConfiguration);

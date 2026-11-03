@@ -11,6 +11,7 @@ use Throwable;
 use UnexpectedValueException;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use Illuminate\Support\Str;
 use Upmind\ProvisionBase\Exception\ProvisionFunctionError;
 use Upmind\ProvisionBase\Provider\Contract\ProviderInterface;
@@ -646,7 +647,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         if ($e instanceof RequestException) {
-            $response = $e->getResponse();
+            $response = $e instanceof ResponseException ? $e->getResponse() : null;
             $statusCode = $response ? $response->getStatusCode() : 0;
             $responseBody = $response ? json_decode((string) $response->getBody(), true) : null;
 

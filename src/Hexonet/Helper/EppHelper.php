@@ -258,7 +258,7 @@ class EppHelper
      * Updating a contact
      *
      * @throws \Metaregistrar\EPP\eppException If command fails
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException If phone number is invalid
+     * @throws \libphonenumber\NumberParseException If phone number is invalid
      */
     public static function updateDomainContact(
         eppConnection $connection,
@@ -357,7 +357,7 @@ class EppHelper
      * Create Contact for a domain
      *
      * @throws \Metaregistrar\EPP\eppException If command fails
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException If phone number is invalid
+     * @throws \libphonenumber\NumberParseException If phone number is invalid
      */
     public static function createContact(
         eppConnection $connection,
@@ -842,7 +842,7 @@ class EppHelper
         }
     }
 
-    public static function createHost(eppConnection $connection, string $host, string $ip = null): bool
+    public static function createHost(eppConnection $connection, string $host, ?string $ip = null): bool
     {
         try {
             $create = new eppCreateHostRequest(new eppHost($host, $ip));

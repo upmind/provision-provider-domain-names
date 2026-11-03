@@ -71,7 +71,7 @@ class DomainNameApiSoapApi implements DomainNameApiInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function registerWithContactInfo(RegisterDomainParams $params): DomainResult
@@ -408,7 +408,7 @@ class DomainNameApiSoapApi implements DomainNameApiInterface
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      */
     private function contactParamsToSoap(ContactParams $params): ContactInfo
     {

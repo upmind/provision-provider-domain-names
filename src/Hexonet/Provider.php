@@ -169,7 +169,7 @@ class Provider extends DomainNames implements ProviderInterface
         }
 
         $dac = new Dac($this->configuration, new Client([
-            'handler' => $this->getGuzzleHandlerStack(!!$this->configuration->sandbox),
+            'handler' => $this->getGuzzleHandlerStack(),
         ]));
 
         return $dac->search($params->sld, $params->tlds);
@@ -192,7 +192,7 @@ class Provider extends DomainNames implements ProviderInterface
      *
      * @throws \Exception
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -388,7 +388,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @throws \Exception
      * @throws \DOMException
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -638,7 +638,7 @@ class Provider extends DomainNames implements ProviderInterface
      * Update Registrant Contact for a given domain
      *
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -664,7 +664,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      * @throws \RuntimeException
      */
@@ -692,7 +692,7 @@ class Provider extends DomainNames implements ProviderInterface
      * @param string $contactType One of: reg, billing, admin, tech
      *
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      *
@@ -821,7 +821,7 @@ class Provider extends DomainNames implements ProviderInterface
 
     /**
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \RuntimeException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
@@ -856,7 +856,7 @@ class Provider extends DomainNames implements ProviderInterface
      * Update Contact Details
      *
      * @throws \Metaregistrar\EPP\eppException
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     protected function updateDomainContact(string $contactId, ContactParams $params): ContactResult
@@ -1044,7 +1044,6 @@ class Provider extends DomainNames implements ProviderInterface
 
         $this->migratedProvider->setLogger($this->getLogger());
 
-        /** @var \Upmind\ProvisionBase\Provider\Contract\ProviderInterface&\Upmind\ProvisionProviders\DomainNames\Category */
         return $this->migratedProvider;
     }
 

@@ -244,7 +244,7 @@ class InternetBSApi
      * @param ContactParams[] $contacts
      * @param string[] $nameServers
      *
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function register(string $domainName, int $years, array $contacts, array $nameServers): void
@@ -264,7 +264,7 @@ class InternetBSApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     private function setContactParams(ContactParams $contactParams, string $type): array
@@ -356,7 +356,7 @@ class InternetBSApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateRegistrantContact(string $domainName, ContactParams $contactParams): ContactData
@@ -375,7 +375,7 @@ class InternetBSApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function updateContact(
@@ -414,7 +414,7 @@ class InternetBSApi
     }
 
     /**
-     * @throws \Propaganistas\LaravelPhone\Exceptions\NumberParseException
+     * @throws \libphonenumber\NumberParseException
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function initiateTransfer(string $domainName, string $eppCode, array $contacts): string

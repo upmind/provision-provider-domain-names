@@ -23,6 +23,7 @@ use Upmind\ProvisionBase\Provider\DataSet\AboutData;
 use Upmind\ProvisionBase\Provider\DataSet\ResultData;
 use Upmind\ProvisionProviders\DomainNames\Category as DomainNames;
 use Upmind\ProvisionProviders\DomainNames\Data\ContactResult;
+use Upmind\ProvisionProviders\DomainNames\Data\DacDomain;
 use Upmind\ProvisionProviders\DomainNames\Data\DacParams;
 use Upmind\ProvisionProviders\DomainNames\Data\DacResult;
 use Upmind\ProvisionProviders\DomainNames\Data\DomainInfoParams;
@@ -103,11 +104,135 @@ class Provider extends DomainNames implements ProviderInterface
     }
 
     /**
+     * @link https://www.namesilo.com/api-reference#domains/check-register-availability
+     * @link https://www.namesilo.com/api-reference#domains/check-transfer-availability
+     *
+     * @throws \Throwable
      * @throws \Upmind\ProvisionBase\Exception\ProvisionFunctionError
      */
     public function domainAvailabilityCheck(DacParams $params): DacResult
     {
-        $this->errorResult('Operation not supported');
+        $sld = Utils::normalizeSld($params->sld);
+
+        $domains = array_values(array_unique(array_map(function (string $tld) use ($sld): string {
+            return Utils::getDomain($sld, $tld);
+        }, $params->tlds)));
+
+        $domainsQuery = ['domains' => implode(',', $domains)];
+
+        [$registerCheck, $transferCheck] = PromiseUtils::all([
+            $this->_callApiPromise($domainsQuery, 'checkRegisterAvailability'),
+            $this->_callApiPromise($domainsQuery, 'checkTransferAvailability'),
+        ])->wait();
+
+        $available = $this->getDacReplyDomains($registerCheck, 'available');
+        $unavailable = $this->getDacReplyDomains($registerCheck, 'unavailable');
+        $invalid = $this->getDacReplyDomains($registerCheck, 'invalid');
+        $transferable = $this->getDacReplyDomains($transferCheck, 'available');
+        $nonTransferable = $this->getDacReplyDomains($transferCheck, 'unavailable');
+
+        $dacDomains = array_map(function (string $domain) use (
+            $available,
+            $unavailable,
+            $invalid,
+            $transferable,
+            $nonTransferable
+        ): DacDomain {
+            $canRegister = isset($available[$domain]);
+            // a domain may be listed as both available and unavailable for transfer, e.g. unsupported TLDs
+            $canTransfer = !$canRegister && isset($transferable[$domain]) && !isset($nonTransferable[$domain]);
+            $isPremium = ($canRegister && (bool) ((int) ($available[$domain]['premium'] ?? 0)) === true)
+                || ($canTransfer && (bool) ((int) ($transferable[$domain]['premium'] ?? 0)) === true);
+
+            $description = $this->getDacDescription(
+                $canRegister,
+                $canTransfer,
+                $isPremium,
+                isset($invalid[$domain]),
+                isset($unavailable[$domain]),
+                $nonTransferable[$domain]['reason'] ?? null
+            );
+
+            return DacDomain::create()
+                ->setDomain($domain)
+                ->setTld(Utils::getTld($domain))
+                ->setCanRegister($canRegister)
+                ->setCanTransfer($canTransfer)
+                ->setIsPremium($isPremium)
+                ->setDescription($description);
+        }, $domains);
+
+        return DacResult::create([
+            'domains' => $dacDomains,
+        ]);
+    }
+
+    /**
+     * Describe a domain's availability, in order of precedence: registration, invalid, transfer, unavailable.
+     *
+     * @param string|null $transferUnavailableReason Reason given by NameSilo when the domain cannot be transferred
+     */
+    private function getDacDescription(
+        bool $canRegister,
+        bool $canTransfer,
+        bool $isPremium,
+        bool $isInvalid,
+        bool $isUnavailable,
+        ?string $transferUnavailableReason
+    ): string {
+        if ($canRegister) {
+            return $isPremium ? 'Premium domain is available to register' : 'Domain is available to register';
+        }
+
+        if ($isInvalid) {
+            return 'Domain name or TLD is invalid or not supported';
+        }
+
+        if ($canTransfer) {
+            return $isPremium
+                ? 'Premium domain is registered and available to transfer'
+                : 'Domain is registered and available to transfer';
+        }
+
+        if ($transferUnavailableReason !== null) {
+            return $transferUnavailableReason;
+        }
+
+        if ($isUnavailable) {
+            return 'Domain is not available to register or transfer';
+        }
+
+        return 'Domain availability could not be determined';
+    }
+
+    /**
+     * Get the domains listed under the given availability group of a check availability reply,
+     * keyed by lowercase domain name, with their XML attributes as values.
+     *
+     * @param SimpleXMLElement $response Parsed checkRegisterAvailability / checkTransferAvailability response
+     * @param string $group One of: available, unavailable, invalid
+     *
+     * @return array<string, array<string, string>>
+     */
+    protected function getDacReplyDomains(SimpleXMLElement $response, string $group): array
+    {
+        $domains = [];
+
+        if (!isset($response->reply->{$group}->domain)) {
+            return $domains;
+        }
+
+        foreach ($response->reply->{$group}->domain as $domain) {
+            $attributes = [];
+
+            foreach ($domain->attributes() as $name => $value) {
+                $attributes[$name] = (string) $value;
+            }
+
+            $domains[strtolower(trim((string) $domain))] = $attributes;
+        }
+
+        return $domains;
     }
 
     /**

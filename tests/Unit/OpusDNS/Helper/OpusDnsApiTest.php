@@ -349,7 +349,7 @@ class OpusDnsApiTest extends TestCase
 
         $requestBody = $this->getRequestBodyAt(1);
         $this->assertArrayHasKey('renewal_mode', $requestBody);
-        $this->assertEquals('renew', $requestBody['renewal_mode']);
+        $this->assertEquals('expire', $requestBody['renewal_mode']);
     }
 
     // =========================================================================

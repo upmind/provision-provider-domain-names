@@ -2,6 +2,11 @@
 
 All notable changes to the package will be documented in this file.
 
+## Unreleased
+
+- Update OpusDNS provider to disable auto-renew (`renewal_mode: expire`) on domain register and transfer.
+- Add WORKFLOW.md requirement that providers must not enable auto-renew on domains by default.
+
 ## [v2.12.92](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.12.92) - 2026-11-03
 
 - Fix DNSSec functions using PHP function incompatible with PHP 7.4

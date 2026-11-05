@@ -69,6 +69,7 @@
                     "league/commonmark",
                     "league/flysystem",
                     "symfony/http-foundation",
+                    "symfony/http-kernel",
                     "symfony/process",
                     "symfony/routing"
                 ]

@@ -2,7 +2,7 @@
 
 All notable changes to the package will be documented in this file.
 
-## Unreleased
+## [v2.34.1](https://github.com/upmind-automation/provision-provider-domain-names/releases/tag/v2.34.1) - 2026-11-05
 
 - Update OpusDNS provider to disable auto-renew (`renewal_mode: expire`) on domain register and transfer.
 

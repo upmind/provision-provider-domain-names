@@ -40,5 +40,6 @@ These are the acceptance criteria for new providers.
 - Throw (or re-throw) normal/expected errors (e.g., data/state/auth issues) as a ProvisionFunctionError using `throw $this->errorResult()` - any other exceptions will be considered unexpected and wrapped in a generic error with a benign message which will be unhelpful to end users
 - Result messages and error messages must be ‘safe’ for end users/customers to read (not contain potentially sensitive information such as  credentials or references to code/classes/files etc) but should still be reasonably helpful. Furthermore for domain names you must **not** expose the provider/registry name in result/error messages because many platforms are re-sold as whitelabelled services
 - Additional information or helpful metadata (e.g. raw API response data) should be returned in successful result debug or error data/debug
+- Do **not** enable auto-renew on domains by default (e.g. on register/transfer), as this can interfere with billing
 - Any changes to `src/Category.php` or in `src/Data/` must be discussed with Upmind prior to the PR
 - Any new 3rd-party dependencies/libraries must be approved by Upmind

@@ -550,7 +550,7 @@ class OpusDnsApi
                 'value' => $years,
             ],
             'nameservers' => array_map(fn($ns) => ['hostname' => $ns], $nameservers),
-            'renewal_mode' => 'renew',
+            'renewal_mode' => 'expire', // never enable auto-renew by default; Upmind handles renewals and billing
         ];
 
         // Map contacts - API expects ContactIdList format: {"registrant": "contact_xxx", ...}
@@ -677,7 +677,7 @@ class OpusDnsApi
         $params = [
             'name' => $domainName,
             'auth_code' => $eppCode,
-            'renewal_mode' => 'renew',
+            'renewal_mode' => 'expire', // never enable auto-renew by default; Upmind handles renewals and billing
         ];
 
         // Map contacts - API expects ContactIdList format: {"registrant": "contact_xxx", ...}

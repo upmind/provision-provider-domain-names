@@ -65,6 +65,10 @@ class ProviderWhoisPrivacyTest extends TestCase
                 'billing' => ['register' => $this->contact()],
                 'admin' => ['register' => $this->contact()],
                 'tech' => ['register' => $this->contact()],
+                'nameservers' => [
+                    'ns1' => ['host' => 'ns1.example.com'],
+                    'ns2' => ['host' => 'ns2.example.com'],
+                ],
             ])));
         });
 

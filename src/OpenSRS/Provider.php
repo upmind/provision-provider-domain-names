@@ -264,7 +264,7 @@ class Provider extends DomainNames implements ProviderInterface
                 'object' => 'DOMAIN',
                 'protocol' => 'XCP',
                 'attributes' => [
-                    'f_whois_privacy' => Utils::tldSupportsWhoisPrivacy($tld) && $params->whois_privacy,
+                    'f_whois_privacy' => $this->getWhoisPrivacyRequestValue($tld, $params->whois_privacy),
                     'domain' => $domain,
                     'reg_username' => bin2hex(random_bytes(6)),
                     'reg_password' => bin2hex(random_bytes(6)),
@@ -406,7 +406,7 @@ class Provider extends DomainNames implements ProviderInterface
                     'change_contact' => 0,
                     'handle' => 'process',
                     'period' => $period,
-                    'f_whois_privacy' => Utils::tldSupportsWhoisPrivacy($tld) && $params->whois_privacy,
+                    'f_whois_privacy' => $this->getWhoisPrivacyRequestValue($tld, $params->whois_privacy),
                     'reg_type' => 'transfer',
                     'custom_tech_contact' => 0,
                     'custom_nameservers' => 0,
@@ -1204,5 +1204,25 @@ class Provider extends DomainNames implements ProviderInterface
             default:
                 throw ProvisionFunctionError::create('Invalid contact type: ' . $contactType->getValue());
         }
+    }
+
+    /**
+     * Determine the f_whois_privacy attribute value for register/transfer.
+     *
+     * When not provided (null), an empty value is sent so the reseller account default applies.
+     * Otherwise, privacy is explicitly enabled (1) only if requested and supported by the TLD,
+     * and explicitly disabled (0) in all other cases.
+     *
+     * @param bool|int|string|null $whoisPrivacy
+     *
+     * @return int|null 1 = enable, 0 = disable, null = not provided
+     */
+    private function getWhoisPrivacyRequestValue(string $tld, $whoisPrivacy): ?int
+    {
+        if ($whoisPrivacy === null) {
+            return null;
+        }
+
+        return $whoisPrivacy && Utils::tldSupportsWhoisPrivacy($tld) ? 1 : 0;
     }
 }
